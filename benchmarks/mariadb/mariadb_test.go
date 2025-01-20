@@ -1,4 +1,4 @@
-package benchmarks
+package mariadb
 
 import (
 	"database/sql"
@@ -44,6 +44,8 @@ func TestMain(m *testing.M) {
 }
 
 func BenchmarkMariaDBSingleInsertFixedData(b *testing.B) {
+	defer testutil.RecoverBenchHandler(b)
+
 	b.ResetTimer()
 	b.ReportAllocs()
 
@@ -56,6 +58,8 @@ func BenchmarkMariaDBSingleInsertFixedData(b *testing.B) {
 }
 
 func BenchmarkMariaDBSingleInsertRandomData(b *testing.B) {
+	defer testutil.RecoverBenchHandler(b)
+
 	b.ResetTimer()
 	b.ReportAllocs()
 

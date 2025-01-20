@@ -37,15 +37,28 @@ func TestMainWrapper(c TestConfig) {
 	os.Exit(exitCode)
 }
 
-// RunWithRecover executes a test function and recovers from panics, failing the test if a panic occurs.
-func RunWithRecover(t *testing.T, testFunc func(*testing.T)) {
-	defer RecoverHandler(t)
+// RunTestWithRecover executes a test function and recovers from panics, failing the test if a panic occurs.
+func RunTestWithRecover(t *testing.T, testFunc func(*testing.T)) {
+	defer RecoverTestHandler(t)
 	testFunc(t)
 }
 
-// RecoverHandler recovers from a panic and marks the test as failed, printing the stack trace.
-func RecoverHandler(t *testing.T) {
+// RecoverTestHandler recovers from a panic and marks the test as failed, printing the stack trace.
+func RecoverTestHandler(t *testing.T) {
 	if r := recover(); r != nil {
 		t.Errorf("Test panicked: %v\nStack trace:\n%s", r, debug.Stack())
+	}
+}
+
+// RunBenchWithRecover executes a bench function and recovers from panics, failing the test if a panic occurs.
+func RunBenchWithRecover(b *testing.B, testFunc func(*testing.B)) {
+	defer RecoverBenchHandler(b)
+	testFunc(b)
+}
+
+// RecoverBenchHandler recovers from a panic and marks the bench as failed, printing the stack trace.
+func RecoverBenchHandler(b *testing.B) {
+	if r := recover(); r != nil {
+		b.Errorf("Test panicked: %v\nStack trace:\n%s", r, debug.Stack())
 	}
 }
