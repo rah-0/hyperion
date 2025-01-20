@@ -105,5 +105,50 @@ BenchmarkTCPClientSendSingleMessage100MB-8          1866          39150366 ns/op
 BenchmarkTCPClientSendSingleMessage1GB-2             181         395581466 ns/op               0 B/op          0 allocs/op
 BenchmarkTCPClientSendSingleMessage1GB-4             180         399766696 ns/op               0 B/op          0 allocs/op
 BenchmarkTCPClientSendSingleMessage1GB-8             178         400584389 ns/op               0 B/op          0 allocs/op
+```
 
+## HTTP
+```
+BenchmarkHTTPClientSendSingleMessage-2           1000000             66719 ns/op            6091 B/op         67 allocs/op
+BenchmarkHTTPClientSendSingleMessage-4           1000000             63271 ns/op            6100 B/op         67 allocs/op
+BenchmarkHTTPClientSendSingleMessage-8           1000000             63520 ns/op            6216 B/op         67 allocs/op
+BenchmarkHTTPClientSendSingleMessage2KB-2         900810             77706 ns/op           10458 B/op         72 allocs/op
+BenchmarkHTTPClientSendSingleMessage2KB-4        1000000             72630 ns/op           10481 B/op         72 allocs/op
+BenchmarkHTTPClientSendSingleMessage2KB-8        1000000             73725 ns/op           10705 B/op         72 allocs/op
+BenchmarkHTTPClientSendSingleMessage4KB-2         731761             99274 ns/op           17828 B/op         78 allocs/op
+BenchmarkHTTPClientSendSingleMessage4KB-4         807621             88791 ns/op           17984 B/op         78 allocs/op
+BenchmarkHTTPClientSendSingleMessage4KB-8         792387             90238 ns/op           18394 B/op         78 allocs/op
+BenchmarkHTTPClientSendSingleMessage8KB-2         650334            111292 ns/op           44290 B/op         81 allocs/op
+BenchmarkHTTPClientSendSingleMessage8KB-4         631486            106435 ns/op           44959 B/op         81 allocs/op
+BenchmarkHTTPClientSendSingleMessage8KB-8         651879            110383 ns/op           46070 B/op         81 allocs/op
+BenchmarkHTTPClientSendSingleMessage16KB-2        567175            126616 ns/op           81692 B/op         83 allocs/op
+BenchmarkHTTPClientSendSingleMessage16KB-4        553728            130191 ns/op           83191 B/op         83 allocs/op
+BenchmarkHTTPClientSendSingleMessage16KB-8        531114            136300 ns/op           85479 B/op         84 allocs/op
+BenchmarkHTTPClientSendSingleMessage32KB-2        427830            170114 ns/op          192436 B/op         86 allocs/op
+BenchmarkHTTPClientSendSingleMessage32KB-4        391776            183716 ns/op          197378 B/op         88 allocs/op
+BenchmarkHTTPClientSendSingleMessage32KB-8        366886            196967 ns/op          201865 B/op         89 allocs/op
+BenchmarkHTTPClientSendSingleMessage64KB-2        315596            230259 ns/op          323979 B/op         89 allocs/op
+BenchmarkHTTPClientSendSingleMessage64KB-4        284298            253967 ns/op          332128 B/op         91 allocs/op
+BenchmarkHTTPClientSendSingleMessage64KB-8        269028            267971 ns/op          337272 B/op         93 allocs/op
+BenchmarkHTTPClientSendSingleMessage128KB-2       205194            346632 ns/op          554813 B/op         92 allocs/op
+BenchmarkHTTPClientSendSingleMessage128KB-4       189961            378911 ns/op          566721 B/op         96 allocs/op
+BenchmarkHTTPClientSendSingleMessage128KB-8       185986            382922 ns/op          572385 B/op         97 allocs/op
+BenchmarkHTTPClientSendSingleMessage256KB-2       111212            659198 ns/op         1235081 B/op        100 allocs/op
+BenchmarkHTTPClientSendSingleMessage256KB-4       102249            707682 ns/op         1246647 B/op        103 allocs/op
+BenchmarkHTTPClientSendSingleMessage256KB-8       108058            719285 ns/op         1252100 B/op        105 allocs/op
+BenchmarkHTTPClientSendSingleMessage512KB-2        53978           1213059 ns/op         2596347 B/op        111 allocs/op
+BenchmarkHTTPClientSendSingleMessage512KB-4        49196           1386575 ns/op         2603641 B/op        112 allocs/op
+BenchmarkHTTPClientSendSingleMessage512KB-8        47948           1464197 ns/op         2609279 B/op        113 allocs/op
+BenchmarkHTTPClientSendSingleMessage1MB-2          21388           3758526 ns/op         5314825 B/op        118 allocs/op
+BenchmarkHTTPClientSendSingleMessage1MB-4          17445           4099613 ns/op         5315669 B/op        118 allocs/op
+BenchmarkHTTPClientSendSingleMessage1MB-8          19362           3452282 ns/op         5317715 B/op        118 allocs/op
+BenchmarkHTTPClientSendSingleMessage10MB-2          2894          23264136 ns/op        52325260 B/op        129 allocs/op
+BenchmarkHTTPClientSendSingleMessage10MB-4          3939          22653774 ns/op        52338492 B/op        130 allocs/op
+BenchmarkHTTPClientSendSingleMessage10MB-8          3363          18553445 ns/op        52338670 B/op        130 allocs/op
+BenchmarkHTTPClientSendSingleMessage100MB-2          554         139628378 ns/op        615297828 B/op       138 allocs/op
+BenchmarkHTTPClientSendSingleMessage100MB-4          544         141763974 ns/op        615298993 B/op       139 allocs/op
+BenchmarkHTTPClientSendSingleMessage100MB-8          488         148327561 ns/op        615301868 B/op       139 allocs/op
+BenchmarkHTTPClientSendSingleMessage1GB-2             67         940118097 ns/op        5736587661 B/op      148 allocs/op
+BenchmarkHTTPClientSendSingleMessage1GB-4             61        1117175741 ns/op        5736595158 B/op      149 allocs/op
+BenchmarkHTTPClientSendSingleMessage1GB-8             79        1161890698 ns/op        5736598274 B/op      149 allocs/op
 ```
