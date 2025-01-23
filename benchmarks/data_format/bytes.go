@@ -5,22 +5,18 @@ import (
 	"encoding/gob"
 )
 
-var (
-	bytesBuf = &bytes.Buffer{}
-	bytesEnc = gob.NewEncoder(bytesBuf)
-	bytesDec = gob.NewDecoder(bytesBuf)
-)
-
 func EncodeBytes(x any) ([]byte, error) {
-	bytesBuf.Reset()
-	if err := bytesEnc.Encode(x); err != nil {
+	b := &bytes.Buffer{}
+	e := gob.NewEncoder(b)
+	if err := e.Encode(x); err != nil {
 		return nil, err
 	}
-	return bytesBuf.Bytes(), nil
+	return b.Bytes(), nil
 }
 
 func DecodeBytes(data []byte, x any) error {
-	bytesBuf.Reset()
-	bytesBuf.Write(data)
-	return bytesDec.Decode(x)
+	b := &bytes.Buffer{}
+	b.Write(data)
+	d := gob.NewDecoder(b)
+	return d.Decode(x)
 }

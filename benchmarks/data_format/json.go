@@ -5,17 +5,13 @@ import (
 	"encoding/json"
 )
 
-var (
-	jsonBuf     = &bytes.Buffer{}
-	jsonEncoder = json.NewEncoder(jsonBuf)
-)
-
 func EncodeJson(x any) ([]byte, error) {
-	jsonBuf.Reset()
-	if err := jsonEncoder.Encode(x); err != nil {
+	b := &bytes.Buffer{}
+	e := json.NewEncoder(b)
+	if err := e.Encode(x); err != nil {
 		return nil, err
 	}
-	return jsonBuf.Bytes(), nil
+	return b.Bytes(), nil
 }
 
 func DecodeJson(data []byte, x any) error {
