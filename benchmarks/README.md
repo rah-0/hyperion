@@ -152,8 +152,7 @@ BenchmarkMariaDBSingleInsertRandomData-8          229183            312220 ns/op
 
 ### Observations:
 
-- JSON: B/op discrepancies are most likely caused by GC.
-- Protobuf: Memory and Allocations per op are quite high under heavy load, quotes from [Hacker News](https://news.ycombinator.com/item?id=40798740):
+- Protobuf: Allocations per op are quite high under heavy load, quotes from [Hacker News](https://news.ycombinator.com/item?id=40798740):
 
 > Go gRPC server code does a lot of allocations. I have a gRPC service where each container does 50-80K/second of incoming calls and I spend a ton of time in GC and in allocating headers for all the msgs.
 
