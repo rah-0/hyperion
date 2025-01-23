@@ -157,5 +157,4 @@ BenchmarkMariaDBSingleInsertRandomData-8          229183            312220 ns/op
 
 > Go gRPC server code does a lot of allocations. I have a gRPC service where each container does 50-80K/second of incoming calls and I spend a ton of time in GC and in allocating headers for all the msgs.
 
-
-
+> **Note:** A `sync.Pool` for Protobuf can reduce the B/op by around 60% but Allocs won't change. 
