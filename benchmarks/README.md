@@ -49,106 +49,113 @@ net-write-timeout=3600
 ```
 
 # Results
-**Command**: go test -bench=. -cpu=2,4,8 -benchtime=60s -timeout=0
+
+The aim of benching is to see what's faster while using the least amount of memory possible for each category.
+
+**Test Command**: go test -bench=. -benchtime=60s -timeout=0
+
+## DB's
+
+---
 
 ## MariaDB
 ```
-BenchmarkMariaDBSingleInsertFixedData-2           233269            311992 ns/op             752 B/op         21 allocs/op
-BenchmarkMariaDBSingleInsertFixedData-4           228982            312275 ns/op             752 B/op         21 allocs/op
 BenchmarkMariaDBSingleInsertFixedData-8           226855            312530 ns/op             752 B/op         21 allocs/op
-BenchmarkMariaDBSingleInsertRandomData-2          227834            312153 ns/op             816 B/op         23 allocs/op
-BenchmarkMariaDBSingleInsertRandomData-4          227857            313258 ns/op             816 B/op         23 allocs/op
 BenchmarkMariaDBSingleInsertRandomData-8          229183            312220 ns/op             816 B/op         23 allocs/op
 ```
 
-## TCP
-```
-BenchmarkTCPClientSendSingleMessage-2           15554428              4678 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage-4           16660903              4306 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage-8           16607952              4318 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage2KB-2        13755962              5318 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage2KB-4        14499967              4955 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage2KB-8        13972306              5140 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage4KB-2        12424875              5837 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage4KB-4        13212968              5436 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage4KB-8        12871070              5610 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage8KB-2        11462521              6279 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage8KB-4        12012882              6013 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage8KB-8        12390741              5787 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage16KB-2       11903547              6086 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage16KB-4       11247807              6380 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage16KB-8       10999038              6334 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage32KB-2        6025442             11890 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage32KB-4        5746462             12581 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage32KB-8        5724616             12679 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage64KB-2        2994360             24246 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage64KB-4        2697742             28783 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage64KB-8        2548231             27723 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage128KB-2       1488265             48403 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage128KB-4       1329224             53235 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage128KB-8       1312656             52941 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage256KB-2        742324             97220 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage256KB-4        707037            104683 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage256KB-8        721300            103995 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage512KB-2        366891            193989 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage512KB-4        359095            204075 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage512KB-8        339342            203246 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage1MB-2          194988            384171 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage1MB-4          180643            408243 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage1MB-8          180158            411231 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage10MB-2          18566           3895965 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage10MB-4          18394           3930107 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage10MB-8          18314           3930304 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage100MB-2          1887          38556426 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage100MB-4          1864          38979951 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage100MB-8          1866          39150366 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage1GB-2             181         395581466 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage1GB-4             180         399766696 ns/op               0 B/op          0 allocs/op
-BenchmarkTCPClientSendSingleMessage1GB-8             178         400584389 ns/op               0 B/op          0 allocs/op
-```
+---
 
-## HTTP
-```
-BenchmarkHTTPClientSendSingleMessage-2           1000000             66719 ns/op            6091 B/op         67 allocs/op
-BenchmarkHTTPClientSendSingleMessage-4           1000000             63271 ns/op            6100 B/op         67 allocs/op
-BenchmarkHTTPClientSendSingleMessage-8           1000000             63520 ns/op            6216 B/op         67 allocs/op
-BenchmarkHTTPClientSendSingleMessage2KB-2         900810             77706 ns/op           10458 B/op         72 allocs/op
-BenchmarkHTTPClientSendSingleMessage2KB-4        1000000             72630 ns/op           10481 B/op         72 allocs/op
-BenchmarkHTTPClientSendSingleMessage2KB-8        1000000             73725 ns/op           10705 B/op         72 allocs/op
-BenchmarkHTTPClientSendSingleMessage4KB-2         731761             99274 ns/op           17828 B/op         78 allocs/op
-BenchmarkHTTPClientSendSingleMessage4KB-4         807621             88791 ns/op           17984 B/op         78 allocs/op
-BenchmarkHTTPClientSendSingleMessage4KB-8         792387             90238 ns/op           18394 B/op         78 allocs/op
-BenchmarkHTTPClientSendSingleMessage8KB-2         650334            111292 ns/op           44290 B/op         81 allocs/op
-BenchmarkHTTPClientSendSingleMessage8KB-4         631486            106435 ns/op           44959 B/op         81 allocs/op
-BenchmarkHTTPClientSendSingleMessage8KB-8         651879            110383 ns/op           46070 B/op         81 allocs/op
-BenchmarkHTTPClientSendSingleMessage16KB-2        567175            126616 ns/op           81692 B/op         83 allocs/op
-BenchmarkHTTPClientSendSingleMessage16KB-4        553728            130191 ns/op           83191 B/op         83 allocs/op
-BenchmarkHTTPClientSendSingleMessage16KB-8        531114            136300 ns/op           85479 B/op         84 allocs/op
-BenchmarkHTTPClientSendSingleMessage32KB-2        427830            170114 ns/op          192436 B/op         86 allocs/op
-BenchmarkHTTPClientSendSingleMessage32KB-4        391776            183716 ns/op          197378 B/op         88 allocs/op
-BenchmarkHTTPClientSendSingleMessage32KB-8        366886            196967 ns/op          201865 B/op         89 allocs/op
-BenchmarkHTTPClientSendSingleMessage64KB-2        315596            230259 ns/op          323979 B/op         89 allocs/op
-BenchmarkHTTPClientSendSingleMessage64KB-4        284298            253967 ns/op          332128 B/op         91 allocs/op
-BenchmarkHTTPClientSendSingleMessage64KB-8        269028            267971 ns/op          337272 B/op         93 allocs/op
-BenchmarkHTTPClientSendSingleMessage128KB-2       205194            346632 ns/op          554813 B/op         92 allocs/op
-BenchmarkHTTPClientSendSingleMessage128KB-4       189961            378911 ns/op          566721 B/op         96 allocs/op
-BenchmarkHTTPClientSendSingleMessage128KB-8       185986            382922 ns/op          572385 B/op         97 allocs/op
-BenchmarkHTTPClientSendSingleMessage256KB-2       111212            659198 ns/op         1235081 B/op        100 allocs/op
-BenchmarkHTTPClientSendSingleMessage256KB-4       102249            707682 ns/op         1246647 B/op        103 allocs/op
-BenchmarkHTTPClientSendSingleMessage256KB-8       108058            719285 ns/op         1252100 B/op        105 allocs/op
-BenchmarkHTTPClientSendSingleMessage512KB-2        53978           1213059 ns/op         2596347 B/op        111 allocs/op
-BenchmarkHTTPClientSendSingleMessage512KB-4        49196           1386575 ns/op         2603641 B/op        112 allocs/op
-BenchmarkHTTPClientSendSingleMessage512KB-8        47948           1464197 ns/op         2609279 B/op        113 allocs/op
-BenchmarkHTTPClientSendSingleMessage1MB-2          21388           3758526 ns/op         5314825 B/op        118 allocs/op
-BenchmarkHTTPClientSendSingleMessage1MB-4          17445           4099613 ns/op         5315669 B/op        118 allocs/op
-BenchmarkHTTPClientSendSingleMessage1MB-8          19362           3452282 ns/op         5317715 B/op        118 allocs/op
-BenchmarkHTTPClientSendSingleMessage10MB-2          2894          23264136 ns/op        52325260 B/op        129 allocs/op
-BenchmarkHTTPClientSendSingleMessage10MB-4          3939          22653774 ns/op        52338492 B/op        130 allocs/op
-BenchmarkHTTPClientSendSingleMessage10MB-8          3363          18553445 ns/op        52338670 B/op        130 allocs/op
-BenchmarkHTTPClientSendSingleMessage100MB-2          554         139628378 ns/op        615297828 B/op       138 allocs/op
-BenchmarkHTTPClientSendSingleMessage100MB-4          544         141763974 ns/op        615298993 B/op       139 allocs/op
-BenchmarkHTTPClientSendSingleMessage100MB-8          488         148327561 ns/op        615301868 B/op       139 allocs/op
-BenchmarkHTTPClientSendSingleMessage1GB-2             67         940118097 ns/op        5736587661 B/op      148 allocs/op
-BenchmarkHTTPClientSendSingleMessage1GB-4             61        1117175741 ns/op        5736595158 B/op      149 allocs/op
-BenchmarkHTTPClientSendSingleMessage1GB-8             79        1161890698 ns/op        5736598274 B/op      149 allocs/op
-```
+## Protocols (sending only)
+
+| Message Size       | Protocol | Iterations   | Time per Op (ns) | Memory per Op (B)     | Allocations per Op |
+|--------------------|----------|--------------|------------------|-----------------------|--------------------|
+| **Single Message** |          |              |                  |                       |                    |
+| Single Message-8   | TCP      | 16,607,952   | 4,318.0          | 0                     | 0                  |
+| Single Message-8   | HTTP     | 1,000,000    | 63,520.0         | 6,216                 | 67                 |
+| **2KB**            |          |              |                  |                       |                    |
+| 2KB-8              | TCP      | 13,972,306   | 5,140.0          | 0                     | 0                  |
+| 2KB-8              | HTTP     | 1,000,000    | 73,725.0         | 10,705                | 72                 |
+| **4KB**            |          |              |                  |                       |                    |
+| 4KB-8              | TCP      | 12,871,070   | 5,610.0          | 0                     | 0                  |
+| 4KB-8              | HTTP     | 792,387      | 90,238.0         | 18,394                | 78                 |
+| **8KB**            |          |              |                  |                       |                    |
+| 8KB-8              | TCP      | 12,390,741   | 5,787.0          | 0                     | 0                  |
+| 8KB-8              | HTTP     | 651,879      | 110,383.0        | 46,070                | 81                 |
+| **16KB**           |          |              |                  |                       |                    |
+| 16KB-8             | TCP      | 10,999,038   | 6,334.0          | 0                     | 0                  |
+| 16KB-8             | HTTP     | 531,114      | 136,300.0        | 85,479                | 84                 |
+| **32KB**           |          |              |                  |                       |                    |
+| 32KB-8             | TCP      | 5,724,616    | 12,679.0         | 0                     | 0                  |
+| 32KB-8             | HTTP     | 366,886      | 196,967.0        | 201,865               | 89                 |
+| **64KB**           |          |              |                  |                       |                    |
+| 64KB-8             | TCP      | 2,548,231    | 27,723.0         | 0                     | 0                  |
+| 64KB-8             | HTTP     | 269,028      | 267,971.0        | 337,272               | 93                 |
+| **128KB**          |          |              |                  |                       |                    |
+| 128KB-8            | TCP      | 1,312,656    | 52,941.0         | 0                     | 0                  |
+| 128KB-8            | HTTP     | 185,986      | 382,922.0        | 572,385               | 97                 |
+| **256KB**          |          |              |                  |                       |                    |
+| 256KB-8            | TCP      | 721,300      | 103,995.0        | 0                     | 0                  |
+| 256KB-8            | HTTP     | 108,058      | 719,285.0        | 1,252,100             | 105                |
+| **512KB**          |          |              |                  |                       |                    |
+| 512KB-8            | TCP      | 339,342      | 203,246.0        | 0                     | 0                  |
+| 512KB-8            | HTTP     | 47,948       | 1,464,197.0      | 2,609,279             | 113                |
+| **1MB**            |          |              |                  |                       |                    |
+| 1MB-8              | TCP      | 180,158      | 411,231.0        | 0                     | 0                  |
+| 1MB-8              | HTTP     | 19,362       | 3,452,282.0      | 5,317,715             | 118                |
+| **10MB**           |          |              |                  |                       |                    |
+| 10MB-8             | TCP      | 18,314       | 3,930,304.0      | 0                     | 0                  |
+| 10MB-8             | HTTP     | 3,363        | 18,553,445.0     | 52,338,670            | 130                |
+| **100MB**          |          |              |                  |                       |                    |
+| 100MB-8            | TCP      | 1,866        | 39,150,366.0     | 0                     | 0                  |
+| 100MB-8            | HTTP     | 488          | 148,327,561.0    | 615,301,868           | 139                |
+| **1GB**            |          |              |                  |                       |                    |
+| 1GB-8              | TCP      | 178          | 400,584,389.0    | 0                     | 0                  |
+| 1GB-8              | HTTP     | 79           | 1,161,890,698.0  | 5,736,598,274         | 149                |
+
+## Encoding
+
+| Size                 | Encoding Type | Iterations     | Time per Op (ns) | Memory per Op (B) | Allocations per Op |
+|----------------------|---------------|----------------|------------------|-------------------|--------------------|
+| **1Small-8**         |               |                |                  |                   |                    |
+| 1Small-8             | GOB           | 331,346,038    | 218.2            | 24                | 1                  |
+| 1Small-8             | JSON          | 302,926,762    | 235.1            | 24                | 1                  |
+| 1Small-8             | Protobuf      | 675,272,739    | 106.9            | 80                | 1                  |
+| **100Small-8**       |               |                |                  |                   |                    |
+| 100Small-8           | GOB           | 12,789,297     | 5,647.0          | 24                | 1                  |
+| 100Small-8           | JSON          | 5,796,138      | 12,506.0         | 24                | 1                  |
+| 100Small-8           | Protobuf      | 6,710,169      | 10,709.0         | 8,000             | 100                |
+| **10000Small-8**     |               |                |                  |                   |                    |
+| 10000Small-8         | GOB           | 126,255        | 569,372.0        | 24                | 1                  |
+| 10000Small-8         | JSON          | 56,889         | 1,268,709.0      | 97                | 1                  |
+| 10000Small-8         | Protobuf      | 66,267         | 1,080,003.0      | 800,000           | 10,000             |
+| **1000000Small-8**   |               |                |                  |                   |                    |
+| 1000000Small-8       | GOB           | 1,198          | 60,117,976.0     | 24                | 1                  |
+| 1000000Small-8       | JSON          | 561            | 128,433,139.0    | 26                | 1                  |
+| 1000000Small-8       | Protobuf      | 658            | 110,364,613.0    | 80,000,002        | 1,000,000          |
+| **1Unreal-8**        |               |                |                  |                   |                    |
+| 1Unreal-8            | GOB           | 45,447,225     | 1,493.0          | 24                | 1                  |
+| 1Unreal-8            | JSON          | 15,375,618     | 4,718.0          | 24                | 1                  |
+| 1Unreal-8            | Protobuf      | 26,083,810     | 2,767.0          | 4,096             | 1                  |
+| **10Unreals-8**      |               |                |                  |                   |                    |
+| 10Unreals-8          | GOB           | 5,216,320      | 13,784.0         | 24                | 1                  |
+| 10Unreals-8          | JSON          | 1,542,039      | 46,899.0         | 24                | 1                  |
+| 10Unreals-8          | Protobuf      | 2,594,926      | 27,592.0         | 40,960            | 10                 |
+| **100Unreals-8**     |               |                |                  |                   |                    |
+| 100Unreals-8         | GOB           | 522,309        | 139,595.0        | 24                | 1                  |
+| 100Unreals-8         | JSON          | 150,490        | 476,419.0        | 30                | 1                  |
+| 100Unreals-8         | Protobuf      | 257,083        | 277,134.0        | 409,600           | 100                |
+| **1000Unreals-8**    |               |                |                  |                   |                    |
+| 1000Unreals-8        | GOB           | 48,220         | 1,513,438.0      | 24                | 1                  |
+| 1000Unreals-8        | JSON          | 14,821         | 4,888,348.0      | 24                | 1                  |
+| 1000Unreals-8        | Protobuf      | 25,994         | 2,790,997.0      | 4,096,000         | 1,000              |
+
+### Observations:
+
+- JSON: B/op discrepancies are most likely caused by GC.
+- Protobuf: Memory and Allocations per op are quite high under heavy load, quotes from [Hacker News](https://news.ycombinator.com/item?id=40798740):
+
+> Go gRPC server code does a lot of allocations. I have a gRPC service where each container does 50-80K/second of incoming calls and I spend a ton of time in GC and in allocating headers for all the msgs.
+
+
+

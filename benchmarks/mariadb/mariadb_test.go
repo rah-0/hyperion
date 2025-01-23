@@ -38,8 +38,8 @@ func TestMain(m *testing.M) {
 func BenchmarkMariaDBSingleInsertFixedData(b *testing.B) {
 	defer testutil.RecoverBenchHandler(b)
 
-	b.ResetTimer()
 	b.ReportAllocs()
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		err := dbTableSampleAInsert("9xKf3QpLm2Ry7UbHt6NwEjVg8As5OcIy4B")
@@ -52,8 +52,8 @@ func BenchmarkMariaDBSingleInsertFixedData(b *testing.B) {
 func BenchmarkMariaDBSingleInsertRandomData(b *testing.B) {
 	defer testutil.RecoverBenchHandler(b)
 
-	b.ResetTimer()
 	b.ReportAllocs()
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		err := dbTableSampleAInsert(uuid.NewString())
