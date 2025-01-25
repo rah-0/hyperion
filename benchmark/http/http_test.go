@@ -3,7 +3,7 @@ package http
 import (
 	"testing"
 
-	"github.com/rah-0/hyperion/utils/testutil"
+	"github.com/rah-0/hyperion/util/testutil"
 )
 
 func TestMain(m *testing.M) {

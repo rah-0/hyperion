@@ -1,17 +1,16 @@
-package data_format
+package serializer
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/rah-0/hyperion/benchmarks/data_format/pb"
-	"github.com/rah-0/hyperion/utils/testutil"
+	"github.com/rah-0/hyperion/benchmark/serializer/pb"
+	"github.com/rah-0/hyperion/util/testutil"
 )
 
 func TestEncodeDecodePerson(t *testing.T) {
-	persons := generateRandomPersons(1)
-	original := persons[0]
+	original := generateRandomPersons(1)[0]
 
 	data, err := EncodeProto(&pb.Person{
 		Name:    original.Name,
@@ -29,23 +28,61 @@ func TestEncodeDecodePerson(t *testing.T) {
 	assert.Equal(t, original.Surname, decoded.Surname, "Surnames should match")
 }
 
-func BenchmarkEncodeProto1Small(b *testing.B) {
-	runEncodeProtoBenchmark(b, 1)
+func TestEncodeDecodeProtoMultiplePersons(t *testing.T) {
+	persons := generateRandomPersons(2)
+	original1 := persons[0]
+	original2 := persons[1]
+
+	data1, err := EncodeProto(&pb.Person{
+		Name:    original1.Name,
+		Age:     int32(original1.Age),
+		Surname: original1.Surname,
+	})
+	assert.NoError(t, err, "Serialization of first Person should not fail")
+	assert.NotEmpty(t, data1, "Serialized data for first Person should not be empty")
+
+	data2, err := EncodeProto(&pb.Person{
+		Name:    original2.Name,
+		Age:     int32(original2.Age),
+		Surname: original2.Surname,
+	})
+	assert.NoError(t, err, "Serialization of second Person should not fail")
+	assert.NotEmpty(t, data2, "Serialized data for second Person should not be empty")
+
+	decoded1 := &pb.Person{}
+	err = DecodeProto(data1, decoded1)
+	assert.NoError(t, err, "Deserialization of first Person should not fail")
+
+	decoded2 := &pb.Person{}
+	err = DecodeProto(data2, decoded2)
+	assert.NoError(t, err, "Deserialization of second Person should not fail")
+
+	assert.Equal(t, original1.Name, decoded1.Name, "Names of first Person should match")
+	assert.Equal(t, original1.Age, int(decoded1.Age), "Ages of first Person should match")
+	assert.Equal(t, original1.Surname, decoded1.Surname, "Surnames of first Person should match")
+
+	assert.Equal(t, original2.Name, decoded2.Name, "Names of second Person should match")
+	assert.Equal(t, original2.Age, int(decoded2.Age), "Ages of second Person should match")
+	assert.Equal(t, original2.Surname, decoded2.Surname, "Surnames of second Person should match")
 }
 
-func BenchmarkEncodeProto100Small(b *testing.B) {
-	runEncodeProtoBenchmark(b, 100)
+func BenchmarkEncodeDecodeProto1Small(b *testing.B) {
+	runEncodeDecodeProtoBenchmark(b, 1)
 }
 
-func BenchmarkEncodeProto10000Small(b *testing.B) {
-	runEncodeProtoBenchmark(b, 10000)
+func BenchmarkEncodeDecodeProto100Small(b *testing.B) {
+	runEncodeDecodeProtoBenchmark(b, 100)
 }
 
-func BenchmarkEncodeProto1000000Small(b *testing.B) {
-	runEncodeProtoBenchmark(b, 1000000)
+func BenchmarkEncodeDecodeProto10000Small(b *testing.B) {
+	runEncodeDecodeProtoBenchmark(b, 10000)
 }
 
-func runEncodeProtoBenchmark(b *testing.B, count int) {
+func BenchmarkEncodeDecodeProto1000000Small(b *testing.B) {
+	runEncodeDecodeProtoBenchmark(b, 1000000)
+}
+
+func runEncodeDecodeProtoBenchmark(b *testing.B, count int) {
 	defer testutil.RecoverBenchHandler(b)
 
 	data := generateRandomPersons(count)
@@ -58,35 +95,42 @@ func runEncodeProtoBenchmark(b *testing.B, count int) {
 		}
 	}
 
-	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, person := range protoData {
-			_, err := EncodeProto(person)
+			encodedData, err := EncodeProto(person)
 			if err != nil {
 				b.Fatalf("Failed to Encode Protobuf: %v", err)
+			}
+
+			var decoded pb.Person
+			err = DecodeProto(encodedData, &decoded)
+			if err != nil {
+				b.Fatalf("Failed to Decode Protobuf: %v", err)
 			}
 		}
 	}
 }
 
-func BenchmarkEncodeProto1Unreal(b *testing.B) {
-	runEncodeProtoUnrealBenchmark(b, 1)
+func BenchmarkEncodeDecodeProto1Unreal(b *testing.B) {
+	runEncodeDecodeProtoUnrealBenchmark(b, 1)
 }
 
-func BenchmarkEncodeProto10Unreals(b *testing.B) {
-	runEncodeProtoUnrealBenchmark(b, 10)
+func BenchmarkEncodeDecodeProto10Unreals(b *testing.B) {
+	runEncodeDecodeProtoUnrealBenchmark(b, 10)
 }
 
-func BenchmarkEncodeProto100Unreals(b *testing.B) {
-	runEncodeProtoUnrealBenchmark(b, 100)
+func BenchmarkEncodeDecodeProto100Unreals(b *testing.B) {
+	runEncodeDecodeProtoUnrealBenchmark(b, 100)
 }
 
-func BenchmarkEncodeProto1000Unreals(b *testing.B) {
-	runEncodeProtoUnrealBenchmark(b, 1000)
+func BenchmarkEncodeDecodeProto1000Unreals(b *testing.B) {
+	runEncodeDecodeProtoUnrealBenchmark(b, 1000)
 }
 
-func runEncodeProtoUnrealBenchmark(b *testing.B, count int) {
+func runEncodeDecodeProtoUnrealBenchmark(b *testing.B, count int) {
+	defer testutil.RecoverBenchHandler(b)
+
 	data := generateRandomUnreals(count)
 	protoData := make([]*pb.Unreal, len(data))
 	for i, u := range data {
@@ -194,13 +238,18 @@ func runEncodeProtoUnrealBenchmark(b *testing.B, count int) {
 		}
 	}
 
-	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, unreal := range protoData {
-			_, err := EncodeProto(unreal)
+			encodedData, err := EncodeProto(unreal)
 			if err != nil {
 				b.Fatalf("Failed to Encode Protobuf: %v", err)
+			}
+
+			var decoded pb.Unreal
+			err = DecodeProto(encodedData, &decoded)
+			if err != nil {
+				b.Fatalf("Failed to Decode Protobuf: %v", err)
 			}
 		}
 	}

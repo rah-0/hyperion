@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/rah-0/hyperion/utils/testutil"
+	"github.com/rah-0/hyperion/util/testutil"
 )
 
 func TestMain(m *testing.M) {
@@ -65,7 +65,7 @@ func BenchmarkTCPClientSendSingleMessage10MB(b *testing.B)  { benchmarkTCP(b, 11
 func BenchmarkTCPClientSendSingleMessage100MB(b *testing.B) { benchmarkTCP(b, 12) }
 func BenchmarkTCPClientSendSingleMessage1GB(b *testing.B)   { benchmarkTCP(b, 13) }
 
-// Helper function for TCP benchmarks
+// Helper function for TCP benchmark
 func benchmarkTCP(b *testing.B, sizeType int) {
 	defer testutil.RecoverBenchHandler(b)
 

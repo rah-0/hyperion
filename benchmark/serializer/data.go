@@ -1,4 +1,4 @@
-package data_format
+package serializer
 
 import (
 	"math/rand"

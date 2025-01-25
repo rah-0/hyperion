@@ -6,7 +6,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 
-	"github.com/rah-0/hyperion/utils/testutil"
+	"github.com/rah-0/hyperion/util/testutil"
 )
 
 func TestMain(m *testing.M) {

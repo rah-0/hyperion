@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/rah-0/hyperion/utils"
+	"github.com/rah-0/hyperion/util"
 )
 
 var (
@@ -32,11 +32,11 @@ func dbTableSampleAInsert(fieldAValue string) error {
 }
 
 func dbConnect() (err error) {
-	usr := utils.GetEnvVariable("MariaDB_Usr")
-	pwd := utils.GetEnvVariable("MariaDB_Pwd")
-	ip := utils.GetEnvVariable("MariaDB_IP")
-	port := utils.GetEnvVariable("MariaDB_Port")
-	dbName := utils.GetEnvVariable("MariaDB_Name")
+	usr := util.GetEnvVariable("MariaDB_Usr")
+	pwd := util.GetEnvVariable("MariaDB_Pwd")
+	ip := util.GetEnvVariable("MariaDB_IP")
+	port := util.GetEnvVariable("MariaDB_Port")
+	dbName := util.GetEnvVariable("MariaDB_Name")
 
 	dsn := usr + ":" + pwd + "@tcp(" + ip + ":" + port + ")/" + dbName
 	db, err = sql.Open("mysql", dsn)
