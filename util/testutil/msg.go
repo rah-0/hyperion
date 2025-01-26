@@ -3,10 +3,11 @@ package testutil
 import (
 	"crypto/rand"
 	"errors"
+	"strings"
 )
 
 var (
-	sizes = map[int]int{
+	Sizes = map[int]int{
 		1:  2 * 1024,               // 2KB
 		2:  4 * 1024,               // 4KB
 		3:  8 * 1024,               // 8KB
@@ -25,7 +26,7 @@ var (
 
 func GenerateMessage(sizeType int) ([]byte, error) {
 	// Get the target size
-	targetSize, ok := sizes[sizeType]
+	targetSize, ok := Sizes[sizeType]
 	if !ok {
 		return []byte{}, errors.New("invalid size type: must be between 1 and 6")
 	}
@@ -44,4 +45,30 @@ func GenerateMessage(sizeType int) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+func GenerateRepeatedMessage(sizeType int) ([]byte, error) {
+	// Get the target size
+	targetSize, ok := Sizes[sizeType]
+	if !ok {
+		return nil, errors.New("invalid size type: must be between 1 and 13")
+	}
+
+	// Define a simple repetitive pattern
+	pattern := "ABCDEF1234567890"
+	patternLength := len(pattern)
+
+	// Calculate how many times to repeat the pattern
+	repeatCount := (targetSize / patternLength) + 1
+
+	// Generate the repeated message
+	repeatedMessage := strings.Repeat(pattern, repeatCount)
+
+	// Ensure the message is at least the target size
+	if len(repeatedMessage) < targetSize {
+		return nil, errors.New("failed to generate repeated message of sufficient size")
+	}
+
+	// Return the message trimmed to the exact target size
+	return []byte(repeatedMessage[:targetSize]), nil
 }

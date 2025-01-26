@@ -12,7 +12,7 @@ type Person struct {
 	Surname string
 }
 
-func generateRandomPersons(count int) []Person {
+func GenerateRandomPersons(count int) []Person {
 	persons := make([]Person, count)
 	for i := 0; i < count; i++ {
 		persons[i] = Person{
@@ -127,7 +127,7 @@ type Unreal struct {
 	Prop100 string
 }
 
-func generateRandomUnreals(count int) []Unreal {
+func GenerateRandomUnreals(count int) []Unreal {
 	unreals := make([]Unreal, count)
 	for i := 0; i < count; i++ {
 		unreals[i] = Unreal{

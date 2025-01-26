@@ -11,7 +11,7 @@ import (
 )
 
 func TestEncodeDecodeBytes(t *testing.T) {
-	original := generateRandomPersons(1)[0]
+	original := GenerateRandomPersons(1)[0]
 
 	buf := &bytes.Buffer{}
 	enc := gob.NewEncoder(buf)
@@ -48,7 +48,7 @@ func BenchmarkEncodeDecodeBytes1000000Small(b *testing.B) {
 func runEncodeDecodeBytesBenchmark(b *testing.B, count int) {
 	defer testutil.RecoverBenchHandler(b)
 
-	data := generateRandomPersons(count)
+	data := GenerateRandomPersons(count)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -88,7 +88,7 @@ func BenchmarkEncodeDecodeBytes1000Unreals(b *testing.B) {
 func runEncodeDecodeBytesUnrealBenchmark(b *testing.B, count int) {
 	defer testutil.RecoverBenchHandler(b)
 
-	data := generateRandomUnreals(count)
+	data := GenerateRandomUnreals(count)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
