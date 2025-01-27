@@ -6,54 +6,71 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/rah-0/hyperion/benchmark/serializer"
 	"github.com/rah-0/hyperion/util/testutil"
 )
 
 func TestGzip_2KB(t *testing.T) {
-	runGzipTest(t, 1)
+	runGzipTestRandomData(t, 1)
 }
 
 func TestGzip_4KB(t *testing.T) {
-	runGzipTest(t, 2)
+	runGzipTestRandomData(t, 2)
 }
 
 func TestGzip_8KB(t *testing.T) {
-	runGzipTest(t, 3)
+	runGzipTestRandomData(t, 3)
 }
 
 func TestGzip_16KB(t *testing.T) {
-	runGzipTest(t, 4)
+	runGzipTestRandomData(t, 4)
 }
 
 func TestGzip_32KB(t *testing.T) {
-	runGzipTest(t, 5)
+	runGzipTestRandomData(t, 5)
 }
 
 func TestGzip_64KB(t *testing.T) {
-	runGzipTest(t, 6)
+	runGzipTestRandomData(t, 6)
 }
 
 func TestGzip_128KB(t *testing.T) {
-	runGzipTest(t, 7)
+	runGzipTestRandomData(t, 7)
 }
 
 func TestGzip_256KB(t *testing.T) {
-	runGzipTest(t, 8)
+	runGzipTestRandomData(t, 8)
 }
 
 func TestGzip_512KB(t *testing.T) {
-	runGzipTest(t, 9)
+	runGzipTestRandomData(t, 9)
 }
 
 func TestGzip_1MB(t *testing.T) {
-	runGzipTest(t, 10)
+	runGzipTestRandomData(t, 10)
 }
 
 func TestGzip_10MB(t *testing.T) {
-	runGzipTest(t, 11)
+	runGzipTestRandomData(t, 11)
 }
 
-func runGzipTest(t *testing.T, sizeType int) {
+func TestGzip_1Small(t *testing.T) {
+	runGzipTestStructsSmall(t, 1)
+}
+
+func TestGzip_100Small(t *testing.T) {
+	runGzipTestStructsSmall(t, 100)
+}
+
+func TestGzip_10000Small(t *testing.T) {
+	runGzipTestStructsSmall(t, 10000)
+}
+
+func TestGzip_100000Small(t *testing.T) {
+	runGzipTestStructsSmall(t, 100000)
+}
+
+func runGzipTestRandomData(t *testing.T, sizeType int) {
 	originalData, err := testutil.GenerateMessage(sizeType)
 	if err != nil {
 		t.Fatalf("Failed to generate message of size type %d: %v", sizeType, err)
@@ -75,6 +92,34 @@ func runGzipTest(t *testing.T, sizeType int) {
 	dataSizeCompressed := len(compressedData)
 	fmt.Printf("Encoded size: %d bytes, Compressed size: %d bytes, Gain %.2f%%\n",
 		dataSize, dataSizeCompressed, testutil.PercentDifference(dataSize, dataSizeCompressed))
+}
+
+func runGzipTestStructsSmall(t *testing.T, size int) {
+	originalData := serializer.GenerateRandomPersons(size)
+	err := serializer.EncodeBytes(serializer.GobEnc, originalData)
+	if err != nil {
+		t.Fatalf("Failed to encode data %d: %v", size, err)
+	}
+	encodedData := serializer.GobBuf.Bytes()
+
+	compressedData, err := CompressGzip(encodedData)
+	if err != nil {
+		t.Fatalf("Failed to compress data for size %d: %v", size, err)
+	}
+
+	decompressedData, err := DecompressGzip(compressedData)
+	if err != nil {
+		t.Fatalf("Failed to decompress data for size %d: %v", size, err)
+	}
+
+	assert.Equal(t, encodedData, decompressedData, "Decompressed data should match the original for size %d", size)
+
+	dataSize := len(encodedData)
+	dataSizeCompressed := len(compressedData)
+	fmt.Printf("Encoded size: %d bytes, Compressed size: %d bytes, Gain %.2f%%\n",
+		dataSize, dataSizeCompressed, testutil.PercentDifference(dataSize, dataSizeCompressed))
+
+	serializer.GobBuf.Reset()
 }
 
 func BenchmarkCompressDecompressGzip(b *testing.B) {

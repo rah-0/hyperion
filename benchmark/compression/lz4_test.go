@@ -6,55 +6,72 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/rah-0/hyperion/benchmark/serializer"
 	"github.com/rah-0/hyperion/util/testutil"
 )
 
 func TestLZ4_2KB(t *testing.T) {
-	runLZ4Test(t, 1)
+	runLZ4TestRandomData(t, 1)
 }
 
 func TestLZ4_4KB(t *testing.T) {
-	runLZ4Test(t, 2)
+	runLZ4TestRandomData(t, 2)
 }
 
 func TestLZ4_8KB(t *testing.T) {
-	runLZ4Test(t, 3)
+	runLZ4TestRandomData(t, 3)
 }
 
 func TestLZ4_16KB(t *testing.T) {
-	runLZ4Test(t, 4)
+	runLZ4TestRandomData(t, 4)
 }
 
 func TestLZ4_32KB(t *testing.T) {
-	runLZ4Test(t, 5)
+	runLZ4TestRandomData(t, 5)
 }
 
 func TestLZ4_64KB(t *testing.T) {
-	runLZ4Test(t, 6)
+	runLZ4TestRandomData(t, 6)
 }
 
 func TestLZ4_128KB(t *testing.T) {
-	runLZ4Test(t, 7)
+	runLZ4TestRandomData(t, 7)
 }
 
 func TestLZ4_256KB(t *testing.T) {
-	runLZ4Test(t, 8)
+	runLZ4TestRandomData(t, 8)
 }
 
 func TestLZ4_512KB(t *testing.T) {
-	runLZ4Test(t, 9)
+	runLZ4TestRandomData(t, 9)
 }
 
 func TestLZ4_1MB(t *testing.T) {
-	runLZ4Test(t, 10)
+	runLZ4TestRandomData(t, 10)
 }
 
 func TestLZ4_10MB(t *testing.T) {
-	runLZ4Test(t, 11)
+	runLZ4TestRandomData(t, 11)
 }
 
-func runLZ4Test(t *testing.T, sizeType int) {
-	originalData, err := testutil.GenerateRepeatedMessage(sizeType)
+func TestLZ4_1Small(t *testing.T) {
+	runLZ4TestStructsSmall(t, 1)
+}
+
+func TestLZ4_100Small(t *testing.T) {
+	runLZ4TestStructsSmall(t, 100)
+}
+
+func TestLZ4_10000Small(t *testing.T) {
+	runLZ4TestStructsSmall(t, 10000)
+}
+
+func TestLZ4_100000Small(t *testing.T) {
+	runLZ4TestStructsSmall(t, 100000)
+}
+
+func runLZ4TestRandomData(t *testing.T, sizeType int) {
+	originalData, err := testutil.GenerateMessage(sizeType)
 	if err != nil {
 		t.Fatalf("Failed to generate message of size type %d: %v", sizeType, err)
 	}
@@ -75,6 +92,35 @@ func runLZ4Test(t *testing.T, sizeType int) {
 	dataSizeCompressed := len(compressedData)
 	fmt.Printf("Encoded size: %d bytes, Compressed size: %d bytes, Gain %.2f%%\n",
 		dataSize, dataSizeCompressed, testutil.PercentDifference(dataSize, dataSizeCompressed))
+}
+
+func runLZ4TestStructsSmall(t *testing.T, size int) {
+	originalData := serializer.GenerateRandomPersons(size)
+	err := serializer.EncodeBytes(serializer.GobEnc, originalData)
+	if err != nil {
+		t.Fatalf("Failed to encode data %d: %v", size, err)
+	}
+	encodedData := serializer.GobBuf.Bytes()
+
+	compressedData, err := CompressLZ4(encodedData)
+	if err != nil {
+		t.Fatalf("Failed to compress data for size %d: %v", size, err)
+	}
+
+	decompressedData, err := DecompressLZ4(compressedData)
+	if err != nil {
+		t.Fatalf("Failed to decompress data for size %d: %v", size, err)
+	}
+
+	assert.Equal(t, encodedData, decompressedData, "Decompressed data should match the original for size %d", size)
+
+	// Output size comparison
+	dataSize := len(encodedData)
+	dataSizeCompressed := len(compressedData)
+	fmt.Printf("Encoded size: %d bytes, Compressed size: %d bytes, Gain %.2f%%\n",
+		dataSize, dataSizeCompressed, testutil.PercentDifference(dataSize, dataSizeCompressed))
+
+	serializer.GobBuf.Reset()
 }
 
 func BenchmarkCompressDecompressLZ4(b *testing.B) {

@@ -28,14 +28,14 @@ func testEncodeDecodeOptBytesPersons(t *testing.T, count int) {
 	persons := GenerateRandomPersons(count)
 
 	for _, original := range persons {
-		err := EncodeBytes(bytesEnc, original)
+		err := EncodeBytes(GobEnc, original)
 		assert.NoError(t, err, "GOB serialization should not fail")
-		assert.NotZero(t, bytesBuf.Len(), "Serialized data should not be empty")
+		assert.NotZero(t, GobBuf.Len(), "Serialized data should not be empty")
 	}
 
 	for _, original := range persons {
 		decoded := &Person{}
-		err := DecodeBytes(bytesDec, decoded)
+		err := DecodeBytes(GobDec, decoded)
 		assert.NoError(t, err, "GOB deserialization should not fail")
 
 		assert.Equal(t, original.Name, decoded.Name, "Names should match")
@@ -43,7 +43,7 @@ func testEncodeDecodeOptBytesPersons(t *testing.T, count int) {
 		assert.Equal(t, original.Surname, decoded.Surname, "Surnames should match")
 	}
 
-	bytesBuf.Reset()
+	GobBuf.Reset()
 }
 
 func TestEncodeDecodeBytesOpt1Unreal(t *testing.T) {
@@ -66,14 +66,14 @@ func testEncodeDecodeOptBytesUnreals(t *testing.T, count int) {
 	unreals := GenerateRandomUnreals(count)
 
 	for _, original := range unreals {
-		err := EncodeBytes(bytesEnc, original)
+		err := EncodeBytes(GobEnc, original)
 		assert.NoError(t, err, "GOB serialization should not fail")
-		assert.NotZero(t, bytesBuf.Len(), "Serialized data should not be empty")
+		assert.NotZero(t, GobBuf.Len(), "Serialized data should not be empty")
 	}
 
 	for _, original := range unreals {
 		decoded := &Unreal{}
-		err := DecodeBytes(bytesDec, decoded)
+		err := DecodeBytes(GobDec, decoded)
 		assert.NoError(t, err, "GOB deserialization should not fail")
 
 		assert.Equal(t, original.Prop1, decoded.Prop1, "Prop1 should match")
@@ -178,7 +178,7 @@ func testEncodeDecodeOptBytesUnreals(t *testing.T, count int) {
 		assert.Equal(t, original.Prop100, decoded.Prop100, "Prop100 should match")
 	}
 
-	bytesBuf.Reset()
+	GobBuf.Reset()
 }
 
 func BenchmarkEncodeDecodeBytesOpt1Small(b *testing.B) {
@@ -219,18 +219,18 @@ func runEncodeDecodeBytesOptBenchmark(b *testing.B, count int) {
 	data := GenerateRandomPersons(count)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := EncodeBytes(bytesEnc, data)
+		err := EncodeBytes(GobEnc, data)
 		if err != nil {
 			b.Fatalf("Failed to Encode Gob: %v", err)
 		}
 		var decoded []Person
-		err = DecodeBytes(bytesDec, &decoded)
+		err = DecodeBytes(GobDec, &decoded)
 		if err != nil {
 			b.Fatalf("Failed to Decode Gob: %v", err)
 		}
 	}
 
-	bytesBuf.Reset()
+	GobBuf.Reset()
 }
 
 func runEncodeDecodeBytesOptUnrealBenchmark(b *testing.B, count int) {
@@ -239,16 +239,16 @@ func runEncodeDecodeBytesOptUnrealBenchmark(b *testing.B, count int) {
 	data := GenerateRandomUnreals(count)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := EncodeBytes(bytesEnc, data)
+		err := EncodeBytes(GobEnc, data)
 		if err != nil {
 			b.Fatalf("Failed to Encode Gob: %v", err)
 		}
 		var decoded []Unreal
-		err = DecodeBytes(bytesDec, &decoded)
+		err = DecodeBytes(GobDec, &decoded)
 		if err != nil {
 			b.Fatalf("Failed to Decode Gob: %v", err)
 		}
 	}
 
-	bytesBuf.Reset()
+	GobBuf.Reset()
 }

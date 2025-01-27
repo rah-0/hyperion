@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	bytesBuf = &bytes.Buffer{}
-	bytesEnc = gob.NewEncoder(bytesBuf)
-	bytesDec = gob.NewDecoder(bytesBuf)
+	GobBuf = &bytes.Buffer{}
+	GobEnc = gob.NewEncoder(GobBuf)
+	GobDec = gob.NewDecoder(GobBuf)
 )
 
 func EncodeBytes(enc *gob.Encoder, x any) error {

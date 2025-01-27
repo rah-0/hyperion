@@ -2,27 +2,29 @@
 
 ## Brotli
 - Achieves the highest compression ratios, especially with repeated data
-- Extremely slow
+- Good all-rounder: will compress either small or big amount of data 
+- Extremely slow and memory intensive
 
 ## Gzip
-- Very high compression ratios
-- Can handle both random and repeated data
+- Compressing small items can even yield a bigger data output
+- Very high compression ratios for repeated data
+- Not so good at random data
 
 ## LZ4
 - The fastest but it can deal with repeated data only, it's quite bad at completely random data
+- Compressing small items can even yield a bigger data output
 
 # Benchmark Results
 
 The data sample is 1mb of random data.
 
-| Algorithm | Time (ms/op) | Memory Allocated (MB/op) | Allocations/op |
-|-----------|--------------|--------------------------|----------------|
-| Brotli    | 1114.68 ms   | 131.4 MB                | 119            |
-| Gzip      | 25.99 ms     | 7.14 MB                 | 57             |
-| LZ4       | 2.80 ms      | 10.0 MB                 | 38             |
+| Algorithm | Time (ms/op) | Memory Allocated (MB/op)  | Allocations/op |
+|-----------|--------------|---------------------------|----------------|
+| Brotli    | 1114.68 ms   | 131.4 MB                  | 119            |
+| Gzip      | 25.99 ms     | 7.14 MB                   | 57             |
+| LZ4       | 2.80 ms      | 10.0 MB                   | 38             |
 
 # Compression Results (Random Data)
-
 | Size       | Algorithm | Encoded Size | Compressed Size | Gain (%)  |
 |------------|-----------|--------------|-----------------|-----------|
 | **2KB**    | Brotli    | 2048 bytes   | 1709 bytes      | 16.55%    |
@@ -58,6 +60,22 @@ The data sample is 1mb of random data.
 | **10MB**   | Brotli    | 10485760 bytes| 8665188 bytes  | 17.36%    |
 |            | Gzip      | 10485760 bytes| 8667954 bytes  | 17.34%    |
 |            | LZ4       | 10485760 bytes| 10485787 bytes | -0.00%    |
+
+# Compression Results (Small structs with random data)
+| Size         | Algorithm | Encoded Size  | Compressed Size | Gain (%)  |
+|--------------|-----------|---------------|-----------------|-----------|
+| **1Small**   | Brotli    | 147 bytes     | 130 bytes       | 11.56%    |
+|              | Gzip      | 84 bytes      | 93 bytes        | -10.71%   |
+|              | LZ4       | 85 bytes      | 104 bytes       | -22.35%   |
+| **100Small** | Brotli    | 7943 bytes    | 4088 bytes      | 48.53%    |
+|              | Gzip      | 7946 bytes    | 4435 bytes      | 44.19%    |
+|              | LZ4       | 7952 bytes    | 7549 bytes      | 5.07%     |
+| **10KSmall** | Brotli    | 793441 bytes  | 393685 bytes    | 50.38%    |
+|              | Gzip      | 793320 bytes  | 426396 bytes    | 46.25%    |
+|              | LZ4       | 793333 bytes  | 601696 bytes    | 24.16%    |
+| **100KSmall**| Brotli    | 7933926 bytes | 3908434 bytes   | 50.74%    |
+|              | Gzip      | 7934106 bytes | 4261133 bytes   | 46.29%    |
+|              | LZ4       | 7934005 bytes | 5984094 bytes   | 24.58%    |
 
 # Compression Results (Repeated Data)
 | Size       | Algorithm | Encoded Size | Compressed Size | Gain (%)  |
