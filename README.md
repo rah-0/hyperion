@@ -64,7 +64,7 @@ Since the config can be big enough, JSON is preferred for flexibility.
 
 - Args: config.json file path to be passed as an argument on startup
 - Hot Reload: required to modify the config without causing downtime
-  - HTTP Endpoint: a POST request that will send the updated JSON config
+  - HTTP Endpoint: a POST request that will sent the updated JSON config
 
 **Details and considerations:**
 - all nodes will have the same config
