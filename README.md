@@ -72,6 +72,7 @@ Since the config can be big enough, JSON is preferred for flexibility.
 - the HTTP Endpoint will be available for all nodes and the node that receives the new config is in charge of propagating the changes to the rest of the nodes
 - when adding a new node, that node will propagate the updated config to the rest since adding a new node always implies updating config
 - to remove a node, a POST request can be done, this request can be done to any of the nodes, including to the one that is to be removed
+- on startup, each node will validate its own config with the rest, if there is a conflict, manual resolution is required 
 
 ---
 
