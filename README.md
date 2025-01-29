@@ -18,11 +18,15 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
     - [ ] nVidia CUDA
     - [ ] AMD ROCm 
 - [ ] Design
+  - [x] Configuration
+    - [x] Args
+    - [x] Hot Reload
+      - [x] HTTP Endpoint
+- [ ] Implementation
   - [ ] Configuration
     - [ ] Args
     - [ ] Hot Reload
       - [ ] HTTP Endpoint
-- [ ] Implementation
   - [ ] Memory
   - [ ] Storage
   - [ ] GPU 
