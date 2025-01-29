@@ -18,6 +18,10 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
     - [ ] nVidia CUDA
     - [ ] AMD ROCm 
 - [ ] Design
+  - [ ] Configuration
+    - [ ] Args
+    - [ ] Hot Reload
+      - [ ] HTTP Endpoint
 - [ ] Implementation
   - [ ] Memory
   - [ ] Storage
@@ -25,7 +29,7 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
     - [ ] Memory
     - [ ] Processing
 
-
+---
 
 ### Benchmarking
 In order to avoid bloating the repo with packages that will only be used for the sole purpose of benchmarking, another repo was created, you can find it [here](https://github.com/rah-0/benchmarks).  
@@ -47,7 +51,25 @@ If at some point compression is needed, **brotli** will be used but careful cons
 - storage: is the processing bill more expensive than increasing the drive size?
 - over the wire: what's the biggest amount of data a slow network could transfer?
 
+---
 
+### Design
+
+#### Configuration
+Since the config can be big enough, JSON is preferred for flexibility.  
+
+- Args: config.json file path to be passed as an argument on startup
+- Hot Reload: required to modify the config without causing downtime
+  - HTTP Endpoint: a POST request that will send the updated JSON config
+
+**Details and considerations:**
+- all nodes will have the same config
+- the config file path passed on startup must be editable to allow the node to update its own config
+- the HTTP Endpoint will be available for all nodes and the node that receives the new config is in charge of propagating the changes to the rest of the nodes
+- when adding a new node, that node will propagate the updated config to the rest since adding a new node always implies updating config
+- to remove a node, a POST request can be done, this request can be done to any of the nodes, including to the one that is to be removed
+
+---
 
 ### Implementation
 
