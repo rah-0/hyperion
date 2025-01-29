@@ -47,7 +47,10 @@ If at some point compression is needed, **brotli** will be used but careful cons
 - storage: is the processing bill more expensive than increasing the drive size?
 - over the wire: what's the biggest amount of data a slow network could transfer?
 
+
+
 ### Implementation
+
 #### GPU
 A very long term plan is to allow the usage of GPU's to perform database operations such as:
 - Relational Operations: projection, join, sorting, aggregation, grouping.
