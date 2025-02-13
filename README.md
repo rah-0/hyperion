@@ -62,7 +62,9 @@ If at some point compression is needed, **brotli** will be used but careful cons
 #### Configuration
 Since the config can be big enough, JSON is preferred for flexibility.  
 
-- Args: config.json file path to be passed as an argument on startup
+- Startup Args: 
+  - config.json file path containing the cluster configuration
+  - data path where items will be stored
 - Hot Reload: required to modify the config without causing downtime
   - HTTP Endpoint: a POST request that will send the updated JSON config
 
