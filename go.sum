@@ -1,0 +1,4 @@
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/rah-0/nabu v0.0.3 h1:Gv5onnDzEvIF/+ZwurzOTyNaYJbxg6++4IpUe3KNbZg=
+github.com/rah-0/nabu v0.0.3/go.mod h1:MCTYZOSPbh+wkJHyqqE699jD0ap3keq9rBuX9kq6FzQ=

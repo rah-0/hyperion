@@ -20,6 +20,7 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
 - [ ] Design
   - [x] Configuration
     - [x] Args
+      - [x] Environment Variables
     - [x] Hot Reload
       - [x] HTTP Endpoint
 - [ ] Implementation
@@ -62,9 +63,9 @@ If at some point compression is needed, **brotli** will be used but careful cons
 #### Configuration
 Since the config can be big enough, JSON is preferred for flexibility.  
 
-- Startup Args: 
+- Command-line arguments: 
   - config.json file path containing the cluster configuration
-  - data path where items will be stored
+    - if no argument is passed, it will use the environment variable: `HyperionPathConfig`
 - Hot Reload: required to modify the config without causing downtime
   - HTTP Endpoint: a POST request that will send the updated JSON config
 
