@@ -58,7 +58,7 @@ If at some point compression is needed, **brotli** will be used but careful cons
 
 ---
 
-### Design
+### Implementation
 
 #### Configuration
 Since the config can be big enough, JSON is preferred for flexibility.  
@@ -75,13 +75,17 @@ Since the config can be big enough, JSON is preferred for flexibility.
 - the HTTP Endpoint will be available for all nodes and the node that receives the new config is in charge of propagating the changes to the rest of the nodes
 - when adding a new node, that node will propagate the updated config to the rest since adding a new node always implies updating config
 - to remove a node, a POST request can be done, this request can be done to any of the nodes, including to the one that is to be removed
-- on startup, each node will validate its own config with the rest, if there is a conflict, manual resolution is required 
-
----
-
-### Implementation
+- on startup, each node will validate its own config with the rest, if there is a conflict, manual resolution is required
 
 #### GPU
 A very long term plan is to allow the usage of GPU's to perform database operations such as:
 - Relational Operations: projection, join, sorting, aggregation, grouping.
 - Compute: compression/decompression, encoding/decoding
+
+---
+
+## Sacrifices
+
+Every distributed database has its drawbacks. This is what **Hyperion** sacrifices for **performance**:
+- security: connections between nodes are not encrypted. If you need security you will have to manage it at a network level.
+- port management: each node will have an unique connection to other node. This means that in a network with 100 nodes there are at least 100 ports needed.

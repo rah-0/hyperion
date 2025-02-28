@@ -8,11 +8,35 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestCheckPathConfig_WithEnv(t *testing.T) {
+func TestCheckPathConfig_WithArgs(t *testing.T) {
+	pathConfig = ""
+
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
 	tempDir := os.TempDir()
 	testFilePath := filepath.Join(tempDir, uuid.NewString(), "config.json")
 
-	err := fileCreate(testFilePath, []byte(`{"config": "test"}`))
+	hostName, _ := os.Hostname()
+	err := fileCreate(testFilePath, []byte(`{"Nodes":[{"Host":{"Name":"`+hostName+`"},"Path":{"Data":"/tmp/`+uuid.NewString()+`"}}]}`))
+	if err != nil {
+		t.Fatalf("Failed to create config file: %v", err)
+	}
+
+	os.Args = []string{"cmd", "-pathConfig=" + testFilePath}
+	main()
+
+	os.RemoveAll(filepath.Dir(testFilePath))
+}
+
+func TestCheckPathConfig_WithEnv(t *testing.T) {
+	pathConfig = ""
+
+	tempDir := os.TempDir()
+	testFilePath := filepath.Join(tempDir, uuid.NewString(), "config.json")
+
+	hostName, _ := os.Hostname()
+	err := fileCreate(testFilePath, []byte(`{"Nodes":[{"Host":{"Name":"`+hostName+`"},"Path":{"Data":"/tmp/`+uuid.NewString()+`"}}]}`))
 	if err != nil {
 		t.Fatalf("Failed to create config file: %v", err)
 	}

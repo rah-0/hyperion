@@ -76,3 +76,25 @@ func TestFileCreateInvalidPath(t *testing.T) {
 		t.Fatalf("Expected error when creating file in an invalid path, but got nil")
 	}
 }
+
+func TestPortAvailability(t *testing.T) {
+	// Ports that are typically open on many systems
+	commonOpenPorts := []int{22}
+
+	// Ports over 60000 (likely to be unused)
+	highPorts := []int{60001, 62000, 65000}
+
+	// Test common open ports
+	for _, port := range commonOpenPorts {
+		if !portIsInUse(port) {
+			t.Errorf("Unexpected: Port %d is not in use while it should be.", port)
+		}
+	}
+
+	// Test high ports (likely to be unused)
+	for _, port := range highPorts {
+		if portIsInUse(port) {
+			t.Errorf("Unexpected: High port %d is in use. This port was expected to be free.", port)
+		}
+	}
+}
