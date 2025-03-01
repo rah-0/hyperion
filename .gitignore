@@ -1,3 +1,4 @@
 .idea/
 .data/
 config.json
+.pprof_svg/

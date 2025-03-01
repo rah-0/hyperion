@@ -1,12 +1,51 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+const (
+	Size2KB   = 2 * 1024
+	Size4KB   = 4 * 1024
+	Size8KB   = 8 * 1024
+	Size16KB  = 16 * 1024
+	Size32KB  = 32 * 1024
+	Size64KB  = 64 * 1024
+	Size128KB = 128 * 1024
+	Size256KB = 256 * 1024
+	Size512KB = 512 * 1024
+	Size1MB   = 1 * 1024 * 1024
+	Size10MB  = 10 * 1024 * 1024
+	Size100MB = 100 * 1024 * 1024
+	Size1GB   = 1 * 1024 * 1024 * 1024
+)
+
+func generateRandomMessage(s int) ([]byte, error) {
+	bytes := make([]byte, s)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return []byte{}, err
+	}
+	for i, b := range bytes {
+		// Limit to printable ASCII characters (32 to 126)
+		bytes[i] = 32 + (b % 95)
+	}
+
+	return bytes, nil
+}
+
+func generateRandomStringMessage(s int) (string, error) {
+	bytes, err := generateRandomMessage(s)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
 
 func getEnvKeyValue(key string) string {
 	value, _ := os.LookupEnv(key)

@@ -31,6 +31,14 @@ func TestCheckPathConfig_WithArgs(t *testing.T) {
 
 func TestCheckPathConfig_WithEnv(t *testing.T) {
 	pathConfig = ""
+	originalValue := os.Getenv("HyperionPathConfig")
+	defer func() {
+		if originalValue != "" {
+			os.Setenv("HyperionPathConfig", originalValue)
+		} else {
+			os.Unsetenv("HyperionPathConfig")
+		}
+	}()
 
 	tempDir := os.TempDir()
 	testFilePath := filepath.Join(tempDir, uuid.NewString(), "config.json")
@@ -42,7 +50,6 @@ func TestCheckPathConfig_WithEnv(t *testing.T) {
 	}
 
 	os.Setenv("HyperionPathConfig", testFilePath)
-	defer os.Unsetenv("HyperionPathConfig")
 
 	err = checkPathConfig()
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"time"
 
 	"github.com/rah-0/nabu"
 )
@@ -109,4 +110,45 @@ func checkCurrentNodes() error {
 	}
 
 	return nil
+}
+
+func startNodes() {
+	errCh := make(chan error, 1)
+
+	for _, node := range nodes {
+		node.mu.Lock()
+		node.errCh = errCh
+		node.mu.Unlock()
+		node.checkDataDir()
+
+		wg.Add(1)
+		go node.listenPortForStatus()
+	}
+
+	waitNodesStatusPortToBeReady()
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+	}()
+}
+
+func waitNodesStatusPortToBeReady() {
+	for {
+		allReady := true
+		for _, node := range nodes {
+			node.mu.Lock()
+			status := node.Status
+			node.mu.Unlock()
+			if status != NodeStatusReady {
+				allReady = false
+				break
+			}
+		}
+		if allReady {
+			break
+		} else {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
 }

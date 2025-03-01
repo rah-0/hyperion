@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/rah-0/nabu"
 )
@@ -19,40 +18,13 @@ const (
 
 var wg sync.WaitGroup
 
-func startNodes() {
-	errCh := make(chan error, 1)
+type Node struct {
+	Host   Host
+	Path   Path
+	errCh  chan error
+	Status NodeStatus
 
-	for _, node := range nodes {
-		node.errCh = errCh
-		node.checkDataDir()
-
-		wg.Add(1)
-		go node.listenPortForStatus()
-	}
-
-	waitNodesStatusPortToBeReady()
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
-}
-
-func waitNodesStatusPortToBeReady() {
-	for {
-		allReady := true
-		for _, node := range nodes {
-			status := node.Status
-			if status != NodeStatusReady {
-				allReady = false
-				break
-			}
-		}
-		if allReady {
-			break
-		} else {
-			time.Sleep(10 * time.Millisecond)
-		}
-	}
+	mu sync.Mutex
 }
 
 func (x *Node) checkDataDir() {
@@ -73,13 +45,13 @@ func (x *Node) checkDataDir() {
 func (x *Node) listenPortForStatus() {
 	defer wg.Done()
 
-	port := x.Host.Ports.Status
+	port := x.Host.Port
 	if portIsInUse(port) {
 		x.errCh <- nabu.FromError(ErrConfigNodePortStatusNotAvailable).WithArgs(port).Log()
 		return
 	}
 
-	listener, err := net.Listen("tcp", x.getListenAddressForStatus())
+	listener, err := net.Listen("tcp", x.getListenAddress())
 	if err != nil {
 		x.errCh <- err
 		return
@@ -100,33 +72,42 @@ func (x *Node) listenPortForStatus() {
 			return
 		}
 
-		go x.handleConnection(conn)
+		c := NewHConn(conn)
+		go x.handleConnection(c)
 	}
 }
 
-func (x *Node) getListenAddressForStatus() string {
-	return fmt.Sprintf(":%d", x.Host.Ports.Status)
+func (x *Node) getListenAddress() string {
+	return fmt.Sprintf(":%d", x.Host.Port)
 }
 
-func (x *Node) handleConnection(conn net.Conn) {
+func (x *Node) handleConnection(hc *HConn) {
 	defer func() {
-		if err := conn.Close(); err != nil {
+		if err := hc.c.Close(); err != nil {
 			nabu.FromError(err).Log()
 		}
 	}()
 
-	fmt.Println("New client connected:", conn.RemoteAddr())
+	for {
+		msg, err := hc.Receive()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			nabu.FromError(err).Log()
+			break
+		}
 
-	// Read data from client
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading from connection:", err)
-		return
+		if msg.Type == MessageTypeTest {
+			msg.String += "Received"
+		}
+
+		if msg.Mode == ModeSync {
+			err = hc.Send(msg)
+			if err != nil {
+				nabu.FromError(err).Log()
+				break
+			}
+		}
 	}
-
-	fmt.Println("Received:", string(buf[:n]))
-
-	// Example: Send a response
-	conn.Write([]byte("Hello from server!\n"))
 }

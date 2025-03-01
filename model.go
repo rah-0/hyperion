@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"sync"
 )
 
 var (
+	ErrMessageEmpty                     = errors.New("message is empty")
 	ErrConfigNodePortStatusNotAvailable = errors.New("node: port for status already in use")
 	ErrConfigCurrentNodesNotFound       = errors.New("config: nodes not found for current hostname")
 	ErrConfigNoNodes                    = errors.New("config: node list is empty")
@@ -15,27 +15,13 @@ var (
 	ErrPathConfigNotEditable            = errors.New("pathConfig: specified path is not editable")
 )
 
-type Ports struct {
-	Status int
-	Data   int
-}
-
 type Path struct {
 	Data string // Where data will be stored
 }
 
 type Host struct {
-	Name  string
-	Ports Ports
-}
-
-type Node struct {
-	Host   Host
-	Path   Path
-	errCh  chan error
-	Status NodeStatus
-
-	mu sync.Mutex
+	Name string
+	Port int
 }
 
 type Config struct {
