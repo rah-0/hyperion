@@ -1,3 +1,6 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/rah-0/benchmarks)](https://goreportcard.com/report/github.com/rah-0/hyperion)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # Hyperion
 Hyperion is a distributed, memory-first database written in Golang and for Golang projects. 
 
