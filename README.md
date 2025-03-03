@@ -20,15 +20,9 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
   - [ ] GPU
     - [ ] nVidia CUDA
     - [ ] AMD ROCm 
-- [ ] Design
-  - [x] Configuration
-    - [x] Args
-      - [x] Environment Variables
-    - [x] Hot Reload
-      - [x] HTTP Endpoint
 - [ ] Implementation
   - [ ] Configuration
-    - [ ] Args
+    - [x] Args
     - [ ] Hot Reload
       - [ ] HTTP Endpoint
   - [ ] Memory
@@ -72,6 +66,33 @@ Since the config can be big enough, JSON is preferred for flexibility.
 - Hot Reload: required to modify the config without causing downtime
   - HTTP Endpoint: a POST request that will send the updated JSON config
 
+See a configuration sample below:
+
+```JSON
+{
+  "ClusterName": "sample",
+  "Nodes": [
+    {
+      "Host": {
+        "Name": "a",
+        "Port": 4000
+      },
+      "Path": {
+        "Data": "/tmp/1"
+      }
+    },{
+      "Host": {
+        "Name": "b",
+        "Port": 5000
+      },
+      "Path": {
+        "Data": "/tmp/2"
+      }
+    }
+  ]
+}
+```
+
 **Details and considerations:**
 - all nodes will have the same config
 - the config file path passed on startup must be editable to allow the node to update its own config
@@ -79,10 +100,11 @@ Since the config can be big enough, JSON is preferred for flexibility.
 - when adding a new node, that node will propagate the updated config to the rest since adding a new node always implies updating config
 - to remove a node, a POST request can be done, this request can be done to any of the nodes, including to the one that is to be removed
 - on startup, each node will validate its own config with the rest, if there is a conflict, manual resolution is required
+- node specific configuration is targeted by the Host.Name attribute
 
 #### GPU
 A very long term plan is to allow the usage of GPU's to perform database operations such as:
-- Relational Operations: projection, join, sorting, aggregation, grouping.
+- Relational Operations: projection, join, sorting, aggregation, grouping
 - Compute: compression/decompression, encoding/decoding
 
 ---
@@ -90,5 +112,4 @@ A very long term plan is to allow the usage of GPU's to perform database operati
 ## Sacrifices
 
 Every distributed database has its drawbacks. This is what **Hyperion** sacrifices for **performance**:
-- security: connections between nodes are not encrypted. If you need security you will have to manage it at a network level.
-- port management: each node will have an unique connection to other node. This means that in a network with 100 nodes there are at least 100 ports needed.
+- security: connections between nodes are not encrypted. If you need security you will have to manage it at a network level

@@ -1,22 +1,12 @@
 package main
 
 import (
-	"net"
 	"testing"
 )
 
-func testConnectNode(t *testing.T, x *Node) (*HConn, error) {
-	if t != nil {
-		t.Helper()
-	}
-	conn, err := net.Dial("tcp", x.getListenAddress())
-	if err != nil {
-		return &HConn{}, err
-	}
-	return NewHConn(conn), nil
-}
+func TestNodesDirectConnection(t *testing.T) {
+	t.Skip()
 
-func TestListenPortForStatus(t *testing.T) {
 	pathConfig = ""
 	err := run()
 	if err != nil {
@@ -24,7 +14,7 @@ func TestListenPortForStatus(t *testing.T) {
 	}
 
 	for _, node := range nodes {
-		conn, err := testConnectNode(t, node)
+		c, err := ConnectToNode(node)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -35,11 +25,11 @@ func TestListenPortForStatus(t *testing.T) {
 			String: "Test",
 		}
 
-		err = conn.Send(msg)
+		err = c.Send(msg)
 		if err != nil {
 			t.Fatal(err)
 		}
-		msg, err = conn.Receive()
+		msg, err = c.Receive()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -47,6 +37,63 @@ func TestListenPortForStatus(t *testing.T) {
 		if msg.String != "TestReceived" {
 			t.Fatalf("Unexpected message: %s", msg.String)
 		}
+	}
+}
+
+func TestNodeToNodeConnection(t *testing.T) {
+	t.Skip()
+
+	pathConfig = ""
+	err := run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var totalExpectedMessages int
+	var totalSuccessfulMessages int
+
+	for _, node := range nodes {
+		expectedMessages := len(node.Peers) // Each node should send/receive a message for every peer
+		totalExpectedMessages += expectedMessages
+
+		successfulMessages := 0
+
+		for _, peer := range node.Peers {
+			msg := Message{
+				Type:   MessageTypeTest,
+				Mode:   ModeSync,
+				String: "Test",
+			}
+
+			err = peer.HConn.Send(msg)
+			if err != nil {
+				t.Errorf("Failed to send message to peer [%s:%d]: %v", peer.Host.Name, peer.Host.Port, err)
+				continue
+			}
+
+			msg, err = peer.HConn.Receive()
+			if err != nil {
+				t.Errorf("Failed to receive message from peer [%s:%d]: %v", peer.Host.Name, peer.Host.Port, err)
+				continue
+			}
+
+			if msg.String != "TestReceived" {
+				t.Errorf("Unexpected response from peer [%s:%d]: got %q, want %q", peer.Host.Name, peer.Host.Port, msg.String, "TestReceived")
+				continue
+			}
+
+			successfulMessages++
+		}
+
+		if successfulMessages != expectedMessages {
+			t.Errorf("Node [%s:%d] had %d/%d successful message exchanges", node.Host.Name, node.Host.Port, successfulMessages, expectedMessages)
+		}
+
+		totalSuccessfulMessages += successfulMessages
+	}
+
+	if totalSuccessfulMessages != totalExpectedMessages {
+		t.Fatalf("Mismatch in total successful messages: got %d, expected %d", totalSuccessfulMessages, totalExpectedMessages)
 	}
 }
 
@@ -89,18 +136,17 @@ func BenchmarkListenPortForStatus(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < 1; i++ {
 				node := nodes[0]
-
-				conn, err := testConnectNode(nil, node)
+				c, err := ConnectToNode(node)
 				if err != nil {
 					b.Fatal(err)
 				}
 
 				// Send message
-				if err := conn.Send(msg); err != nil {
+				if err := c.Send(msg); err != nil {
 					b.Fatal(err)
 				}
 
-				receivedMsg, err := conn.Receive()
+				receivedMsg, err := c.Receive()
 				if err != nil {
 					b.Fatal(err)
 				}

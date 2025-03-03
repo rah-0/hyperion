@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/rah-0/nabu"
 )
@@ -12,19 +15,46 @@ type NodeStatus int
 
 const (
 	NodeStatusStarting NodeStatus = iota
+	NodeStatusActive
 	NodeStatusReady
-	NodeStatusReadyToReceiveData
 )
-
-var wg sync.WaitGroup
 
 type Node struct {
 	Host   Host
 	Path   Path
 	errCh  chan error
 	Status NodeStatus
+	HConn  *HConn
+	Peers  []*Node
 
 	mu sync.Mutex
+}
+
+func NewNode(h Host, p Path) *Node {
+	return &Node{
+		Host:  h,
+		Path:  p,
+		errCh: make(chan error, 1),
+		Peers: []*Node{},
+	}
+}
+
+func ConnectToNode(x *Node) (*HConn, error) {
+	var conn net.Conn
+	var err error
+
+	for {
+		conn, err = net.Dial("tcp", x.getListenAddress())
+		if err == nil {
+			return NewHConn(conn), nil
+		}
+		if strings.Contains(err.Error(), "connection refused") {
+			nabu.FromMessage("trying to connect to: [" + x.getListenAddress() + "]").Log()
+		} else {
+			return nil, err
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func (x *Node) checkDataDir() {
@@ -42,18 +72,13 @@ func (x *Node) checkDataDir() {
 	}
 }
 
-func (x *Node) listenPortForStatus() {
-	defer wg.Done()
-
-	port := x.Host.Port
-	if portIsInUse(port) {
-		x.errCh <- nabu.FromError(ErrConfigNodePortStatusNotAvailable).WithArgs(port).Log()
-		return
-	}
+func (x *Node) start() {
+	x.handleErrors()
+	x.checkDataDir()
 
 	listener, err := net.Listen("tcp", x.getListenAddress())
 	if err != nil {
-		x.errCh <- err
+		x.errCh <- nabu.FromError(err).WithArgs(x.Host)
 		return
 	}
 	defer func() {
@@ -62,9 +87,46 @@ func (x *Node) listenPortForStatus() {
 		}
 	}()
 
+	go x.connectToPeers()
+	x.acceptConnections(listener)
+}
+
+func (x *Node) connectToPeers() {
+	x.waitStatusActive()
+
+	var newPeers []*Node
+	for _, node := range config.Nodes {
+		// Skip self
+		if node.Host.Name == x.Host.Name && node.Host.Port == x.Host.Port {
+			continue
+		}
+
+		c, err := ConnectToNode(node)
+		if err != nil {
+			x.errCh <- nabu.FromError(err).Log()
+			continue
+		}
+
+		node.HConn = c
+		newPeers = append(newPeers, node)
+	}
+
+	// Update the peer list
 	x.mu.Lock()
+	x.Peers = newPeers
 	x.Status = NodeStatusReady
 	x.mu.Unlock()
+}
+
+func (x *Node) getListenAddress() string {
+	return fmt.Sprintf(":%d", x.Host.Port)
+}
+
+func (x *Node) acceptConnections(listener net.Listener) {
+	x.mu.Lock()
+	x.Status = NodeStatusActive
+	x.mu.Unlock()
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -77,16 +139,14 @@ func (x *Node) listenPortForStatus() {
 	}
 }
 
-func (x *Node) getListenAddress() string {
-	return fmt.Sprintf(":%d", x.Host.Port)
-}
-
 func (x *Node) handleConnection(hc *HConn) {
 	defer func() {
 		if err := hc.c.Close(); err != nil {
 			nabu.FromError(err).Log()
 		}
 	}()
+
+	nabu.FromMessage("new connection from [" + hc.c.RemoteAddr().String() + "] to [" + hc.c.LocalAddr().String() + "]").Log()
 
 	for {
 		msg, err := hc.Receive()
@@ -108,6 +168,40 @@ func (x *Node) handleConnection(hc *HConn) {
 				nabu.FromError(err).Log()
 				break
 			}
+		}
+	}
+}
+
+func (x *Node) handleErrors() {
+	go func(n *Node) {
+		for {
+			select {
+			case err, ok := <-n.errCh:
+				if !ok {
+					return
+				}
+				if err != nil {
+					if strings.Contains(err.Error(), "address already in use") {
+						nabu.FromError(err).WithLevelFatal().Log()
+						os.Exit(1)
+					} else {
+						nabu.FromError(err).Log()
+					}
+				}
+			}
+		}
+	}(x)
+}
+
+func (x *Node) waitStatusActive() {
+	for {
+		x.mu.Lock()
+		status := x.Status
+		x.mu.Unlock()
+		if status == NodeStatusActive {
+			break
+		} else {
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
 }

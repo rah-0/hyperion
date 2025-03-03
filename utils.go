@@ -2,11 +2,8 @@ package main
 
 import (
 	"crypto/rand"
-	"fmt"
-	"net"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 const (
@@ -89,17 +86,4 @@ func fileIsEditable(filename string) bool {
 	}
 	file.Close()
 	return true
-}
-
-func portIsInUse(port int) bool {
-	address := fmt.Sprintf(":%d", port)
-	conn, err := net.DialTimeout("tcp", address, time.Millisecond*100)
-	if err != nil {
-		return false // Port is likely not in use
-	}
-	if conn != nil {
-		conn.Close()
-		return true // Port is in use
-	}
-	return false
 }

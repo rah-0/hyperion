@@ -39,12 +39,6 @@ func run() error {
 	}
 
 	startNodes()
-	go func() {
-		for _, node := range nodes {
-			nabu.FromError(<-node.errCh).Log()
-			os.Exit(1)
-		}
-	}()
 
 	return nil
 }
@@ -91,7 +85,7 @@ func checkConfig() error {
 
 func checkCurrentNodes() error {
 	if len(config.Nodes) == 0 {
-		return ErrConfigNoNodes
+		return ErrConfigNodesNotFound
 	}
 
 	hostName, err := os.Hostname()
@@ -101,39 +95,25 @@ func checkCurrentNodes() error {
 
 	for _, node := range config.Nodes {
 		if node.Host.Name == hostName {
-			nodes = append(nodes, &node)
+			nodes = append(nodes, NewNode(node.Host, node.Path))
 		}
 	}
 
 	if len(nodes) == 0 {
-		return ErrConfigCurrentNodesNotFound
+		return ErrConfigNodesNotFoundForHost
 	}
 
 	return nil
 }
 
 func startNodes() {
-	errCh := make(chan error, 1)
-
 	for _, node := range nodes {
-		node.mu.Lock()
-		node.errCh = errCh
-		node.mu.Unlock()
-		node.checkDataDir()
-
-		wg.Add(1)
-		go node.listenPortForStatus()
+		go node.start()
 	}
-
-	waitNodesStatusPortToBeReady()
-
-	go func() {
-		wg.Wait()
-		close(errCh)
-	}()
+	waitNodesToBeReady()
 }
 
-func waitNodesStatusPortToBeReady() {
+func waitNodesToBeReady() {
 	for {
 		allReady := true
 		for _, node := range nodes {
