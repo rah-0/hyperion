@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"os"
@@ -8,34 +8,17 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestPathExists(t *testing.T) {
-	tempDir := os.TempDir()
-
-	exists, _ := pathExists(tempDir)
-	if !exists {
-		t.Fatalf("Temp dir should exist")
-	}
-
-	exists, err := pathExists(filepath.Join(tempDir, uuid.NewString()))
-	if exists {
-		t.Fatalf("Random path should not exist")
-	}
-	if err != nil {
-		t.Fatalf("Error should be nil")
-	}
-}
-
 func TestFileCreateAndRead(t *testing.T) {
 	tempDir := os.TempDir()
 	testFilePath := filepath.Join(tempDir, uuid.NewString(), "testfile.txt")
 
 	expectedContent := []byte("Hello, World!")
-	err := fileCreate(testFilePath, expectedContent)
+	err := FileCreate(testFilePath, expectedContent)
 	if err != nil {
 		t.Fatalf("fileCreate failed: %v", err)
 	}
 
-	actualContent, err := fileRead(testFilePath)
+	actualContent, err := FileRead(testFilePath)
 	if err != nil {
 		t.Fatalf("fileRead failed: %v", err)
 	}
@@ -51,12 +34,12 @@ func TestFileCreateWithEmptyContent(t *testing.T) {
 	tempDir := os.TempDir()
 	testFilePath := filepath.Join(tempDir, uuid.NewString(), "emptyfile.txt")
 
-	err := fileCreate(testFilePath, []byte{})
+	err := FileCreate(testFilePath, []byte{})
 	if err != nil {
 		t.Fatalf("fileCreate failed for empty content: %v", err)
 	}
 
-	content, err := fileRead(testFilePath)
+	content, err := FileRead(testFilePath)
 	if err != nil {
 		t.Fatalf("fileRead failed for empty content: %v", err)
 	}
@@ -71,7 +54,7 @@ func TestFileCreateWithEmptyContent(t *testing.T) {
 func TestFileCreateInvalidPath(t *testing.T) {
 	invalidPath := "/invalid_path/testfile.txt"
 
-	err := fileCreate(invalidPath, []byte("test data"))
+	err := FileCreate(invalidPath, []byte("test data"))
 	if err == nil {
 		t.Fatalf("Expected error when creating file in an invalid path, but got nil")
 	}

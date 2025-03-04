@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/rah-0/nabu"
+
+	. "github.com/rah-0/hyperion/util"
 )
 
 type NodeStatus int
@@ -53,18 +55,18 @@ func ConnectToNode(x *Node) (*HConn, error) {
 		} else {
 			return nil, err
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 	}
 }
 
 func (x *Node) checkDataDir() {
-	exists, err := pathExists(x.Path.Data)
+	exists, err := PathExists(x.Path.Data)
 	if err != nil {
 		x.errCh <- err
 		return
 	}
 	if !exists {
-		err := pathCreateDirs(x.Path.Data)
+		err := DirectoryCreate(x.Path.Data)
 		if err != nil {
 			x.errCh <- err
 			return
@@ -107,7 +109,9 @@ func (x *Node) connectToPeers() {
 			continue
 		}
 
+		node.mu.Lock()
 		node.HConn = c
+		node.mu.Unlock()
 		newPeers = append(newPeers, node)
 	}
 

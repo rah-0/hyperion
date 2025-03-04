@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/rah-0/nabu"
+
+	. "github.com/rah-0/hyperion/util"
 )
 
 var (
@@ -45,20 +47,20 @@ func run() error {
 
 func checkPathConfig() error {
 	if pathConfig == "" {
-		pathConfig = getEnvKeyValue("HyperionPathConfig")
+		pathConfig = GetEnvKeyValue("HyperionPathConfig")
 	}
 	if pathConfig == "" {
 		return ErrPathConfigNotSpecified
 	}
 
-	exists, err := pathExists(pathConfig)
+	exists, err := PathExists(pathConfig)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return ErrPathConfigNotFound
 	}
-	if !fileIsEditable(pathConfig) {
+	if !FileIsEditable(pathConfig) {
 		return ErrPathConfigNotEditable
 	}
 
@@ -66,7 +68,7 @@ func checkPathConfig() error {
 }
 
 func checkConfig() error {
-	content, err := fileRead(pathConfig)
+	content, err := FileRead(pathConfig)
 	if err != nil {
 		return err
 	}

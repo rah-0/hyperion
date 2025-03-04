@@ -1,0 +1,38 @@
+{
+  "ClusterName": "sample",
+  "Nodes": [
+    {
+      "Host": {
+        "Name": "debian",
+        "Port": 5000
+      },
+      "Path": {
+        "Data": "/tmp/data/1"
+      }
+    },{
+      "Host": {
+        "Name": "debian",
+        "Port": 6000
+      },
+      "Path": {
+        "Data": "/tmp/data/2"
+      }
+    }, {
+      "Host": {
+        "Name": "debian",
+        "Port": 7000
+      },
+      "Path": {
+        "Data": "/tmp/data/3"
+      }
+    },{
+      "Host": {
+        "Name": "debian",
+        "Port": 8000
+      },
+      "Path": {
+        "Data": "/tmp/data/4"
+      }
+    }
+  ]
+}

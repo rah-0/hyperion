@@ -7,8 +7,6 @@ import (
 var (
 	ErrMessageEmpty = errors.New("message: is empty")
 
-	ErrNodePortNotAvailable = errors.New("node: port not available")
-
 	ErrConfigNodesNotFound        = errors.New("config: node list is empty")
 	ErrConfigNodesNotFoundForHost = errors.New("config: nodes not found for current hostname")
 

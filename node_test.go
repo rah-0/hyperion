@@ -2,17 +2,11 @@ package main
 
 import (
 	"testing"
+
+	. "github.com/rah-0/hyperion/util"
 )
 
 func TestNodesDirectConnection(t *testing.T) {
-	t.Skip()
-
-	pathConfig = ""
-	err := run()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	for _, node := range nodes {
 		c, err := ConnectToNode(node)
 		if err != nil {
@@ -41,14 +35,6 @@ func TestNodesDirectConnection(t *testing.T) {
 }
 
 func TestNodeToNodeConnection(t *testing.T) {
-	t.Skip()
-
-	pathConfig = ""
-	err := run()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	var totalExpectedMessages int
 	var totalSuccessfulMessages int
 
@@ -65,7 +51,7 @@ func TestNodeToNodeConnection(t *testing.T) {
 				String: "Test",
 			}
 
-			err = peer.HConn.Send(msg)
+			err := peer.HConn.Send(msg)
 			if err != nil {
 				t.Errorf("Failed to send message to peer [%s:%d]: %v", peer.Host.Name, peer.Host.Port, err)
 				continue
@@ -113,8 +99,8 @@ var messageSizes = map[string]int{
 }
 
 func BenchmarkListenPortForStatus(b *testing.B) {
-	pathConfig = ""
-	err := run()
+	node := nodes[0]
+	c, err := ConnectToNode(node)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -122,7 +108,7 @@ func BenchmarkListenPortForStatus(b *testing.B) {
 	for sizeLabel, size := range messageSizes {
 		b.Run("Size: "+sizeLabel, func(b *testing.B) {
 			// Generate a random message of the given size
-			testStr, err := generateRandomStringMessage(size)
+			testStr, err := GenerateRandomStringMessage(size)
 			if err != nil {
 				b.Fatalf("Failed to generate message of size %d: %v", size, err)
 			}
@@ -134,13 +120,7 @@ func BenchmarkListenPortForStatus(b *testing.B) {
 
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < 1; i++ {
-				node := nodes[0]
-				c, err := ConnectToNode(node)
-				if err != nil {
-					b.Fatal(err)
-				}
-
+			for i := 0; i < b.N; i++ {
 				// Send message
 				if err := c.Send(msg); err != nil {
 					b.Fatal(err)
