@@ -4,6 +4,9 @@ import (
 	"testing"
 )
 
-func TestSample(t *testing.T) {
-	Sample()
+func TestGenerate(t *testing.T) {
+	err := Generate()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

@@ -4,7 +4,7 @@ package entities
 	Define your entities (structs) in this file.
 */
 
-type Person struct {
+type Sample struct {
 	Name    string
 	Surname string
 }

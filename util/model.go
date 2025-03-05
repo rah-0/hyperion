@@ -18,12 +18,12 @@ const (
 
 // StructField represents a field in a struct
 type StructField struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Name string
+	Type string
 }
 
 // StructDef represents the whole struct definition
 type StructDef struct {
-	Name   string        `json:"name"`
-	Fields []StructField `json:"fields"`
+	Name   string
+	Fields []StructField
 }

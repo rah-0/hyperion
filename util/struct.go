@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 )
 
-// ExtractStructsFromPackage scans a package directory and extracts struct definitions
-func ExtractStructsFromPackage(pkgDir string) ([]StructDef, error) {
+// StructsExtractFromPackage scans a package directory and extracts struct definitions
+func StructsExtractFromPackage(pkgDir string) ([]StructDef, error) {
 	var structs []StructDef
 
 	// Read all files in the directory

@@ -37,7 +37,7 @@ type Product struct {
 	}
 
 	// Run the function to extract structs
-	structs, err := ExtractStructsFromPackage(tempDir)
+	structs, err := StructsExtractFromPackage(tempDir)
 	if err != nil {
 		t.Fatalf("Failed to extract structs: %v", err)
 	}
