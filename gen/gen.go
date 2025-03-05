@@ -89,14 +89,13 @@ func isMigrationRequired(s StructDef, p string) (bool, string, error) {
 		return false, hv, err
 	}
 
-	if len(svs) == 0 {
-		return false, hv, ErrGeneratorStructNotFound
-	} else if len(svs) > 1 {
-		return false, hv, ErrGeneratorStructMoreThanOneFound
+	for _, x := range svs {
+		if x.Name == s.Name {
+			return !reflect.DeepEqual(s, x), hv, nil
+		}
 	}
 
-	sv := svs[0]
-	return !reflect.DeepEqual(s, sv), hv, nil
+	return false, hv, ErrGeneratorStructNotFound
 }
 
 func createEntities(structs []StructDef, pathEntities string) error {
