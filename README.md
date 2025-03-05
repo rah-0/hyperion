@@ -4,9 +4,7 @@
 # Hyperion
 Hyperion is a distributed, memory-first database written in Golang and for Golang projects. 
 
-
-
-## Planning
+# Planning
 - [ ] Benchmarking
   - [x] Protocols
   - [x] Serializers
@@ -25,39 +23,43 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
     - [x] Args
     - [ ] Hot Reload
       - [ ] HTTP Endpoint
-  - [ ] Memory
   - [ ] Storage
+    - [ ] Generator
+      - [ ] Versioning
+      - [ ] Migrations
+    - [ ] Memory
+    - [ ] Disk
   - [ ] GPU 
     - [ ] Memory
     - [ ] Processing
 
 ---
 
-### Benchmarking
+## Benchmarking
 In order to avoid bloating the repo with packages that will only be used for the sole purpose of benchmarking, another repo was created, you can find it [here](https://github.com/rah-0/benchmarks).  
 The goal of benchmarking first before writing any code is to set some bars regarding expectations, establish some baselines and have some sanity checks.
 
-#### Protocols
+### Protocols
 **TCP** was picked over HTTP for performance reasons but also because:   
 - netpoller is used, which is an abstraction over the operating system's I/O multiplexing mechanisms, including epoll on Linux systems
 - persistent connections will be established between nodes
 
-#### Serializers
+### Serializers
 **gob** was picked over JSON or Protobuf because:
 - JSON lacks efficient support for Golang's time.Time precision
 - Protobuf requires constant mapping between internal and Protobuf structs, it also requires additional tooling and setup for schema management and code generation
 - Gob uses Go's reflection to serialize native types directly without manual schema definitions
 
-#### Compression
+### Compression
 If at some point compression is needed, **brotli** will be used but careful considerations need to be taken:
 - storage: is the processing bill more expensive than increasing the drive size?
 - over the wire: what's the biggest amount of data a slow network could transfer?
 
 ---
 
-### Implementation
+## Implementation
 
-#### Configuration
+### Configuration
 Since the config can be big enough, JSON is preferred for flexibility.  
 
 - Command-line arguments: 
@@ -77,14 +79,69 @@ See a configuration sample [here](https://github.com/rah-0/hyperion/blob/master/
 - on startup, each node will validate its own config with the rest, if there is a conflict, manual resolution is required
 - node specific configuration is targeted by the Host.Name attribute
 
-#### GPU
+### Storage
+How and where the information will be saved
+
+#### Generator
+Given [the defined](https://github.com/rah-0/hyperion/blob/master/entities/entities.go) structs (tables), a generator is needed to:
+- avoid reflection
+- facilitate queries
+- handle versioning and migrations
+
+##### Versioning
+[The defined](https://github.com/rah-0/hyperion/blob/master/entities/entities.go) structs will have versions. Every time there is a change like:
+- struct deleted
+- struct field renamed
+- struct field removed
+- struct field added
+
+a new version will be created, versioning is required for migrations
+
+##### Migrations
+
+Required in order to avoid downtime. At any point in time, structs might be updated or even completely removed. Migrations allow custom behavior to happen when upgrading or downgrading.
+Upgrading allows current data to migrate to a future state while downgrade allows older nodes to communicate with nodes from different version. There are some instances where migrations
+will not save you from having to restart every single node and cause a downtime. Let's see few cases:
+
+This case illustrates a breaking change where it is required for all nodes to be upgraded, let's say there's this struct:
+```GO
+type Person struct {
+	Name    string
+	Surname string
+}
+```
+and we want to update it to:
+```GO
+type Person struct {
+	FullName    string
+}
+```
+While the upgrade path is clear, simply concat Name + " " + Surname] the downgrade path is not possible since you cannot trust space " " to split the data.  
+What if there is someone with compound name/surname and already contains a space? The chance of getting back the same previous results is unlikely.
+
+The following case illustrates how a migration would be successful, let's say we want to migrate from:
+```GO
+type Event struct {
+    Date  time.Time
+}
+```
+to:
+```GO
+type Event struct {
+    Date  int64
+}
+```
+While int64 is not a direct representation of time.Time, you can still convert int64 to time.Time and viceversa as long as you keep in mind that you're losing precision. 
+
+### GPU
 A very long term plan is to allow the usage of GPU's to perform database operations such as:
 - Relational Operations: projection, join, sorting, aggregation, grouping
 - Compute: compression/decompression, encoding/decoding
 
 ---
 
-## Sacrifices
+# Sacrifices
 
 Every distributed database has its drawbacks. This is what **Hyperion** sacrifices for **performance**:
 - security: connections between nodes are not encrypted. If you need security you will have to manage it at a network level
+- models: the entities (tables) have to [live inside](https://github.com/rah-0/hyperion/blob/master/entities/entities.go) the repo to make migrations easier
