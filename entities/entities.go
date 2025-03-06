@@ -5,6 +5,7 @@ package entities
 */
 
 type Sample struct {
-	Name    string
-	Surname string
+	//Name    string
+	//Surname string
+	FullName string
 }

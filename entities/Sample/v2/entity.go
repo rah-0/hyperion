@@ -11,10 +11,9 @@ func init() {
 }
 
 const (
-	Version = "v1"
+	Version = "v2"
 )
 
 type Sample struct {
-	Name    string
-	Surname string
+	FullName string
 }

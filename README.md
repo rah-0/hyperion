@@ -133,6 +133,10 @@ type Event struct {
 ```
 While int64 is not a direct representation of time.Time, you can still convert int64 to time.Time and viceversa as long as you keep in mind that you're losing precision. 
 
+**Details and considerations:**
+The generator will create the migration signature functions for you along with the tests 
+but the correct implementation is your responsibility.
+
 ### GPU
 A very long term plan is to allow the usage of GPU's to perform database operations such as:
 - Relational Operations: projection, join, sorting, aggregation, grouping
