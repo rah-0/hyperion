@@ -10,7 +10,7 @@ import (
 
 const (
 	Version    = "v1"
-	EntityName = "Sample"
+	Name       = "Sample"
 	DbFileName = "SampleV1.bin"
 )
 
@@ -26,7 +26,7 @@ func init() {
 
 	RegisterEntity(&Entity{
 		Version:    Version,
-		EntityName: EntityName,
+		Name:       Name,
 		DbFileName: DbFileName,
 		Fields:     Fields,
 		New:        New,

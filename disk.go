@@ -4,11 +4,13 @@ import (
 	"encoding/binary"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/google/uuid"
 )
 
 type Disk struct {
+	Mu         sync.Mutex
 	Serializer *Serializer
 	Path       string
 }
@@ -33,44 +35,35 @@ func (x *Disk) WriteToFile(data any) error {
 	defer file.Close()
 
 	x.Serializer.Reset()
-	if err := x.Serializer.Encode(data); err != nil {
+	if err = x.Serializer.Encode(data); err != nil {
 		return err
 	}
-	serializedData := x.Serializer.GetData()
 
 	// Write length prefix
-	length := uint32(len(serializedData))
-	if err := binary.Write(file, binary.LittleEndian, length); err != nil {
+	length := uint32(x.Serializer.Buffer.Len())
+	if err = binary.Write(file, binary.LittleEndian, length); err != nil {
 		return err
 	}
 
-	// Write actual data
-	_, err = file.Write(serializedData)
+	_, err = file.Write(x.Serializer.GetData())
 	return err
 }
 
 func (x *Disk) ReadFromFile(data any) error {
-	file, err := os.Open(x.Path)
+	file, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	// Read length prefix
 	var length uint32
-	if err := binary.Read(file, binary.LittleEndian, &length); err != nil {
+	if err = binary.Read(file, binary.LittleEndian, &length); err != nil {
 		return err
 	}
 
-	// Read actual serialized data
 	x.Serializer.Reset()
-	buf := make([]byte, length)
-	if _, err := file.Read(buf); err != nil {
+	if _, err = x.Serializer.Buffer.ReadFrom(file); err != nil {
 		return err
 	}
-
-	// Deserialize
-	x.Serializer.Reset()
-	x.Serializer.SetData(buf)
 	return x.Serializer.Decode(data)
 }

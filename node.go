@@ -10,6 +10,7 @@ import (
 
 	"github.com/rah-0/nabu"
 
+	"github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
 
@@ -31,22 +32,24 @@ type Host struct {
 }
 
 type Node struct {
-	Host   Host
-	Path   Path
-	errCh  chan error
-	Status NodeStatus
-	HConn  *HConn
-	Peers  []*Node
+	Host     Host
+	Path     Path
+	errCh    chan error
+	Status   NodeStatus
+	HConn    *HConn
+	Peers    []*Node
+	Entities []*register.Entity
 
 	Mu sync.Mutex
 }
 
-func NewNode(h Host, p Path) *Node {
+func NewNode(h Host, p Path, es []*register.Entity) *Node {
 	return &Node{
-		Host:  h,
-		Path:  p,
-		errCh: make(chan error, 1),
-		Peers: []*Node{},
+		Host:     h,
+		Path:     p,
+		Entities: es,
+		errCh:    make(chan error, 1),
+		Peers:    []*Node{},
 	}
 }
 
@@ -214,7 +217,7 @@ func (x *Node) waitStatusActive() {
 		if status == NodeStatusActive {
 			break
 		} else {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	}
 }

@@ -8,7 +8,12 @@
       },
       "Path": {
         "Data": "/tmp/data/1"
-      }
+      },
+      "Entities": [
+        {
+          "Name": "Sample"
+        }
+      ]
     },{
       "Host": {
         "Name": "debian",
@@ -16,7 +21,12 @@
       },
       "Path": {
         "Data": "/tmp/data/2"
-      }
+      },
+      "Entities": [
+        {
+          "Name": "Sample"
+        }
+      ]
     }, {
       "Host": {
         "Name": "debian",
@@ -24,7 +34,12 @@
       },
       "Path": {
         "Data": "/tmp/data/3"
-      }
+      },
+      "Entities": [
+        {
+          "Name": "Sample"
+        }
+      ]
     },{
       "Host": {
         "Name": "debian",
@@ -32,7 +47,12 @@
       },
       "Path": {
         "Data": "/tmp/data/4"
-      }
+      },
+      "Entities": [
+        {
+          "Name": "Sample"
+        }
+      ]
     }
   ]
 }

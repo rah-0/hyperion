@@ -8,6 +8,7 @@ import (
 
 	"github.com/rah-0/nabu"
 
+	"github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
 
@@ -102,12 +103,25 @@ func checkCurrentNodes() error {
 
 	for _, node := range config.Nodes {
 		if node.Host.Name == hostName {
-			nodes = append(nodes, NewNode(node.Host, node.Path))
+			nodes = append(nodes, NewNode(node.Host, node.Path, node.Entities))
 		}
 	}
 
 	if len(nodes) == 0 {
 		return ErrConfigNodesNotFoundForHost
+	}
+
+	// Config per node targets an entity by name but here we find all versions for that entity
+	for _, node := range nodes {
+		var entitiesWithVersions []*register.Entity
+		for _, wantedEntity := range node.Entities {
+			for _, entity := range register.Entities {
+				if entity.Name == wantedEntity.Name {
+					entitiesWithVersions = append(entitiesWithVersions, entity)
+				}
+			}
+		}
+		node.Entities = entitiesWithVersions
 	}
 
 	return nil
@@ -135,7 +149,7 @@ func waitNodesToBeReady() {
 		if allReady {
 			break
 		} else {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	}
 }

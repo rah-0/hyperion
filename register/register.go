@@ -3,8 +3,9 @@ package register
 var Entities []*Entity
 
 type Entity struct {
+	// These fields are used for dynamic loading
 	Version    string
-	EntityName string
+	Name       string
 	DbFileName string
 	Fields     map[string]int
 	New        func() Model

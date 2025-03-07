@@ -24,7 +24,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 
 	template += "const (\n"
 	template += `Version = "` + v + `"` + "\n"
-	template += `EntityName = "` + s.Name + `"` + "\n"
+	template += `Name = "` + s.Name + `"` + "\n"
 	template += `DbFileName = "` + s.Name + strings.ToUpper(v) + `.bin"` + "\n"
 	template += ")\n\n"
 
@@ -42,7 +42,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "gob.Register(" + s.Name + "{})\n\n"
 	template += "RegisterEntity(&Entity{" + "\n"
 	template += "Version: Version," + "\n"
-	template += "EntityName: EntityName," + "\n"
+	template += "Name: Name," + "\n"
 	template += "DbFileName: DbFileName," + "\n"
 	template += "Fields: Fields," + "\n"
 	template += "New: New," + "\n"

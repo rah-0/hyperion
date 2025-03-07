@@ -21,7 +21,7 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 	}
 
 	for _, e := range Entities {
-		if e.EntityName != "Sample" {
+		if e.Name != "Sample" {
 			continue
 		}
 
@@ -31,7 +31,7 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 
 		err := serializer.Encode(instance)
 		if err != nil {
-			t.Fatalf("Encoding failed for %s: %v", e.EntityName, err)
+			t.Fatalf("Encoding failed for %s: %v", e.Name, err)
 		}
 
 		data := serializer.GetData()
@@ -41,12 +41,12 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 		serializer.SetData(data)
 		err = serializer.Decode(newInstance)
 		if err != nil {
-			t.Fatalf("Decoding failed for %s: %v", e.EntityName, err)
+			t.Fatalf("Decoding failed for %s: %v", e.Name, err)
 		}
 
 		if newInstance.GetFieldValue("Name") != "John" || newInstance.GetFieldValue("Surname") != "Doe" {
 			t.Fatalf("Decoded values mismatch for %s: got Name=%s, Surname=%s",
-				e.EntityName, newInstance.GetFieldValue("Name"), newInstance.GetFieldValue("Surname"))
+				e.Name, newInstance.GetFieldValue("Name"), newInstance.GetFieldValue("Surname"))
 		}
 	}
 }

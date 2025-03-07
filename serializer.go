@@ -6,17 +6,17 @@ import (
 )
 
 type Serializer struct {
-	b *bytes.Buffer
-	e *gob.Encoder
-	d *gob.Decoder
+	Buffer *bytes.Buffer
+	e      *gob.Encoder
+	d      *gob.Decoder
 }
 
 func NewSerializer() *Serializer {
 	b := new(bytes.Buffer)
 	return &Serializer{
-		b: b,
-		e: gob.NewEncoder(b),
-		d: gob.NewDecoder(b),
+		Buffer: b,
+		e:      gob.NewEncoder(b),
+		d:      gob.NewDecoder(b),
 	}
 }
 
@@ -32,17 +32,17 @@ func (x *Serializer) Decode(a any) error {
 }
 
 func (x *Serializer) Reset() {
-	x.b.Reset()
+	x.Buffer.Reset()
 }
 
 func (x *Serializer) SetData(d []byte) {
-	x.b.Write(d)
+	x.Buffer.Write(d)
 }
 
 func (x *Serializer) GetData() []byte {
-	return x.b.Bytes()
+	return x.Buffer.Bytes()
 }
 
 func (x *Serializer) GetBuffer() *bytes.Buffer {
-	return x.b
+	return x.Buffer
 }
