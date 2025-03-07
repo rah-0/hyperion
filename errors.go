@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	ErrGeneratorStructNotFound = errors.New("generator: struct not found")
+
 	ErrMessageEmpty = errors.New("message: is empty")
 
 	ErrConfigNodesNotFound        = errors.New("config: node list is empty")
@@ -15,17 +17,3 @@ var (
 	ErrPathConfigNotFound     = errors.New("pathConfig: specified path cannot be found")
 	ErrPathConfigNotEditable  = errors.New("pathConfig: specified path is not editable")
 )
-
-type Path struct {
-	Data string // Where data will be stored
-}
-
-type Host struct {
-	Name string
-	Port int
-}
-
-type Config struct {
-	ClusterName string
-	Nodes       []*Node
-}

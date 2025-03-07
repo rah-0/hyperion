@@ -21,6 +21,15 @@ const (
 	NodeStatusReady
 )
 
+type Path struct {
+	Data string // Where data will be stored
+}
+
+type Host struct {
+	Name string
+	Port int
+}
+
 type Node struct {
 	Host   Host
 	Path   Path
@@ -29,7 +38,7 @@ type Node struct {
 	HConn  *HConn
 	Peers  []*Node
 
-	mu sync.Mutex
+	Mu sync.Mutex
 }
 
 func NewNode(h Host, p Path) *Node {
@@ -74,7 +83,7 @@ func (x *Node) checkDataDir() {
 	}
 }
 
-func (x *Node) start() {
+func (x *Node) Start() {
 	x.handleErrors()
 	x.checkDataDir()
 
@@ -109,17 +118,17 @@ func (x *Node) connectToPeers() {
 			continue
 		}
 
-		node.mu.Lock()
+		node.Mu.Lock()
 		node.HConn = c
-		node.mu.Unlock()
+		node.Mu.Unlock()
 		newPeers = append(newPeers, node)
 	}
 
 	// Update the peer list
-	x.mu.Lock()
+	x.Mu.Lock()
 	x.Peers = newPeers
 	x.Status = NodeStatusReady
-	x.mu.Unlock()
+	x.Mu.Unlock()
 }
 
 func (x *Node) getListenAddress() string {
@@ -127,9 +136,9 @@ func (x *Node) getListenAddress() string {
 }
 
 func (x *Node) acceptConnections(listener net.Listener) {
-	x.mu.Lock()
+	x.Mu.Lock()
 	x.Status = NodeStatusActive
-	x.mu.Unlock()
+	x.Mu.Unlock()
 
 	for {
 		conn, err := listener.Accept()
@@ -199,9 +208,9 @@ func (x *Node) handleErrors() {
 
 func (x *Node) waitStatusActive() {
 	for {
-		x.mu.Lock()
+		x.Mu.Lock()
 		status := x.Status
-		x.mu.Unlock()
+		x.Mu.Unlock()
 		if status == NodeStatusActive {
 			break
 		} else {

@@ -11,6 +11,11 @@ import (
 	. "github.com/rah-0/hyperion/util"
 )
 
+type Config struct {
+	ClusterName string
+	Nodes       []*Node
+}
+
 var (
 	nodes      []*Node
 	config     Config
@@ -110,7 +115,7 @@ func checkCurrentNodes() error {
 
 func startNodes() {
 	for _, node := range nodes {
-		go node.start()
+		go node.Start()
 	}
 	waitNodesToBeReady()
 }
@@ -119,9 +124,9 @@ func waitNodesToBeReady() {
 	for {
 		allReady := true
 		for _, node := range nodes {
-			node.mu.Lock()
+			node.Mu.Lock()
 			status := node.Status
-			node.mu.Unlock()
+			node.Mu.Unlock()
 			if status != NodeStatusReady {
 				allReady = false
 				break

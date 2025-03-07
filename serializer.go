@@ -42,3 +42,7 @@ func (x *Serializer) SetData(d []byte) {
 func (x *Serializer) GetData() []byte {
 	return x.b.Bytes()
 }
+
+func (x *Serializer) GetBuffer() *bytes.Buffer {
+	return x.b
+}

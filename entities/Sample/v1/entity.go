@@ -4,17 +4,63 @@ package Sample
 
 import (
 	"encoding/gob"
+
+	. "github.com/rah-0/hyperion/register"
 )
+
+const (
+	Version    = "v1"
+	EntityName = "Sample"
+	DbFileName = "SampleV1.bin"
+)
+
+var Fields = map[string]int{
+	"Name":    1,
+	"Surname": 2,
+}
+
+var _ Model = (*Sample)(nil)
 
 func init() {
 	gob.Register(Sample{})
-}
 
-const (
-	Version = "v1"
-)
+	RegisterEntity(&Entity{
+		Version:    Version,
+		EntityName: EntityName,
+		DbFileName: DbFileName,
+		Fields:     Fields,
+		New:        New,
+	})
+}
 
 type Sample struct {
 	Name    string
 	Surname string
+}
+
+func New() Model {
+	return &Sample{}
+}
+
+func (s *Sample) SetFieldValue(fieldName string, value any) {
+	switch Fields[fieldName] {
+	case 1:
+		if v, ok := value.(string); ok {
+			s.Name = v
+		}
+	case 2:
+		if v, ok := value.(string); ok {
+			s.Surname = v
+		}
+	}
+}
+
+func (s *Sample) GetFieldValue(fieldName string) any {
+	switch Fields[fieldName] {
+	case 1:
+		return s.Name
+	case 2:
+		return s.Surname
+	}
+	return nil
 }

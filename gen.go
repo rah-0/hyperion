@@ -1,4 +1,4 @@
-package gen
+package main
 
 import (
 	"go/format"
@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"reflect"
 
+	. "github.com/rah-0/hyperion/template"
 	. "github.com/rah-0/hyperion/util"
+	//
+	// Dynamic Imports Start
+	_ "github.com/rah-0/hyperion/entities/Sample/v1"
+	// Dynamic Imports End
 )
 
 func Generate() error {
-	pathEntities, err := filepath.Abs(filepath.Join("..", "entities"))
-	if err != nil {
-		return err
-	}
-
-	existingEntitiesDirs, err := DirectoriesInPath(pathEntities)
+	pathEntities, err := filepath.Abs("entities")
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func Generate() error {
 		return err
 	}
 
-	pathsEntities, err := createDirectoriesForStructs(pathEntities, structs)
+	err = createDirectoriesForStructs(pathEntities, structs)
 	if err != nil {
 		return err
 	}
@@ -35,8 +35,45 @@ func Generate() error {
 		return err
 	}
 
-	// Cleanup
-	err = deleteDirectoriesOfNonExistingEntities(pathEntities, existingEntitiesDirs, pathsEntities)
+	err = updateDynamicImports(pathEntities)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateDynamicImports(pathEntities string) error {
+	mn, err := GetModuleName("go.mod")
+	if err != nil {
+		return err
+	}
+
+	ds, err := DirectoriesInPath(pathEntities)
+	if err != nil {
+		return err
+	}
+
+	var imports = ""
+	for _, entityName := range ds {
+		versions, err := DirectoriesInPath(filepath.Join(pathEntities, entityName))
+		if err != nil {
+			return err
+		}
+		for i, v := range versions {
+			imports += "\t" + `_ "` + filepath.Join(mn, "entities", entityName, v) + `"`
+			if i < len(versions)-1 {
+				imports += "\n"
+			}
+		}
+	}
+
+	err = FileExpand("gen.go", []FileExpanderTags{{
+		StartTag:   []byte("// Dynamic Imports Start"),
+		EndTag:     []byte("// Dynamic Imports End"),
+		ExpandWith: []byte(imports),
+		Count:      1,
+	}})
 	if err != nil {
 		return err
 	}
@@ -45,7 +82,11 @@ func Generate() error {
 }
 
 func createEntityAtPath(s StructDef, v string, p string) error {
-	t := templateEntity(s, v)
+	t, err := TemplateEntity(s, v)
+	if err != nil {
+		return err
+	}
+
 	f, err := format.Source([]byte(t))
 	if err != nil {
 		return err
@@ -117,7 +158,7 @@ func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p str
 		return ErrGeneratorStructNotFound
 	}
 
-	t, err := templateMigrations(sPrevious, sCurrent, vPrevious, vCurrent)
+	t, err := TemplateMigrations(sPrevious, sCurrent, vPrevious, vCurrent)
 	if err != nil {
 		return err
 	}
@@ -132,7 +173,7 @@ func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p str
 		return err
 	}
 
-	t, err = templateMigrationsTests(sPrevious, sCurrent, vPrevious, vCurrent)
+	t, err = TemplateMigrationsTests(sCurrent)
 	if err != nil {
 		return err
 	}
@@ -195,34 +236,13 @@ func createEntities(structs []StructDef, pathEntities string) error {
 	return nil
 }
 
-func createDirectoriesForStructs(pathEntities string, structs []StructDef) (paths []string, err error) {
+func createDirectoriesForStructs(pathEntities string, structs []StructDef) (err error) {
 	for _, s := range structs {
 		pathEntity := path.Join(pathEntities, s.Name)
 		err = DirectoryCreate(pathEntity)
 		if err != nil {
 			return
 		}
-
-		paths = append(paths, pathEntity)
 	}
 	return
-}
-
-func deleteDirectoriesOfNonExistingEntities(pathEntities string, existingEntitiesDirs []string, pathsEntities []string) error {
-	for _, d := range existingEntitiesDirs {
-		p := path.Join(pathEntities, d)
-		s := true
-		for _, e := range pathsEntities {
-			if p == e {
-				s = false
-			}
-		}
-		if s {
-			err := DirectoryRemove(p)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
