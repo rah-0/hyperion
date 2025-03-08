@@ -10,7 +10,7 @@ import (
 	. "github.com/rah-0/hyperion/util"
 )
 
-func TestWriteRead(t *testing.T) {
+func TestWriteReadSingle(t *testing.T) {
 	d := NewDisk()
 	d.WithNewSerializer()
 	d.WithNewRandomPath()

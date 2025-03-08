@@ -39,7 +39,6 @@ func (x *Disk) WriteToFile(data any) error {
 		return err
 	}
 
-	// Write length prefix
 	length := uint32(x.Serializer.Buffer.Len())
 	if err = binary.Write(file, binary.LittleEndian, length); err != nil {
 		return err

@@ -18,4 +18,7 @@ func RegisterEntity(entity *Entity) {
 type Model interface {
 	SetFieldValue(fieldName string, value any)
 	GetFieldValue(fieldName string) any
+	Encode() error
+	Decode() error
+	BufferReset()
 }

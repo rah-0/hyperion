@@ -14,8 +14,6 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestGeneratedSampleSerializer(t *testing.T) {
-	serializer := NewSerializer()
-
 	if len(Entities) == 0 {
 		t.Fatal("no entities generated")
 	}
@@ -25,28 +23,23 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 			continue
 		}
 
-		instance := e.New()
-		instance.SetFieldValue("Name", "John")
-		instance.SetFieldValue("Surname", "Doe")
-
-		err := serializer.Encode(instance)
+		instanceOld := e.New()
+		instanceOld.SetFieldValue("Name", "John")
+		instanceOld.SetFieldValue("Surname", "Doe")
+		err := instanceOld.Encode()
 		if err != nil {
 			t.Fatalf("Encoding failed for %s: %v", e.Name, err)
 		}
 
-		data := serializer.GetData()
-		serializer.Reset()
-
-		newInstance := e.New()
-		serializer.SetData(data)
-		err = serializer.Decode(newInstance)
+		instanceNew := e.New()
+		err = instanceNew.Decode()
 		if err != nil {
 			t.Fatalf("Decoding failed for %s: %v", e.Name, err)
 		}
 
-		if newInstance.GetFieldValue("Name") != "John" || newInstance.GetFieldValue("Surname") != "Doe" {
+		if instanceNew.GetFieldValue("Name") != "John" || instanceNew.GetFieldValue("Surname") != "Doe" {
 			t.Fatalf("Decoded values mismatch for %s: got Name=%s, Surname=%s",
-				e.Name, newInstance.GetFieldValue("Name"), newInstance.GetFieldValue("Surname"))
+				e.Name, instanceNew.GetFieldValue("Name"), instanceNew.GetFieldValue("Surname"))
 		}
 	}
 }
