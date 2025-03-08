@@ -1,5 +1,9 @@
 package register
 
+import (
+	"bytes"
+)
+
 var Entities []*Entity
 
 type Entity struct {
@@ -21,4 +25,7 @@ type Model interface {
 	Encode() error
 	Decode() error
 	BufferReset()
+	GetBuffer() *bytes.Buffer
+	GetBufferData() []byte
+	SetBufferData([]byte)
 }

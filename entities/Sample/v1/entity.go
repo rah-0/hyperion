@@ -90,3 +90,21 @@ func (s *Sample) BufferReset() {
 	defer mu.Unlock()
 	Buffer.Reset()
 }
+
+func (s *Sample) GetBuffer() *bytes.Buffer {
+	mu.Lock()
+	defer mu.Unlock()
+	return Buffer
+}
+
+func (s *Sample) GetBufferData() []byte {
+	mu.Lock()
+	defer mu.Unlock()
+	return Buffer.Bytes()
+}
+
+func (s *Sample) SetBufferData(data []byte) {
+	mu.Lock()
+	defer mu.Unlock()
+	Buffer.Write(data)
+}

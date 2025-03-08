@@ -3,34 +3,41 @@ package main
 import (
 	"testing"
 
-	"github.com/google/uuid"
-
-	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
-
+	. "github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
 
 func TestWriteReadSingle(t *testing.T) {
 	d := NewDisk()
-	d.WithNewSerializer()
 	d.WithNewRandomPath()
 	defer FileDelete(d.Path) // Cleanup temp file
 
-	entity := SampleV1.New()
-	entity.SetFieldValue("Name", uuid.NewString())
-
-	decoded := SampleV1.Sample{}
-
-	if err := d.WriteToFile(entity); err != nil {
-		t.Fatalf("WriteToFile failed: %v", err)
+	if len(Entities) == 0 {
+		t.Fatal("no entities generated")
 	}
-	if err := d.ReadFromFile(&decoded); err != nil {
-		t.Fatalf("ReadFromFile failed: %v", err)
-	}
+	for _, e := range Entities {
+		if e.Name != "Sample" {
+			continue
+		}
 
-	original := entity.GetFieldValue("Name")
-	fromStorage := decoded.GetFieldValue("Name")
-	if original != fromStorage {
-		t.Fatalf("Expected %+v, got %+v", original, fromStorage)
+		instanceToSave := e.New()
+		instanceToSave.SetFieldValue("Name", "John")
+		instanceToSave.SetFieldValue("Surname", "Doe")
+		if err := d.WriteToFile(instanceToSave); err != nil {
+			t.Fatalf("WriteToFile failed: %v", err)
+		}
+
+		instanceToSave.BufferReset()
+
+		instanceToLoad := e.New()
+		if err := d.ReadFromFile(instanceToLoad); err != nil {
+			t.Fatalf("ReadFromFile failed: %v", err)
+		}
+		if instanceToLoad.GetFieldValue("Name") != "John" {
+			t.Fatalf("ReadFromFile failed: %v != John", instanceToLoad.GetFieldValue("Name"))
+		}
+		if instanceToLoad.GetFieldValue("Surname") != "Doe" {
+			t.Fatalf("ReadFromFile failed: %v != Doe", instanceToLoad.GetFieldValue("Surname"))
+		}
 	}
 }

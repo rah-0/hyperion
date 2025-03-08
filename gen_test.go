@@ -17,7 +17,6 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 	if len(Entities) == 0 {
 		t.Fatal("no entities generated")
 	}
-
 	for _, e := range Entities {
 		if e.Name != "Sample" {
 			continue

@@ -7,48 +7,50 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+
+	"github.com/rah-0/hyperion/register"
 )
 
 type Disk struct {
-	Mu         sync.Mutex
-	Serializer *Serializer
-	Path       string
+	Mu   sync.Mutex
+	Path string
 }
 
 func NewDisk() *Disk {
 	return &Disk{}
 }
 
-func (x *Disk) WithNewSerializer() {
-	x.Serializer = NewSerializer()
-}
-
 func (x *Disk) WithNewRandomPath() {
 	x.Path = filepath.Join(os.TempDir(), uuid.NewString())
 }
 
-func (x *Disk) WriteToFile(data any) error {
+func (x *Disk) WriteToFile(m register.Model) error {
+	x.Mu.Lock()
+	defer x.Mu.Unlock()
+
 	file, err := os.OpenFile(x.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	x.Serializer.Reset()
-	if err = x.Serializer.Encode(data); err != nil {
+	if err = m.Encode(); err != nil {
 		return err
 	}
 
-	length := uint32(x.Serializer.Buffer.Len())
+	length := uint32(m.GetBuffer().Len())
 	if err = binary.Write(file, binary.LittleEndian, length); err != nil {
 		return err
 	}
 
-	_, err = file.Write(x.Serializer.GetData())
+	_, err = file.Write(m.GetBufferData())
 	return err
 }
 
-func (x *Disk) ReadFromFile(data any) error {
+func (x *Disk) ReadFromFile(m register.Model) error {
+	x.Mu.Lock()
+	defer x.Mu.Unlock()
+
 	file, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
 	if err != nil {
 		return err
@@ -60,9 +62,8 @@ func (x *Disk) ReadFromFile(data any) error {
 		return err
 	}
 
-	x.Serializer.Reset()
-	if _, err = x.Serializer.Buffer.ReadFrom(file); err != nil {
+	if _, err = m.GetBuffer().ReadFrom(file); err != nil {
 		return err
 	}
-	return x.Serializer.Decode(data)
+	return m.Decode()
 }

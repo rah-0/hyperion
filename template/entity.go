@@ -109,6 +109,24 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "Buffer.Reset()\n"
 	template += "}\n\n"
 
+	template += "func (s *" + s.Name + ") GetBuffer() *bytes.Buffer {\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
+	template += "return Buffer\n"
+	template += "}\n\n"
+
+	template += "func (s *" + s.Name + ") GetBufferData() []byte {\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
+	template += "return Buffer.Bytes()\n"
+	template += "}\n\n"
+
+	template += "func (s *" + s.Name + ") SetBufferData(data []byte) {\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
+	template += "Buffer.Write(data)\n"
+	template += "}\n\n"
+
 	return template, nil
 }
 
