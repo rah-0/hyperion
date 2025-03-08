@@ -28,4 +28,6 @@ type Model interface {
 	GetBuffer() *bytes.Buffer
 	GetBufferData() []byte
 	SetBufferData([]byte)
+	SetOffset(uint64)
+	GetOffset() uint64
 }

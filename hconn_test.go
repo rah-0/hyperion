@@ -151,13 +151,13 @@ func TestPartialRead(t *testing.T) {
 	}()
 
 	// Simulating slow/chunked read
-	lengthBuf := make([]byte, 4)
+	lengthBuf := make([]byte, 8)
 	_, err := io.ReadFull(server, lengthBuf)
 	if err != nil {
 		t.Fatalf("Failed to read length prefix: %v", err)
 	}
 
-	messageLength := binary.BigEndian.Uint32(lengthBuf)
+	messageLength := binary.BigEndian.Uint64(lengthBuf)
 	receivedBuf := make([]byte, messageLength)
 
 	totalRead := 0
@@ -212,8 +212,8 @@ func TestCorruptedData(t *testing.T) {
 
 	go func() {
 		// Send incorrect length prefix (indicating more bytes than actually sent)
-		lengthPrefix := make([]byte, 4)
-		binary.BigEndian.PutUint32(lengthPrefix, 100) // Expecting 100 bytes
+		lengthPrefix := make([]byte, 8)
+		binary.BigEndian.PutUint64(lengthPrefix, 100) // Expecting 100 bytes
 
 		client.Write(lengthPrefix) // Only send the length, no actual message
 		client.Close()

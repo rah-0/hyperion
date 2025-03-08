@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -79,4 +80,23 @@ func FileExpand(filePath string, tags []FileExpanderTags) error {
 
 	newContent := bytes.Join(lines, []byte("\n"))
 	return FileCreate(filePath, newContent)
+}
+
+func FileSizeHuman(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+
+	size := info.Size()
+	units := []string{"B", "KB", "MB", "GB", "TB"}
+	var i int
+	floatSize := float64(size)
+
+	for floatSize >= 1024 && i < len(units)-1 {
+		floatSize /= 1024
+		i++
+	}
+
+	return fmt.Sprintf("%.2f %s", floatSize, units[i]), nil
 }

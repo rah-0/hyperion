@@ -1,8 +1,10 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"golang.org/x/mod/modfile"
 )
@@ -31,4 +33,20 @@ func GetModuleName(modPath string) (string, error) {
 	}
 
 	return modFile.Module.Mod.Path, nil
+}
+
+func GetMemoryUsage() string {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
+	var unitIndex int
+	memory := float64(m.Sys)
+
+	for memory >= 1024 && unitIndex < len(units)-1 {
+		memory /= 1024
+		unitIndex++
+	}
+
+	return fmt.Sprintf("%.2f %s", memory, units[unitIndex])
 }

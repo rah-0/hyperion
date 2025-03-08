@@ -38,7 +38,7 @@ func (x *Disk) WriteToFile(m register.Model) error {
 		return err
 	}
 
-	length := uint32(m.GetBuffer().Len())
+	length := uint64(m.GetBuffer().Len())
 	if err = binary.Write(file, binary.LittleEndian, length); err != nil {
 		return err
 	}
@@ -47,23 +47,39 @@ func (x *Disk) WriteToFile(m register.Model) error {
 	return err
 }
 
-func (x *Disk) ReadFromFile(m register.Model) error {
+func (x *Disk) LoadAllEntities(e *register.Entity) ([]register.Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
 	file, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer file.Close()
 
-	var length uint32
-	if err = binary.Read(file, binary.LittleEndian, &length); err != nil {
-		return err
-	}
+	var entities []register.Model
+	var offset uint64
+	for {
+		var length uint64
+		if err = binary.Read(file, binary.LittleEndian, &length); err != nil {
+			break // EOF or error
+		}
 
-	if _, err = m.GetBuffer().ReadFrom(file); err != nil {
-		return err
+		data := make([]byte, length)
+		if _, err = file.Read(data); err != nil {
+			return nil, err
+		}
+
+		instance := e.New()
+		instance.SetBufferData(data)
+		if err = instance.Decode(); err != nil {
+			return nil, err
+		}
+
+		instance.SetOffset(offset)
+		offset += 8 + length
+
+		entities = append(entities, instance)
 	}
-	return m.Decode()
+	return entities, nil
 }

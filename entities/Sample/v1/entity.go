@@ -32,6 +32,18 @@ var (
 func init() {
 	gob.Register(Sample{})
 
+	// The following process initializes the encoder and decoder by preloading metadata.
+	// This prevents metadata from being stored with the first encoded struct.
+	// If the metadata were missing or inconsistent, decoding the struct later could fail.
+	x := New()
+	if err := x.Encode(); err != nil {
+		panic("failed to encode type metadata: " + err.Error())
+	}
+	if err := x.Decode(); err != nil {
+		panic("failed to decode type metadata: " + err.Error())
+	}
+	x.BufferReset()
+
 	RegisterEntity(&Entity{
 		Version:    Version,
 		Name:       Name,
@@ -44,6 +56,7 @@ func init() {
 type Sample struct {
 	Name    string
 	Surname string
+	offset  uint64
 }
 
 func New() Model {
@@ -71,6 +84,14 @@ func (s *Sample) GetFieldValue(fieldName string) any {
 		return s.Surname
 	}
 	return nil
+}
+
+func (s *Sample) SetOffset(offset uint64) {
+	s.offset = offset
+}
+
+func (s *Sample) GetOffset() uint64 {
+	return s.offset
 }
 
 func (s *Sample) Encode() error {

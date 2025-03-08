@@ -28,9 +28,9 @@ func (hc *HConn) Send(a any) error {
 	data := hc.s.GetData()
 	hc.s.Reset()
 
-	dataLen := uint32(len(data))
-	lengthPrefix := make([]byte, 4)
-	binary.BigEndian.PutUint32(lengthPrefix, dataLen)
+	dataLen := uint64(len(data))
+	lengthPrefix := make([]byte, 8)
+	binary.BigEndian.PutUint64(lengthPrefix, dataLen)
 
 	if err := hc.write(lengthPrefix); err != nil {
 		return err
@@ -44,12 +44,12 @@ func (hc *HConn) Send(a any) error {
 
 // Receive reads a message using the length-prefixed format
 func (hc *HConn) Receive() (msg Message, err error) {
-	lengthPrefix, err := hc.read(4)
+	lengthPrefix, err := hc.read(8)
 	if err != nil {
 		return
 	}
 
-	messageLength := binary.BigEndian.Uint32(lengthPrefix)
+	messageLength := binary.BigEndian.Uint64(lengthPrefix)
 	if messageLength == 0 {
 		err = ErrMessageEmpty
 		return
