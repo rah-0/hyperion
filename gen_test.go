@@ -35,6 +35,7 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Decoding failed for %s: %v", e.Name, err)
 		}
+		instanceNew.BufferReset()
 
 		if instanceNew.GetFieldValue("Name") != "John" || instanceNew.GetFieldValue("Surname") != "Doe" {
 			t.Fatalf("Decoded values mismatch for %s: got Name=%s, Surname=%s",
