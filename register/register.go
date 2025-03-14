@@ -24,10 +24,18 @@ type Model interface {
 	GetFieldValue(fieldName string) any
 	Encode() error
 	Decode() error
+
 	BufferReset()
 	GetBuffer() *bytes.Buffer
 	GetBufferData() []byte
 	SetBufferData([]byte)
+
 	SetOffset(uint64)
 	GetOffset() uint64
+
+	MemoryAdd()
+	MemoryRemove() bool
+	MemoryClear()
+	MemoryGetAll() []Model
+	MemoryContains(target Model) bool
 }

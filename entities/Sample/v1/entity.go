@@ -27,6 +27,7 @@ var (
 	Buffer  = new(bytes.Buffer)
 	Encoder = gob.NewEncoder(Buffer)
 	Decoder = gob.NewDecoder(Buffer)
+	Mem     []*Sample
 )
 
 func init() {
@@ -43,6 +44,8 @@ func init() {
 		panic("failed to decode type metadata: " + err.Error())
 	}
 	x.BufferReset()
+
+	Mem = []*Sample{}
 
 	RegisterEntity(&Entity{
 		Version:    Version,
@@ -128,4 +131,52 @@ func (s *Sample) SetBufferData(data []byte) {
 	mu.Lock()
 	defer mu.Unlock()
 	Buffer.Write(data)
+}
+
+func (s *Sample) MemoryAdd() {
+	mu.Lock()
+	defer mu.Unlock()
+	Mem = append(Mem, s)
+}
+
+func (s *Sample) MemoryRemove() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	for i, instance := range Mem {
+		if instance == s {
+			lastIndex := len(Mem) - 1
+			Mem[i] = Mem[lastIndex]
+			Mem = Mem[:lastIndex]
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Sample) MemoryClear() {
+	mu.Lock()
+	defer mu.Unlock()
+	Mem = []*Sample{}
+}
+
+func (s *Sample) MemoryGetAll() []Model {
+	mu.Lock()
+	defer mu.Unlock()
+	instances := make([]Model, len(Mem))
+	for i, instance := range Mem {
+		instances[i] = instance
+	}
+	return instances
+}
+
+func (s *Sample) MemoryContains(target Model) bool {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for _, instance := range Mem {
+		if instance == target {
+			return true
+		}
+	}
+	return false
 }
