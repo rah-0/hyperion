@@ -5,7 +5,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"time"
+	"sync"
 
 	"github.com/rah-0/nabu"
 
@@ -15,41 +15,61 @@ import (
 
 type Config struct {
 	ClusterName string
-	Nodes       []*Node
+	Connection  struct {
+		Retries struct {
+			MaxCount        int
+			IntervalSeconds int
+		}
+	}
+	Nodes []*Node
 }
 
 var (
-	nodes      []*Node
-	config     Config
-	pathConfig string
+	GlobalNode   *Node
+	GlobalConfig Config
+	pathConfig   string
+	forceHost    string
 )
 
 func main() {
 	flag.StringVar(&pathConfig, "pathConfig", "", "")
+	flag.StringVar(&forceHost, "forceHost", "", "")
 	flag.Parse()
 
 	nabu.SetLogLevel(nabu.LevelDebug)
 
-	if err := run(); err != nil {
+	if err := checkConfigs(); err != nil {
 		nabu.FromError(err).WithLevelFatal().Log()
 		os.Exit(1)
 	}
+
+	run()
 }
 
-func run() error {
+func checkConfigs() error {
 	if err := checkPathConfig(); err != nil {
 		return nabu.FromError(err).Log()
 	}
 	if err := checkConfig(); err != nil {
 		return nabu.FromError(err).Log()
 	}
+	checkForceHost()
 	if err := checkCurrentNodes(); err != nil {
 		return nabu.FromError(err).Log()
 	}
-
-	startNodes()
-
 	return nil
+}
+
+func run() {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		GlobalNode.Start()
+	}()
+
+	wg.Wait()
 }
 
 func checkPathConfig() error {
@@ -74,6 +94,13 @@ func checkPathConfig() error {
 	return nil
 }
 
+func checkForceHost() {
+	if forceHost == "" {
+		forceHost = GetEnvKeyValue("HyperionForceHost")
+	}
+	return
+}
+
 func checkConfig() error {
 	content, err := FileRead(pathConfig)
 	if err != nil {
@@ -84,7 +111,7 @@ func checkConfig() error {
 		return ErrPathConfigNoContent
 	}
 
-	err = json.Unmarshal(content, &config)
+	err = json.Unmarshal(content, &GlobalConfig)
 	if err != nil {
 		return err
 	}
@@ -93,65 +120,42 @@ func checkConfig() error {
 }
 
 func checkCurrentNodes() error {
-	if len(config.Nodes) == 0 {
+	if len(GlobalConfig.Nodes) == 0 {
 		return ErrConfigNodesNotFound
 	}
 
-	hostName, err := os.Hostname()
-	if err != nil {
-		return err
+	var hostName string
+	if forceHost == "" {
+		var err error
+		hostName, err = os.Hostname()
+		if err != nil {
+			return err
+		}
+	} else {
+		hostName = forceHost
 	}
 
-	for _, node := range config.Nodes {
+	for _, node := range GlobalConfig.Nodes {
 		if node.Host.Name == hostName {
-			nodes = append(nodes, NewNode(node.Host, node.Path, node.Entities))
+			GlobalNode = NewNode(node.Host, node.Path, node.Entities)
 		}
 	}
 
-	if len(nodes) == 0 {
-		return ErrConfigNodesNotFoundForHost
+	if GlobalNode == nil {
+		return ErrConfigNodeNotFoundForHost
 	}
 
 	// Config per node targets an entity by name but here we find all versions for that entity
-	for _, node := range nodes {
-		for _, e := range node.Entities {
-			for _, re := range register.Entities {
-				if e.Name == re.Name {
-					node.EntitiesStorage = append(node.EntitiesStorage, &EntityStorage{
-						Disk:   NewDisk().WithPath(filepath.Join(node.Path.Data, re.DbFileName)),
-						Entity: re,
-					})
-				}
+	for _, e := range GlobalNode.Entities {
+		for _, re := range register.Entities {
+			if e.Name == re.Name {
+				GlobalNode.EntitiesStorage = append(GlobalNode.EntitiesStorage, &EntityStorage{
+					Disk:   NewDisk().WithPath(filepath.Join(GlobalNode.Path.Data, re.DbFileName)),
+					Entity: re,
+				})
 			}
 		}
 	}
 
 	return nil
-}
-
-func startNodes() {
-	for _, node := range nodes {
-		go node.Start()
-	}
-	waitNodesToBeReady()
-}
-
-func waitNodesToBeReady() {
-	for {
-		allReady := true
-		for _, node := range nodes {
-			node.Mu.Lock()
-			status := node.Status
-			node.Mu.Unlock()
-			if status != NodeStatusReady {
-				allReady = false
-				break
-			}
-		}
-		if allReady {
-			break
-		} else {
-			time.Sleep(1 * time.Second)
-		}
-	}
 }

@@ -9,10 +9,12 @@ var (
 
 	ErrMessageEmpty = errors.New("message: is empty")
 
-	ErrConfigNodesNotFound        = errors.New("config: node list is empty")
-	ErrConfigNodesNotFoundForHost = errors.New("config: nodes not found for current hostname")
+	ErrConfigNodesNotFound       = errors.New("GlobalConfig: node list is empty")
+	ErrConfigNodeNotFoundForHost = errors.New("GlobalConfig: node not found for current hostname")
 
-	ErrPathConfigNoContent    = errors.New("pathConfig: config file is empty")
+	ErrConnectionReachedRetryLimit = errors.New("Connection: retry limit reached")
+
+	ErrPathConfigNoContent    = errors.New("pathConfig: GlobalConfig file is empty")
 	ErrPathConfigNotSpecified = errors.New("pathConfig: not specified in either command line argument or environment variable")
 	ErrPathConfigNotFound     = errors.New("pathConfig: specified path cannot be found")
 	ErrPathConfigNotEditable  = errors.New("pathConfig: specified path is not editable")

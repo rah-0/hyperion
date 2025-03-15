@@ -63,8 +63,10 @@ If at some point compression is needed, **brotli** will be used but careful cons
 Since the config can be big enough, JSON is preferred for flexibility.  
 
 - Command-line arguments: 
-  - config.json file path containing the cluster configuration
+  - `pathConfig` config.json file path containing the cluster configuration
     - if no argument is passed, it will use the environment variable: `HyperionPathConfig`
+  - `forceHost` can be used to load a specific configuration
+    - if no argument is passed, it will use the environment variable: `HyperionForceHost`
 - Hot Reload: required to modify the config without causing downtime
   - HTTP Endpoint: a POST request that will send the updated JSON config
 

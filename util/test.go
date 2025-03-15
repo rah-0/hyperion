@@ -1,8 +1,11 @@
 package util
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime/debug"
 	"testing"
 )
@@ -61,4 +64,38 @@ func RecoverBenchHandler(b *testing.B) {
 	if r := recover(); r != nil {
 		b.Errorf("Test panicked: %v\nStack trace:\n%s", r, debug.Stack())
 	}
+}
+
+func BuildBinary() error {
+	binaryPath := filepath.Join(os.TempDir(), "hyperion_test")
+	fmt.Println("Building binary at:", binaryPath)
+
+	// Build the Go binary
+	cmd := exec.Command("go", "build", "-o", binaryPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to build binary: %w", err)
+	}
+
+	// Give execution permissions to the binary
+	if err := os.Chmod(binaryPath, 0755); err != nil {
+		return fmt.Errorf("failed to set execute permissions: %w", err)
+	}
+
+	fmt.Println("Binary built and execution permissions granted:", binaryPath)
+	return nil
+}
+
+func Pkill(processName string) error {
+	cmd := exec.Command("pkill", processName)
+	output, err := cmd.CombinedOutput()
+	s := string(output)
+	if err != nil {
+		return fmt.Errorf("pkill failed: %v, output: %s", err, s)
+	}
+	if len(s) > 0 {
+		fmt.Printf("pkill succeeded, output: %s\n", s)
+	}
+	return nil
 }

@@ -67,6 +67,7 @@ func ConnectToNode(x *Node) (*HConn, error) {
 	var conn net.Conn
 	var err error
 
+	retryCount := 0
 	for {
 		conn, err = net.Dial("tcp", x.getListenAddress())
 		if err == nil {
@@ -77,7 +78,12 @@ func ConnectToNode(x *Node) (*HConn, error) {
 		} else {
 			return nil, err
 		}
-		time.Sleep(1 * time.Second)
+
+		retryCount++
+		if retryCount >= GlobalConfig.Connection.Retries.MaxCount {
+			return nil, ErrConnectionReachedRetryLimit
+		}
+		time.Sleep(time.Duration(GlobalConfig.Connection.Retries.IntervalSeconds) * time.Second)
 	}
 }
 
@@ -92,6 +98,11 @@ func (x *Node) Start() {
 	listener, err := net.Listen("tcp", x.getListenAddress())
 	if err != nil {
 		x.errCh <- nabu.FromError(err).WithArgs(x.Host)
+		return
+	}
+
+	if err = x.loadEntitiesFromDisk(); err != nil {
+		x.errCh <- err
 		return
 	}
 
@@ -119,11 +130,20 @@ func (x *Node) checkDataDir() error {
 	return nil
 }
 
+func (x *Node) loadEntitiesFromDisk() error {
+	for _, s := range x.EntitiesStorage {
+		fmt.Println(s.Disk)
+		fmt.Println(s.Entity)
+	}
+
+	return nil
+}
+
 func (x *Node) connectToPeers() {
-	x.waitStatusActive()
+	x.WaitStatusActive()
 
 	var newPeers []*Node
-	for _, node := range config.Nodes {
+	for _, node := range GlobalConfig.Nodes {
 		// Skip self
 		if node.Host.Name == x.Host.Name && node.Host.Port == x.Host.Port {
 			continue
@@ -223,7 +243,7 @@ func (x *Node) handleErrors() {
 	}(x)
 }
 
-func (x *Node) waitStatusActive() {
+func (x *Node) WaitStatusActive() {
 	for {
 		x.Mu.Lock()
 		status := x.Status

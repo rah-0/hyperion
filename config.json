@@ -1,9 +1,15 @@
 {
   "ClusterName": "sample",
+  "Connection": {
+    "Retries": {
+      "MaxCount": 5,
+      "IntervalSeconds": 1
+    }
+  },
   "Nodes": [
     {
       "Host": {
-        "Name": "debian",
+        "Name": "A",
         "Port": 5000
       },
       "Path": {
@@ -16,7 +22,7 @@
       ]
     },{
       "Host": {
-        "Name": "debian",
+        "Name": "B",
         "Port": 6000
       },
       "Path": {
@@ -29,7 +35,7 @@
       ]
     }, {
       "Host": {
-        "Name": "debian",
+        "Name": "C",
         "Port": 7000
       },
       "Path": {
@@ -42,7 +48,7 @@
       ]
     },{
       "Host": {
-        "Name": "debian",
+        "Name": "D",
         "Port": 8000
       },
       "Path": {

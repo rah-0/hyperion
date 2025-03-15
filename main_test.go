@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -10,26 +13,57 @@ import (
 	. "github.com/rah-0/hyperion/util"
 )
 
-
 func TestMain(m *testing.M) {
 	TestMainWrapper(TestConfig{
 		M: m,
 		LoadResources: func() error {
+			err := BuildBinary()
+			if err != nil {
+				return err
+			}
+
 			p, err := filepath.Abs("./config.json")
 			if err != nil {
 				return err
 			}
 
+			for _, n := range GlobalConfig.Nodes {
+				fmt.Print(n)
+			}
+
 			pathConfig = p
-			err = run()
+			err = checkConfigs()
 			if err != nil {
 				return err
 			}
 
+			var wg sync.WaitGroup
+			for _, n := range GlobalConfig.Nodes {
+				wg.Add(1)
+
+				go func(node *Node) {
+					defer wg.Done()
+					logFilePath := filepath.Join(os.TempDir(), "hyperion_test_"+node.Host.Name+".log")
+					FileDelete(logFilePath)
+					logFile, _ := os.Create(logFilePath)
+					defer logFile.Close()
+
+					cmd := exec.Command(filepath.Join(os.TempDir(), "hyperion_test"),
+						"-pathConfig", p,
+						"-forceHost", node.Host.Name)
+					cmd.Stdout = logFile
+					cmd.Stderr = logFile
+
+					if err := cmd.Start(); err != nil {
+						fmt.Printf("Error running instance for host %s: %v\n", node.Host.Name, err)
+					}
+				}(n)
+			}
+			wg.Wait()
 			return nil
 		},
 		UnloadResources: func() error {
-			return nil
+			return Pkill("hyperion_test")
 		},
 	})
 }
