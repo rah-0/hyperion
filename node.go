@@ -31,23 +31,33 @@ type Host struct {
 	Port int
 }
 
+type EntityConfig struct {
+	Name string
+}
+
+type EntityStorage struct {
+	Disk   *Disk
+	Entity *register.Entity
+}
+
 type Node struct {
-	Host     Host
-	Path     Path
-	errCh    chan error
-	Status   NodeStatus
-	HConn    *HConn
-	Peers    []*Node
-	Entities []*register.Entity
+	Host            Host
+	Path            Path
+	errCh           chan error
+	Status          NodeStatus
+	HConn           *HConn
+	Peers           []*Node
+	Entities        []*EntityConfig
+	EntitiesStorage []*EntityStorage
 
 	Mu sync.Mutex
 }
 
-func NewNode(h Host, p Path, es []*register.Entity) *Node {
+func NewNode(h Host, p Path, ecs []*EntityConfig) *Node {
 	return &Node{
 		Host:     h,
 		Path:     p,
-		Entities: es,
+		Entities: ecs,
 		errCh:    make(chan error, 1),
 		Peers:    []*Node{},
 	}
@@ -71,38 +81,42 @@ func ConnectToNode(x *Node) (*HConn, error) {
 	}
 }
 
-func (x *Node) checkDataDir() {
-	exists, err := PathExists(x.Path.Data)
-	if err != nil {
+func (x *Node) Start() {
+	x.handleErrors()
+
+	if err := x.checkDataDir(); err != nil {
 		x.errCh <- err
 		return
 	}
-	if !exists {
-		err := DirectoryCreate(x.Path.Data)
-		if err != nil {
-			x.errCh <- err
-			return
-		}
-	}
-}
-
-func (x *Node) Start() {
-	x.handleErrors()
-	x.checkDataDir()
 
 	listener, err := net.Listen("tcp", x.getListenAddress())
 	if err != nil {
 		x.errCh <- nabu.FromError(err).WithArgs(x.Host)
 		return
 	}
+
 	defer func() {
-		if err := listener.Close(); err != nil {
+		if err = listener.Close(); err != nil {
 			x.errCh <- err
 		}
 	}()
 
 	go x.connectToPeers()
 	x.acceptConnections(listener)
+}
+
+func (x *Node) checkDataDir() error {
+	exists, err := PathExists(x.Path.Data)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		err = DirectoryCreate(x.Path.Data)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (x *Node) connectToPeers() {

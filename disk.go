@@ -43,8 +43,14 @@ func NewDisk() *Disk {
 	return &Disk{}
 }
 
-func (x *Disk) WithNewRandomPath() {
+func (x *Disk) WithNewRandomPath() *Disk {
 	x.Path = filepath.Join(os.TempDir(), uuid.NewString())
+	return x
+}
+
+func (x *Disk) WithPath(path string) *Disk {
+	x.Path = path
+	return x
 }
 
 func (x *Disk) DataWrite(data []byte) (uint64, error) {

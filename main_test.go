@@ -10,6 +10,7 @@ import (
 	. "github.com/rah-0/hyperion/util"
 )
 
+
 func TestMain(m *testing.M) {
 	TestMainWrapper(TestConfig{
 		M: m,

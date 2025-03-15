@@ -67,6 +67,8 @@ func New() Model {
 }
 
 func (s *Sample) SetFieldValue(fieldName string, value any) {
+	mu.Lock()
+	defer mu.Unlock()
 	switch Fields[fieldName] {
 	case 1:
 		if v, ok := value.(string); ok {
@@ -80,6 +82,8 @@ func (s *Sample) SetFieldValue(fieldName string, value any) {
 }
 
 func (s *Sample) GetFieldValue(fieldName string) any {
+	mu.Lock()
+	defer mu.Unlock()
 	switch Fields[fieldName] {
 	case 1:
 		return s.Name
@@ -90,10 +94,14 @@ func (s *Sample) GetFieldValue(fieldName string) any {
 }
 
 func (s *Sample) SetOffset(offset uint64) {
+	mu.Lock()
+	defer mu.Unlock()
 	s.offset = offset
 }
 
 func (s *Sample) GetOffset() uint64 {
+	mu.Lock()
+	defer mu.Unlock()
 	return s.offset
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/rah-0/nabu"
@@ -113,15 +114,16 @@ func checkCurrentNodes() error {
 
 	// Config per node targets an entity by name but here we find all versions for that entity
 	for _, node := range nodes {
-		var entitiesWithVersions []*register.Entity
-		for _, wantedEntity := range node.Entities {
-			for _, entity := range register.Entities {
-				if entity.Name == wantedEntity.Name {
-					entitiesWithVersions = append(entitiesWithVersions, entity)
+		for _, e := range node.Entities {
+			for _, re := range register.Entities {
+				if e.Name == re.Name {
+					node.EntitiesStorage = append(node.EntitiesStorage, &EntityStorage{
+						Disk:   NewDisk().WithPath(filepath.Join(node.Path.Data, re.DbFileName)),
+						Entity: re,
+					})
 				}
 			}
 		}
-		node.Entities = entitiesWithVersions
 	}
 
 	return nil

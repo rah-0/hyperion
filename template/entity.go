@@ -82,6 +82,8 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") SetFieldValue(fieldName string, value any) {" + "\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
 	template += "switch Fields[fieldName] {" + "\n"
 	i = 1
 	for _, f := range s.Fields {
@@ -94,6 +96,8 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}}" + "\n\n"
 
 	template += "func (s *" + s.Name + ") GetFieldValue(fieldName string) any {" + "\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
 	template += "switch Fields[fieldName] {" + "\n"
 	i = 1
 	for _, f := range s.Fields {
@@ -106,10 +110,14 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}" + "\n\n"
 
 	template += "func (s *" + s.Name + ") SetOffset(offset uint64) {\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
 	template += "s.offset = offset\n"
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") GetOffset() uint64 {\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n"
 	template += "return s.offset\n"
 	template += "}\n\n"
 
