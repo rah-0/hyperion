@@ -15,6 +15,7 @@ type Entity struct {
 	DbFileName string
 	Fields     map[string]int
 	New        func() Model
+	Data       []byte
 }
 
 func RegisterEntity(entity *Entity) {

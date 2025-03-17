@@ -22,6 +22,8 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += `"encoding/gob"` + "\n"
 	template += `"sync"` + "\n\n"
 	template += `"github.com/google/uuid"` + "\n\n"
+	template += `. "` + filepath.Join(mn, "hconn") + `"` + "\n"
+	template += `. "` + filepath.Join(mn, "model") + `"` + "\n"
 	template += `. "` + filepath.Join(mn, "register") + `"` + "\n"
 	template += ")\n"
 
@@ -95,8 +97,6 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") SetFieldValue(fieldName string, value any) {" + "\n"
-	template += "mu.Lock()\n"
-	template += "defer mu.Unlock()\n"
 	template += "switch Fields[fieldName] {" + "\n"
 	i = 1
 	for _, f := range s.Fields {
@@ -109,8 +109,6 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}}" + "\n\n"
 
 	template += "func (s *" + s.Name + ") GetFieldValue(fieldName string) any {" + "\n"
-	template += "mu.Lock()\n"
-	template += "defer mu.Unlock()\n"
 	template += "switch Fields[fieldName] {" + "\n"
 	i = 1
 	for _, f := range s.Fields {
@@ -214,6 +212,26 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "Mem = append(Mem, instance)\n"
 	template += "}\n"
 	template += "}\n"
+	template += "}\n\n"
+
+	template += "func (s *" + s.Name + ") DbInsertAsync(c *HConn) error {\n"
+	template += "if s.Uuid == uuid.Nil {\n"
+	template += "s.WithNewUuid()\n"
+	template += "}\n"
+	template += "if err := s.Encode(); err != nil {\n"
+	template += "return err\n"
+	template += "}\n\n"
+	template += "msg := Message{\n"
+	template += "Type: MessageTypeInsert,\n"
+	template += "Mode: ModeAsync,\n"
+	template += "Entity: Entity{\n"
+	template += "Version: Version,\n"
+	template += "Name: Name,\n"
+	template += "Data: s.GetBufferData(),\n"
+	template += "},\n"
+	template += "}\n"
+	template += "s.BufferReset()\n\n"
+	template += "return c.Send(msg)\n"
 	template += "}\n\n"
 
 	return template, nil

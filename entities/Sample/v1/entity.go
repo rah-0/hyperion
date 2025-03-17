@@ -9,6 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
+	. "github.com/rah-0/hyperion/hconn"
+	. "github.com/rah-0/hyperion/model"
 	. "github.com/rah-0/hyperion/register"
 )
 
@@ -82,8 +84,6 @@ func (s *Sample) GetUuid() uuid.UUID {
 }
 
 func (s *Sample) SetFieldValue(fieldName string, value any) {
-	mu.Lock()
-	defer mu.Unlock()
 	switch Fields[fieldName] {
 	case 1:
 		if v, ok := value.(uuid.UUID); ok {
@@ -101,8 +101,6 @@ func (s *Sample) SetFieldValue(fieldName string, value any) {
 }
 
 func (s *Sample) GetFieldValue(fieldName string) any {
-	mu.Lock()
-	defer mu.Unlock()
 	switch Fields[fieldName] {
 	case 1:
 		return s.Uuid
@@ -208,4 +206,26 @@ func (s *Sample) MemorySet(models []Model) {
 			Mem = append(Mem, instance)
 		}
 	}
+}
+
+func (s *Sample) DbInsertAsync(c *HConn) error {
+	if s.Uuid == uuid.Nil {
+		s.WithNewUuid()
+	}
+	if err := s.Encode(); err != nil {
+		return err
+	}
+
+	msg := Message{
+		Type: MessageTypeInsert,
+		Mode: ModeAsync,
+		Entity: Entity{
+			Version: Version,
+			Name:    Name,
+			Data:    s.GetBufferData(),
+		},
+	}
+	s.BufferReset()
+
+	return c.Send(msg)
 }

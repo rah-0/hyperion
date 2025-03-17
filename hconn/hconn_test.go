@@ -1,4 +1,4 @@
-package main
+package hconn
 
 import (
 	"encoding/binary"
@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	. "github.com/rah-0/hyperion/model"
 )
 
 // TestSendAndReceive tests sending and receiving a Message using HConn

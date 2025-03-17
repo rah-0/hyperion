@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"reflect"
 
+	. "github.com/rah-0/hyperion/model"
 	. "github.com/rah-0/hyperion/template"
 	. "github.com/rah-0/hyperion/util"
+
 	//
 	// Dynamic Imports Start
 	_ "github.com/rah-0/hyperion/entities/Sample/v1"

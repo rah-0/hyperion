@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	. "github.com/rah-0/hyperion/model"
 	. "github.com/rah-0/hyperion/util"
 )
 

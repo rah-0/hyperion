@@ -1,20 +1,22 @@
-package main
+package hconn
 
 import (
 	"encoding/binary"
 	"net"
 
 	"github.com/rah-0/nabu"
+
+	. "github.com/rah-0/hyperion/model"
 )
 
 type HConn struct {
-	c net.Conn
+	C net.Conn
 	s *Serializer
 }
 
 func NewHConn(conn net.Conn) *HConn {
 	return &HConn{
-		c: conn,
+		C: conn,
 		s: NewSerializer(),
 	}
 }
@@ -70,7 +72,7 @@ func (hc *HConn) Receive() (msg Message, err error) {
 func (hc *HConn) write(data []byte) error {
 	totalSent := 0
 	for totalSent < len(data) {
-		n, err := hc.c.Write(data[totalSent:])
+		n, err := hc.C.Write(data[totalSent:])
 		if err != nil {
 			return err
 		}
@@ -85,7 +87,7 @@ func (hc *HConn) read(size int) ([]byte, error) {
 	totalRead := 0
 
 	for totalRead < size {
-		n, err := hc.c.Read(buffer[totalRead:])
+		n, err := hc.C.Read(buffer[totalRead:])
 		if err != nil {
 			return nil, err
 		}

@@ -10,6 +10,8 @@ import (
 
 	"github.com/rah-0/nabu"
 
+	. "github.com/rah-0/hyperion/hconn"
+	. "github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
@@ -220,12 +222,12 @@ func (x *Node) acceptConnections(listener net.Listener) {
 
 func (x *Node) handleConnection(hc *HConn) {
 	defer func() {
-		if err := hc.c.Close(); err != nil {
+		if err := hc.C.Close(); err != nil {
 			nabu.FromError(err).Log()
 		}
 	}()
 
-	nabu.FromMessage("new connection from [" + hc.c.RemoteAddr().String() + "] to [" + hc.c.LocalAddr().String() + "]").Log()
+	nabu.FromMessage("new connection from [" + hc.C.RemoteAddr().String() + "] to [" + hc.C.LocalAddr().String() + "]").Log()
 
 	for {
 		msg, err := hc.Receive()
@@ -244,7 +246,33 @@ func (x *Node) handleConnection(hc *HConn) {
 			}
 		} else if msg.Mode == ModeAsync {
 			if msg.Type == MessageTypeInsert {
-				fmt.Println(msg)
+				for _, e := range x.EntitiesStorage {
+					if e.Memory.Name == msg.Entity.Name && e.Memory.Version == msg.Entity.Version {
+						var wg sync.WaitGroup
+
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							if err := e.Disk.DataWrite(msg.Entity.Data); err != nil {
+								nabu.FromError(err).Log()
+							}
+						}()
+
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							entity := e.Memory.New()
+							entity.SetBufferData(msg.Entity.Data)
+							if err := entity.Decode(); err != nil {
+								nabu.FromError(err).Log()
+							}
+							entity.MemoryAdd()
+						}()
+
+						wg.Wait()
+						break
+					}
+				}
 			}
 		}
 

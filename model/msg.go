@@ -1,4 +1,8 @@
-package main
+package model
+
+import (
+	"github.com/rah-0/hyperion/register"
+)
 
 type MessageType int
 
@@ -20,5 +24,5 @@ type Message struct {
 	Mode   Mode
 	String string
 	Bytes  []byte
-	Entity []byte
+	Entity register.Entity
 }
