@@ -17,18 +17,9 @@ func TestMain(m *testing.M) {
 	TestMainWrapper(TestConfig{
 		M: m,
 		LoadResources: func() error {
-			err := BuildBinary()
-			if err != nil {
-				return err
-			}
-
 			p, err := filepath.Abs("./config.json")
 			if err != nil {
 				return err
-			}
-
-			for _, n := range GlobalConfig.Nodes {
-				fmt.Print(n)
 			}
 
 			pathConfig = p
@@ -43,12 +34,14 @@ func TestMain(m *testing.M) {
 
 				go func(node *Node) {
 					defer wg.Done()
+					_ = BuildBinary(node.Host.Name)
+
 					logFilePath := filepath.Join(os.TempDir(), "hyperion_test_"+node.Host.Name+".log")
-					FileDelete(logFilePath)
+					_ = FileDelete(logFilePath)
 					logFile, _ := os.Create(logFilePath)
 					defer logFile.Close()
 
-					cmd := exec.Command(filepath.Join(os.TempDir(), "hyperion_test"),
+					cmd := exec.Command(filepath.Join(os.TempDir(), "hyperion_test_"+node.Host.Name),
 						"-pathConfig", p,
 						"-forceHost", node.Host.Name)
 					cmd.Stdout = logFile
@@ -63,7 +56,7 @@ func TestMain(m *testing.M) {
 			return nil
 		},
 		UnloadResources: func() error {
-			return Pkill("hyperion_test")
+			return Pkill("hyperion_test_*")
 		},
 	})
 }

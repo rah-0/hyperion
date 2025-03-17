@@ -21,6 +21,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += `"bytes"` + "\n"
 	template += `"encoding/gob"` + "\n"
 	template += `"sync"` + "\n\n"
+	template += `"github.com/google/uuid"` + "\n\n"
 	template += `. "` + filepath.Join(mn, "register") + `"` + "\n"
 	template += ")\n"
 
@@ -74,11 +75,19 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	for _, f := range s.Fields {
 		template += f.Name + " " + f.Type + "\n"
 	}
-	template += "offset uint64" + "\n"
 	template += "}\n"
 
-	template += "func New() Model {" + "\n"
-	template += "return &" + s.Name + "{}\n"
+	template += "func New() Model {\n"
+	template += "return &" + s.Name + "{\n"
+	template += "}\n"
+	template += "}\n\n"
+
+	template += "func (s *" + s.Name + ") SetUuid(uuid uuid.UUID) {\n"
+	template += "s.Uuid = uuid\n"
+	template += "}\n\n"
+
+	template += "func (s *" + s.Name + ") GetUuid() uuid.UUID {\n"
+	template += "return s.Uuid\n"
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") SetFieldValue(fieldName string, value any) {" + "\n"
@@ -108,18 +117,6 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}" + "\n"
 	template += "return nil" + "\n"
 	template += "}" + "\n\n"
-
-	template += "func (s *" + s.Name + ") SetOffset(offset uint64) {\n"
-	template += "mu.Lock()\n"
-	template += "defer mu.Unlock()\n"
-	template += "s.offset = offset\n"
-	template += "}\n\n"
-
-	template += "func (s *" + s.Name + ") GetOffset() uint64 {\n"
-	template += "mu.Lock()\n"
-	template += "defer mu.Unlock()\n"
-	template += "return s.offset\n"
-	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") Encode() error {\n"
 	template += "mu.Lock()\n"

@@ -1,11 +1,5 @@
 {
   "ClusterName": "sample",
-  "Connection": {
-    "Retries": {
-      "MaxCount": 5,
-      "IntervalSeconds": 1
-    }
-  },
   "Nodes": [
     {
       "Host": {

@@ -67,7 +67,6 @@ func ConnectToNode(x *Node) (*HConn, error) {
 	var conn net.Conn
 	var err error
 
-	retryCount := 0
 	for {
 		conn, err = net.Dial("tcp", x.getListenAddress())
 		if err == nil {
@@ -78,12 +77,7 @@ func ConnectToNode(x *Node) (*HConn, error) {
 		} else {
 			return nil, err
 		}
-
-		retryCount++
-		if retryCount >= GlobalConfig.Connection.Retries.MaxCount {
-			return nil, ErrConnectionReachedRetryLimit
-		}
-		time.Sleep(time.Duration(GlobalConfig.Connection.Retries.IntervalSeconds) * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 

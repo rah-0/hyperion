@@ -15,13 +15,7 @@ import (
 
 type Config struct {
 	ClusterName string
-	Connection  struct {
-		Retries struct {
-			MaxCount        int
-			IntervalSeconds int
-		}
-	}
-	Nodes []*Node
+	Nodes       []*Node
 }
 
 var (

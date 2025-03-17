@@ -7,6 +7,8 @@ import (
 	"encoding/gob"
 	"sync"
 
+	"github.com/google/uuid"
+
 	. "github.com/rah-0/hyperion/register"
 )
 
@@ -17,8 +19,9 @@ const (
 )
 
 var Fields = map[string]int{
-	"Name":    1,
-	"Surname": 2,
+	"Uuid":    1,
+	"Name":    2,
+	"Surname": 3,
 }
 
 var (
@@ -57,13 +60,17 @@ func init() {
 }
 
 type Sample struct {
+	Uuid    uuid.UUID
 	Name    string
 	Surname string
-	offset  uint64
 }
 
 func New() Model {
 	return &Sample{}
+}
+
+func (s *Sample) GetUuid() uuid.UUID {
+	return s.Uuid
 }
 
 func (s *Sample) SetFieldValue(fieldName string, value any) {
@@ -71,10 +78,14 @@ func (s *Sample) SetFieldValue(fieldName string, value any) {
 	defer mu.Unlock()
 	switch Fields[fieldName] {
 	case 1:
+		if v, ok := value.(uuid.UUID); ok {
+			s.Uuid = v
+		}
+	case 2:
 		if v, ok := value.(string); ok {
 			s.Name = v
 		}
-	case 2:
+	case 3:
 		if v, ok := value.(string); ok {
 			s.Surname = v
 		}
@@ -86,23 +97,13 @@ func (s *Sample) GetFieldValue(fieldName string) any {
 	defer mu.Unlock()
 	switch Fields[fieldName] {
 	case 1:
-		return s.Name
+		return s.Uuid
 	case 2:
+		return s.Name
+	case 3:
 		return s.Surname
 	}
 	return nil
-}
-
-func (s *Sample) SetOffset(offset uint64) {
-	mu.Lock()
-	defer mu.Unlock()
-	s.offset = offset
-}
-
-func (s *Sample) GetOffset() uint64 {
-	mu.Lock()
-	defer mu.Unlock()
-	return s.offset
 }
 
 func (s *Sample) Encode() error {

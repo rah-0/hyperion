@@ -2,6 +2,8 @@ package register
 
 import (
 	"bytes"
+
+	"github.com/google/uuid"
 )
 
 var Entities []*Entity
@@ -20,8 +22,10 @@ func RegisterEntity(entity *Entity) {
 }
 
 type Model interface {
+	GetUuid() uuid.UUID
 	SetFieldValue(fieldName string, value any)
 	GetFieldValue(fieldName string) any
+
 	Encode() error
 	Decode() error
 
@@ -29,9 +33,6 @@ type Model interface {
 	GetBuffer() *bytes.Buffer
 	GetBufferData() []byte
 	SetBufferData([]byte)
-
-	SetOffset(uint64)
-	GetOffset() uint64
 
 	MemoryAdd()
 	MemoryRemove() bool

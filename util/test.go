@@ -66,8 +66,8 @@ func RecoverBenchHandler(b *testing.B) {
 	}
 }
 
-func BuildBinary() error {
-	binaryPath := filepath.Join(os.TempDir(), "hyperion_test")
+func BuildBinary(suffix string) error {
+	binaryPath := filepath.Join(os.TempDir(), "hyperion_test_"+suffix)
 	fmt.Println("Building binary at:", binaryPath)
 
 	// Build the Go binary

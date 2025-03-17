@@ -14,6 +14,15 @@ import (
 	// Dynamic Imports End
 )
 
+var (
+	GlobalStructFields = []StructField{
+		{
+			Name: "Uuid",
+			Type: "uuid.UUID",
+		},
+	}
+)
+
 func Generate() error {
 	pathEntities, err := filepath.Abs("entities")
 	if err != nil {
@@ -82,6 +91,11 @@ func updateDynamicImports(pathEntities string) error {
 }
 
 func createEntityAtPath(s StructDef, v string, p string) error {
+	var newFields []StructField
+	newFields = append(newFields, GlobalStructFields...)
+	newFields = append(newFields, s.Fields...)
+	s.Fields = newFields
+
 	t, err := TemplateEntity(s, v)
 	if err != nil {
 		return err
@@ -132,11 +146,33 @@ func isMigrationRequired(s StructDef, p string) (bool, string, error) {
 
 	for _, x := range svs {
 		if x.Name == s.Name {
-			return !reflect.DeepEqual(s, x), hv, nil
+			return !compareStructFields(s, x), hv, nil
 		}
 	}
 
 	return false, hv, ErrGeneratorStructNotFound
+}
+
+// compareStructFields compares two StructDefs while ignoring GlobalStructFields.
+func compareStructFields(a, b StructDef) bool {
+	ignoredFields := make(map[string]bool)
+	for _, f := range GlobalStructFields {
+		ignoredFields[f.Name] = true
+	}
+
+	var filteredA, filteredB []StructField
+	for _, f := range a.Fields {
+		if !ignoredFields[f.Name] {
+			filteredA = append(filteredA, f)
+		}
+	}
+	for _, f := range b.Fields {
+		if !ignoredFields[f.Name] {
+			filteredB = append(filteredB, f)
+		}
+	}
+
+	return reflect.DeepEqual(filteredA, filteredB)
 }
 
 // createEntityMigration will create upgrade and downgrade functions together with tests.

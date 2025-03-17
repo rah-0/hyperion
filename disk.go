@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,15 +11,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/rah-0/hyperion/register"
-	. "github.com/rah-0/hyperion/util"
-)
-
-const (
-	LEN_BYTE_STATUS  = 1
-	LEN_BYTES_LENGTH = 8
-
-	STATUS_BYTE_ACTIVE  = byte(0)
-	STATUS_BYTE_DELETED = byte(1)
 )
 
 /*
@@ -36,7 +26,7 @@ its final length will be 1 (Status byte) + 10 (Data bytes) = 11 Bytes
 type Disk struct {
 	Mu     sync.Mutex
 	Path   string
-	Offset uint64
+	Entity *register.Entity
 }
 
 func NewDisk() *Disk {
@@ -48,42 +38,42 @@ func (x *Disk) WithNewRandomPath() *Disk {
 	return x
 }
 
+func (x *Disk) WithEntity(e *register.Entity) *Disk {
+	x.Entity = e
+	return x
+}
+
 func (x *Disk) WithPath(path string) *Disk {
 	x.Path = path
 	return x
 }
 
-func (x *Disk) DataWrite(data []byte) (uint64, error) {
+func (x *Disk) DataWrite(data []byte) error {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
-	lastOffset := x.Offset
 
 	file, err := os.OpenFile(x.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	defer file.Close()
 
-	length := uint64(len(data) + LEN_BYTE_STATUS)
+	length := uint64(len(data))
 	if err = binary.Write(file, binary.LittleEndian, length); err != nil {
-		return 0, err
+		return err
 	}
-	if err = binary.Write(file, binary.LittleEndian, STATUS_BYTE_ACTIVE); err != nil {
-		return 0, err
-	}
+
 	_, err = file.Write(data)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	x.Offset += LEN_BYTES_LENGTH + length
-	return lastOffset, nil
+	return file.Sync()
 }
 
-func (x *Disk) DataReadAll(e *register.Entity) ([]register.Model, error) {
+func (x *Disk) DataReadAll() ([]register.Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
-	x.Offset = 0
 
 	file, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
 	if err != nil {
@@ -91,7 +81,8 @@ func (x *Disk) DataReadAll(e *register.Entity) ([]register.Model, error) {
 	}
 	defer file.Close()
 
-	var entities []register.Model
+	latestEntities := make(map[uuid.UUID]register.Model)
+
 	for {
 		var length uint64
 		if err = binary.Read(file, binary.LittleEndian, &length); err != nil {
@@ -101,37 +92,29 @@ func (x *Disk) DataReadAll(e *register.Entity) ([]register.Model, error) {
 			return nil, err
 		}
 
-		var status byte // Read status flag (1 byte)
-		if err = binary.Read(file, binary.LittleEndian, &status); err != nil {
-			return nil, err
-		}
-		if status == STATUS_BYTE_DELETED {
-			if length > math.MaxInt64 {
-				return nil, fmt.Errorf("invalid record length: %d", length)
-			}
-			_, err = file.Seek(int64(length-LEN_BYTE_STATUS), io.SeekCurrent) // Skip the remaining data
-			if err != nil {
-				return nil, err
-			}
-			continue
+		data := make([]byte, length)
+		if _, err = io.ReadFull(file, data); err != nil {
+			return nil, fmt.Errorf("failed to read full record data: %w", err)
 		}
 
-		// Read the data
-		data := make([]byte, length-LEN_BYTE_STATUS) // -1 since deleted flag was read already
-		if _, err = file.Read(data); err != nil {
-			return nil, err
-		}
-
-		instance := e.New()
+		// Decode entity
+		instance := x.Entity.New()
 		instance.SetBufferData(data)
 		if err = instance.Decode(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode entity: %w", err)
 		}
-		instance.SetOffset(x.Offset)
 
-		x.Offset += LEN_BYTES_LENGTH + length
-		entities = append(entities, instance)
+		// Extract UUID and keep only the latest version
+		entityUUID := instance.GetUuid()
+		latestEntities[entityUUID] = instance
 	}
+
+	// Convert map to slice
+	entities := make([]register.Model, 0, len(latestEntities))
+	for _, model := range latestEntities {
+		entities = append(entities, model)
+	}
+
 	return entities, nil
 }
 
@@ -145,25 +128,10 @@ func (x *Disk) DataCleanup() error {
 	}
 	defer originalFile.Close()
 
-	tempPath := x.Path + ".tmp"
-	exists, err := PathExists(tempPath)
-	if exists {
-		// Delete old tmp file if it exists.
-		// Partial writes could happen on a power loss.
-		err = FileDelete(tempPath)
-		if err != nil {
-			return err
-		}
-	}
+	// First pass: Detect duplicates
+	seenUUIDs := make(map[uuid.UUID]bool)
+	hasDuplicates := false
 
-	// Create a temporary file for cleanup data
-	tempFile, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
-	}
-	defer tempFile.Close()
-
-	compactionNeeded := false
 	for {
 		var length uint64
 		if err = binary.Read(originalFile, binary.LittleEndian, &length); err != nil {
@@ -173,33 +141,80 @@ func (x *Disk) DataCleanup() error {
 			return err
 		}
 
-		var status byte
-		if err = binary.Read(originalFile, binary.LittleEndian, &status); err != nil {
-			return err
-		}
-
-		if status == STATUS_BYTE_DELETED {
-			if length > math.MaxInt64 {
-				return fmt.Errorf("invalid record length: %d", length)
-			}
-			_, err = originalFile.Seek(int64(length-LEN_BYTE_STATUS), io.SeekCurrent) // Skip remaining data
-			if err != nil {
-				return err
-			}
-			compactionNeeded = true
-			continue
-		}
-
-		data := make([]byte, length-LEN_BYTE_STATUS)
+		data := make([]byte, length)
 		if _, err = originalFile.Read(data); err != nil {
 			return err
 		}
 
-		newLength := uint64(len(data) + LEN_BYTE_STATUS)
-		if err = binary.Write(tempFile, binary.LittleEndian, newLength); err != nil {
+		// Decode entity to extract UUID
+		instance := x.Entity.New()
+		instance.SetBufferData(data)
+		if err = instance.Decode(); err != nil {
 			return err
 		}
-		if err = binary.Write(tempFile, binary.LittleEndian, STATUS_BYTE_ACTIVE); err != nil {
+
+		entityUUID := instance.GetUuid()
+
+		// Check if UUID has already been seen
+		if seenUUIDs[entityUUID] {
+			hasDuplicates = true
+			break // Stop scanning early; we now know cleanup is needed
+		}
+		seenUUIDs[entityUUID] = true
+	}
+
+	// If no duplicates were found, no need to clean up
+	if !hasDuplicates {
+		return nil
+	}
+
+	// Reset file pointer for second pass
+	if _, err = originalFile.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+
+	// Second pass: Compact the file by keeping only the latest version per UUID
+	tempPath := x.Path + ".tmp"
+	latestEntities := make(map[uuid.UUID][]byte)
+
+	for {
+		var length uint64
+		if err = binary.Read(originalFile, binary.LittleEndian, &length); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+
+		data := make([]byte, length)
+		if _, err = originalFile.Read(data); err != nil {
+			return err
+		}
+
+		// Decode entity to extract UUID
+		instance := x.Entity.New()
+		instance.SetBufferData(data)
+		if err = instance.Decode(); err != nil {
+			return err
+		}
+
+		entityUUID := instance.GetUuid()
+
+		// Store only the latest version
+		latestEntities[entityUUID] = data
+	}
+
+	// Create new compacted file
+	tempFile, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer tempFile.Close()
+
+	// Write the latest versions to the compacted file
+	for _, data := range latestEntities {
+		length := uint64(len(data))
+		if err = binary.Write(tempFile, binary.LittleEndian, length); err != nil {
 			return err
 		}
 		if _, err = tempFile.Write(data); err != nil {
@@ -207,53 +222,15 @@ func (x *Disk) DataCleanup() error {
 		}
 	}
 
-	if compactionNeeded {
-		// Remove the old file before renaming
-		if err = os.Remove(x.Path); err != nil {
-			return err
-		}
-		// Rename the new compacted file to the original filename
-		return os.Rename(tempPath, x.Path)
-	} else {
-		// No compaction needed, remove temporary file
-		err = os.Remove(tempPath)
-		if err != nil {
-			return err
-		}
+	// Ensure data is fully written
+	if err = tempFile.Sync(); err != nil {
+		return err
+	}
+
+	// Replace old file with compacted file
+	if err = os.Rename(tempPath, x.Path); err != nil {
+		return err
 	}
 
 	return nil
-}
-
-func (x *Disk) DataChangeStatus(offset uint64, status byte) error {
-	x.Mu.Lock()
-	defer x.Mu.Unlock()
-
-	file, err := os.OpenFile(x.Path, os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Seek to status flag position
-	_, err = file.Seek(int64(offset+LEN_BYTES_LENGTH), io.SeekStart)
-	if err != nil {
-		return err
-	}
-
-	// Write status
-	if err = binary.Write(file, binary.LittleEndian, status); err != nil {
-		return err
-	}
-
-	return file.Sync()
-}
-
-func (x *Disk) DataUpdate(offset uint64, data []byte) (uint64, error) {
-	// Mark the existing record as deleted
-	if err := x.DataChangeStatus(offset, STATUS_BYTE_DELETED); err != nil {
-		return 0, err
-	}
-	// Write the new data as a separate entry
-	return x.DataWrite(data)
 }
