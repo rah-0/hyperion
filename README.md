@@ -23,12 +23,18 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
     - [x] Args
     - [ ] Hot Reload
       - [ ] HTTP Endpoint
-  - [ ] Storage
-    - [ ] Generator
-      - [ ] Versioning
-      - [ ] Migrations
-    - [ ] Memory
-    - [ ] Disk
+  - [x] Storage
+    - [x] Generator
+      - [x] Versioning
+      - [x] Migrations
+    - [x] Memory
+    - [x] Disk
+  - [ ] Modes
+    - [ ] Single node
+    - [ ] Multi node
+      - [ ] Sharding
+      - [ ] Duplication
+      - [ ] Sharding + Duplication
   - [ ] GPU 
     - [ ] Memory
     - [ ] Processing

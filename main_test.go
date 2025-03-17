@@ -36,13 +36,16 @@ func TestMain(m *testing.M) {
 					defer wg.Done()
 					_ = BuildBinary(node.Host.Name)
 
+					pathConfigForNode := filepath.Join(os.TempDir(), "hyperion_test_"+node.Host.Name+".config")
+					_ = FileCOpy(p, pathConfigForNode)
+
 					logFilePath := filepath.Join(os.TempDir(), "hyperion_test_"+node.Host.Name+".log")
 					_ = FileDelete(logFilePath)
 					logFile, _ := os.Create(logFilePath)
 					defer logFile.Close()
 
 					cmd := exec.Command(filepath.Join(os.TempDir(), "hyperion_test_"+node.Host.Name),
-						"-pathConfig", p,
+						"-pathConfig", pathConfigForNode,
 						"-forceHost", node.Host.Name)
 					cmd.Stdout = logFile
 					cmd.Stderr = logFile

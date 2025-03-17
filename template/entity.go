@@ -82,6 +82,10 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n"
 	template += "}\n\n"
 
+	template += "func (s *" + s.Name + ") WithNewUuid() {\n"
+	template += "s.Uuid = uuid.New()\n"
+	template += "}\n\n"
+
 	template += "func (s *" + s.Name + ") SetUuid(uuid uuid.UUID) {\n"
 	template += "s.Uuid = uuid\n"
 	template += "}\n\n"
@@ -199,6 +203,17 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n"
 	template += "}\n"
 	template += "return false\n"
+	template += "}\n\n"
+
+	template += "func (s *" + s.Name + ") MemorySet(models []Model) {\n"
+	template += "mu.Lock()\n"
+	template += "defer mu.Unlock()\n\n"
+	template += "Mem = make([]*" + s.Name + ", 0, len(models))\n"
+	template += "for _, model := range models {\n"
+	template += "if instance, ok := model.(*" + s.Name + "); ok {\n"
+	template += "Mem = append(Mem, instance)\n"
+	template += "}\n"
+	template += "}\n"
 	template += "}\n\n"
 
 	return template, nil

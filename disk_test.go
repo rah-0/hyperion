@@ -333,7 +333,7 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 
 		// Write multiple unique entities
 		expectedEntities := make(map[uuid.UUID]Model)
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 1000; i++ {
 			instance := e.New()
 			instance.SetFieldValue("Uuid", uuid.New())
 			instance.SetFieldValue("Name", "User"+uuid.NewString())
@@ -386,7 +386,7 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 
 		// Write initial entities
 		expectedEntities := make(map[uuid.UUID]Model)
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 1000; i++ {
 			instance := e.New()
 			instance.SetFieldValue("Uuid", uuid.New())
 			instance.SetFieldValue("Name", "User"+uuid.NewString())
@@ -403,8 +403,7 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 			expectedEntities[instance.GetUuid()] = instance
 		}
 
-		// Update 5 of the 10 entities
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 500; i++ {
 			var entityUUID uuid.UUID
 			for key := range expectedEntities {
 				entityUUID = key
@@ -557,4 +556,59 @@ func BenchmarkDataReadAll(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestGenerateLargeDataset(t *testing.T) {
+	t.Skip()
+
+	d := NewDisk()
+	d.WithNewRandomPath()
+	// t.Cleanup(func() { FileDelete(d.Path) })
+
+	if len(Entities) == 0 {
+		t.Fatal("No entities generated")
+	}
+
+	var testEntity *Entity
+	for _, e := range Entities {
+		if e.Name == "Sample" {
+			testEntity = e
+			break
+		}
+	}
+
+	if testEntity == nil {
+		t.Fatal("Test entity 'Sample' not found")
+	}
+
+	const numRows = 1000000
+
+	t.Logf("Starting to write %d entities to disk...", numRows)
+
+	// Write entities
+	ticks := 0
+	for i := 0; i < numRows; i++ {
+		instance := testEntity.New()
+		instance.SetFieldValue("Uuid", uuid.New())
+		instance.SetFieldValue("Name", fmt.Sprintf("User_%d", i))
+		instance.SetFieldValue("Surname", fmt.Sprintf("Surname_%d", i))
+
+		if err := instance.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(instance.GetBufferData()); err != nil {
+			t.Fatalf("DataWrite failed at row %d: %v", i, err)
+		}
+		instance.BufferReset()
+
+		ticks++
+		if ticks == 1000 {
+			ticks = 0
+			percentage := float64(i+1) / float64(numRows) * 100
+			fmt.Printf("Progress: %.2f%%\n", percentage)
+		}
+	}
+
+	fmt.Println("\nData writing completed.")
+	fmt.Println("File Path:", d.Path)
 }

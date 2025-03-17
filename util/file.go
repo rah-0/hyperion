@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -99,4 +100,34 @@ func FileSizeHuman(path string) (string, error) {
 	}
 
 	return fmt.Sprintf("%.2f %s", floatSize, units[i]), nil
+}
+
+func FileCOpy(pathSource, pathDestiny string) error {
+	// Open the source file
+	sourceFile, err := os.Open(pathSource)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	// Create the destination file
+	destinationFile, err := os.Create(pathDestiny)
+	if err != nil {
+		return err
+	}
+	defer destinationFile.Close()
+
+	// Copy the contents
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	// Ensure all data is written to disk
+	err = destinationFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

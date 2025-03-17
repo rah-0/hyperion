@@ -9,8 +9,10 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/rah-0/nabu"
 
 	"github.com/rah-0/hyperion/register"
+	. "github.com/rah-0/hyperion/util"
 )
 
 /*
@@ -75,14 +77,26 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
+	nabu.FromMessage("Starting data read for file: [" + x.Path + "]").Log()
+
 	file, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
+	// Get total file size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	fileSize := fileInfo.Size()
+	var bytesRead int64 = 0
+	var lastLoggedProgress float64 = -1.0
+
 	latestEntities := make(map[uuid.UUID]register.Model)
 
+	nabu.FromMessage("Reading entities from file...").Log()
 	for {
 		var length uint64
 		if err = binary.Read(file, binary.LittleEndian, &length); err != nil {
@@ -91,22 +105,31 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 			}
 			return nil, err
 		}
+		bytesRead += int64(binary.Size(length))
 
 		data := make([]byte, length)
 		if _, err = io.ReadFull(file, data); err != nil {
-			return nil, fmt.Errorf("failed to read full record data: %w", err)
+			return nil, err
 		}
+		bytesRead += int64(len(data))
 
 		// Decode entity
 		instance := x.Entity.New()
 		instance.SetBufferData(data)
 		if err = instance.Decode(); err != nil {
-			return nil, fmt.Errorf("failed to decode entity: %w", err)
+			return nil, err
 		}
 
 		// Extract UUID and keep only the latest version
 		entityUUID := instance.GetUuid()
 		latestEntities[entityUUID] = instance
+
+		// Log progress every 1% interval, with two decimal places
+		progress := (float64(bytesRead) / float64(fileSize)) * 100
+		if progress-lastLoggedProgress >= 1.0 {
+			nabu.FromMessage(fmt.Sprintf("Reading progress: %.2f%% completed", progress)).Log()
+			lastLoggedProgress = progress
+		}
 	}
 
 	// Convert map to slice
@@ -115,6 +138,7 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 		entities = append(entities, model)
 	}
 
+	nabu.FromMessage("Finished reading all entities from file. Total entities: " + fmt.Sprintf("%d", len(entities))).Log()
 	return entities, nil
 }
 
@@ -122,6 +146,7 @@ func (x *Disk) DataCleanup() error {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
+	nabu.FromMessage("Starting data cleanup for file: [" + x.Path + "]").Log()
 	originalFile, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
 	if err != nil {
 		return err
@@ -132,6 +157,15 @@ func (x *Disk) DataCleanup() error {
 	seenUUIDs := make(map[uuid.UUID]bool)
 	hasDuplicates := false
 
+	fileInfo, err := originalFile.Stat()
+	if err != nil {
+		return err
+	}
+	fileSize := fileInfo.Size()
+	var bytesRead int64 = 0
+	var lastLoggedProgress float64 = -1.0
+
+	nabu.FromMessage("Scanning file to detect duplicates...").Log()
 	for {
 		var length uint64
 		if err = binary.Read(originalFile, binary.LittleEndian, &length); err != nil {
@@ -140,11 +174,13 @@ func (x *Disk) DataCleanup() error {
 			}
 			return err
 		}
+		bytesRead += int64(binary.Size(length))
 
 		data := make([]byte, length)
 		if _, err = originalFile.Read(data); err != nil {
 			return err
 		}
+		bytesRead += int64(len(data))
 
 		// Decode entity to extract UUID
 		instance := x.Entity.New()
@@ -158,13 +194,22 @@ func (x *Disk) DataCleanup() error {
 		// Check if UUID has already been seen
 		if seenUUIDs[entityUUID] {
 			hasDuplicates = true
+			nabu.FromMessage("Duplicate detected for entity UUID: [" + entityUUID.String() + "]").Log()
 			break // Stop scanning early; we now know cleanup is needed
 		}
 		seenUUIDs[entityUUID] = true
+
+		// Log progress every 1% interval, with two decimal places
+		progress := (float64(bytesRead) / float64(fileSize)) * 100
+		if progress-lastLoggedProgress >= 1.0 {
+			nabu.FromMessage(fmt.Sprintf("Progress: %.2f%% scanned", progress)).Log()
+			lastLoggedProgress = progress
+		}
 	}
 
 	// If no duplicates were found, no need to clean up
 	if !hasDuplicates {
+		nabu.FromMessage("No duplicates found. Skipping cleanup.").Log()
 		return nil
 	}
 
@@ -175,7 +220,22 @@ func (x *Disk) DataCleanup() error {
 
 	// Second pass: Compact the file by keeping only the latest version per UUID
 	tempPath := x.Path + ".tmp"
+	exists, err := PathExists(tempPath)
+	if err != nil {
+		return err
+	}
+	if exists {
+		err = FileDelete(tempPath)
+		if err != nil {
+			return err
+		}
+	}
+
 	latestEntities := make(map[uuid.UUID][]byte)
+
+	nabu.FromMessage("Compacting file...").Log()
+	bytesRead = 0 // Reset counter
+	lastLoggedProgress = -1.0
 
 	for {
 		var length uint64
@@ -185,11 +245,13 @@ func (x *Disk) DataCleanup() error {
 			}
 			return err
 		}
+		bytesRead += int64(binary.Size(length))
 
 		data := make([]byte, length)
 		if _, err = originalFile.Read(data); err != nil {
 			return err
 		}
+		bytesRead += int64(len(data))
 
 		// Decode entity to extract UUID
 		instance := x.Entity.New()
@@ -199,9 +261,14 @@ func (x *Disk) DataCleanup() error {
 		}
 
 		entityUUID := instance.GetUuid()
-
-		// Store only the latest version
 		latestEntities[entityUUID] = data
+
+		// Log progress every 1% interval
+		progress := (float64(bytesRead) / float64(fileSize)) * 100
+		if progress-lastLoggedProgress >= 1.0 {
+			nabu.FromMessage(fmt.Sprintf("Compacting progress: %.2f%% completed", progress)).Log()
+			lastLoggedProgress = progress
+		}
 	}
 
 	// Create new compacted file
@@ -211,7 +278,15 @@ func (x *Disk) DataCleanup() error {
 	}
 	defer tempFile.Close()
 
-	// Write the latest versions to the compacted file
+	nabu.FromMessage("Writing compacted data to new file...").Log()
+	bytesWritten := int64(0)
+	lastLoggedProgress = -1.0
+	totalBytes := int64(0)
+
+	for _, data := range latestEntities {
+		totalBytes += int64(len(data) + binary.Size(uint64(len(data))))
+	}
+
 	for _, data := range latestEntities {
 		length := uint64(len(data))
 		if err = binary.Write(tempFile, binary.LittleEndian, length); err != nil {
@@ -219,6 +294,14 @@ func (x *Disk) DataCleanup() error {
 		}
 		if _, err = tempFile.Write(data); err != nil {
 			return err
+		}
+		bytesWritten += int64(len(data) + binary.Size(length))
+
+		// Log progress every 1% interval
+		progress := (float64(bytesWritten) / float64(totalBytes)) * 100
+		if progress-lastLoggedProgress >= 1.0 {
+			nabu.FromMessage(fmt.Sprintf("Writing progress: %.2f%% completed", progress)).Log()
+			lastLoggedProgress = progress
 		}
 	}
 
@@ -232,5 +315,6 @@ func (x *Disk) DataCleanup() error {
 		return err
 	}
 
+	nabu.FromMessage("Data cleanup completed successfully for file: [" + x.Path + "]").Log()
 	return nil
 }

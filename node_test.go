@@ -6,6 +6,32 @@ import (
 	. "github.com/rah-0/hyperion/util"
 )
 
+func TestNodeDirectConnectionIpAndPort(t *testing.T) {
+	c, err := ConnectToNodeWithHostAndPort("127.0.0.1", "5000")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msg := Message{
+		Type:   MessageTypeTest,
+		Mode:   ModeSync,
+		String: "Test",
+	}
+
+	err = c.Send(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg, err = c.Receive()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if msg.String != "TestReceived" {
+		t.Fatalf("Unexpected message: %s", msg.String)
+	}
+}
+
 func TestNodeDirectConnection(t *testing.T) {
 	c, err := ConnectToNode(GlobalNode)
 	if err != nil {

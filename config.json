@@ -14,45 +14,6 @@
           "Name": "Sample"
         }
       ]
-    },{
-      "Host": {
-        "Name": "B",
-        "Port": 6000
-      },
-      "Path": {
-        "Data": "/tmp/data/2"
-      },
-      "Entities": [
-        {
-          "Name": "Sample"
-        }
-      ]
-    }, {
-      "Host": {
-        "Name": "C",
-        "Port": 7000
-      },
-      "Path": {
-        "Data": "/tmp/data/3"
-      },
-      "Entities": [
-        {
-          "Name": "Sample"
-        }
-      ]
-    },{
-      "Host": {
-        "Name": "D",
-        "Port": 8000
-      },
-      "Path": {
-        "Data": "/tmp/data/4"
-      },
-      "Entities": [
-        {
-          "Name": "Sample"
-        }
-      ]
     }
   ]
 }

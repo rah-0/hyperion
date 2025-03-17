@@ -5,6 +5,7 @@ type MessageType int
 const (
 	MessageTypeUndefined MessageType = iota
 	MessageTypeTest
+	MessageTypeInsert = 2
 )
 
 type Mode int
@@ -19,4 +20,5 @@ type Message struct {
 	Mode   Mode
 	String string
 	Bytes  []byte
+	Entity []byte
 }

@@ -37,7 +37,7 @@ type EntityConfig struct {
 
 type EntityStorage struct {
 	Disk   *Disk
-	Entity *register.Entity
+	Memory *register.Entity
 }
 
 type Node struct {
@@ -60,6 +60,24 @@ func NewNode(h Host, p Path, ecs []*EntityConfig) *Node {
 		Entities: ecs,
 		errCh:    make(chan error, 1),
 		Peers:    []*Node{},
+	}
+}
+
+func ConnectToNodeWithHostAndPort(ip string, port string) (*HConn, error) {
+	var conn net.Conn
+	var err error
+
+	for {
+		conn, err = net.Dial("tcp", ip+":"+port)
+		if err == nil {
+			return NewHConn(conn), nil
+		}
+		if strings.Contains(err.Error(), "connection refused") {
+			nabu.FromMessage("trying to connect to: [" + ip + ":" + port + "]").Log()
+		} else {
+			return nil, err
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -126,8 +144,25 @@ func (x *Node) checkDataDir() error {
 
 func (x *Node) loadEntitiesFromDisk() error {
 	for _, s := range x.EntitiesStorage {
-		fmt.Println(s.Disk)
-		fmt.Println(s.Entity)
+		d := s.Disk
+		exists, err := PathExists(d.Path)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			continue
+		}
+
+		if err = d.DataCleanup(); err != nil {
+			return err
+		}
+
+		entities, err := d.DataReadAll()
+		if err != nil {
+			return err
+		}
+
+		s.Memory.New().MemorySet(entities)
 	}
 
 	return nil
@@ -163,7 +198,7 @@ func (x *Node) connectToPeers() {
 }
 
 func (x *Node) getListenAddress() string {
-	return fmt.Sprintf(":%d", x.Host.Port)
+	return fmt.Sprintf("%s:%d", x.Host.Name, x.Host.Port)
 }
 
 func (x *Node) acceptConnections(listener net.Listener) {
@@ -202,16 +237,20 @@ func (x *Node) handleConnection(hc *HConn) {
 			break
 		}
 
-		if msg.Type == MessageTypeTest {
-			msg.String += "Received"
+		if msg.Mode == ModeSync {
+			if msg.Type == MessageTypeTest {
+				msg.String += "Received"
+				err = hc.Send(msg)
+			}
+		} else if msg.Mode == ModeAsync {
+			if msg.Type == MessageTypeInsert {
+				fmt.Println(msg)
+			}
 		}
 
-		if msg.Mode == ModeSync {
-			err = hc.Send(msg)
-			if err != nil {
-				nabu.FromError(err).Log()
-				break
-			}
+		if err != nil {
+			nabu.FromError(err).Log()
+			break
 		}
 	}
 }

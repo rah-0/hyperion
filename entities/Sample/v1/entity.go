@@ -69,6 +69,14 @@ func New() Model {
 	return &Sample{}
 }
 
+func (s *Sample) WithNewUuid() {
+	s.Uuid = uuid.New()
+}
+
+func (s *Sample) SetUuid(uuid uuid.UUID) {
+	s.Uuid = uuid
+}
+
 func (s *Sample) GetUuid() uuid.UUID {
 	return s.Uuid
 }
@@ -188,4 +196,16 @@ func (s *Sample) MemoryContains(target Model) bool {
 		}
 	}
 	return false
+}
+
+func (s *Sample) MemorySet(models []Model) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	Mem = make([]*Sample, 0, len(models))
+	for _, model := range models {
+		if instance, ok := model.(*Sample); ok {
+			Mem = append(Mem, instance)
+		}
+	}
 }

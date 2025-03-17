@@ -23,8 +23,10 @@ func RegisterEntity(entity *Entity) {
 
 type Model interface {
 	GetUuid() uuid.UUID
-	SetFieldValue(fieldName string, value any)
-	GetFieldValue(fieldName string) any
+	SetUuid(uuid uuid.UUID)
+	WithNewUuid()
+	SetFieldValue(string, any)
+	GetFieldValue(string) any
 
 	Encode() error
 	Decode() error
@@ -38,5 +40,6 @@ type Model interface {
 	MemoryRemove() bool
 	MemoryClear()
 	MemoryGetAll() []Model
-	MemoryContains(target Model) bool
+	MemoryContains(Model) bool
+	MemorySet([]Model)
 }
