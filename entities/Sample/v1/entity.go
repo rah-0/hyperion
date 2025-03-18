@@ -208,17 +208,16 @@ func (s *Sample) MemorySet(models []Model) {
 	}
 }
 
-func (s *Sample) DbInsertAsync(c *HConn) error {
+func (s *Sample) DbInsert(c *HConn) (Message, error) {
 	if s.Uuid == uuid.Nil {
 		s.WithNewUuid()
 	}
 	if err := s.Encode(); err != nil {
-		return err
+		return Message{}, err
 	}
 
 	msg := Message{
 		Type: MessageTypeInsert,
-		Mode: ModeAsync,
 		Entity: Entity{
 			Version: Version,
 			Name:    Name,
@@ -227,5 +226,8 @@ func (s *Sample) DbInsertAsync(c *HConn) error {
 	}
 	s.BufferReset()
 
-	return c.Send(msg)
+	if err := c.Send(msg); err != nil {
+		return Message{}, err
+	}
+	return c.Receive()
 }

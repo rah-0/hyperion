@@ -239,39 +239,29 @@ func (x *Node) handleConnection(hc *HConn) {
 			break
 		}
 
-		if msg.Mode == ModeSync {
-			if msg.Type == MessageTypeTest {
-				msg.String += "Received"
-				err = hc.Send(msg)
-			}
-		} else if msg.Mode == ModeAsync {
-			if msg.Type == MessageTypeInsert {
-				for _, e := range x.EntitiesStorage {
-					if e.Memory.Name == msg.Entity.Name && e.Memory.Version == msg.Entity.Version {
-						var wg sync.WaitGroup
-
-						wg.Add(1)
-						go func() {
-							defer wg.Done()
-							if err := e.Disk.DataWrite(msg.Entity.Data); err != nil {
-								nabu.FromError(err).Log()
-							}
-						}()
-
-						wg.Add(1)
-						go func() {
-							defer wg.Done()
-							entity := e.Memory.New()
-							entity.SetBufferData(msg.Entity.Data)
-							if err := entity.Decode(); err != nil {
-								nabu.FromError(err).Log()
-							}
-							entity.MemoryAdd()
-						}()
-
-						wg.Wait()
-						break
+		if msg.Type == MessageTypeTest {
+			msg.String += "Received"
+			err = hc.Send(msg)
+		} else if msg.Type == MessageTypeInsert {
+			for _, e := range x.EntitiesStorage {
+				if e.Memory.Name == msg.Entity.Name && e.Memory.Version == msg.Entity.Version {
+					entity := e.Memory.New()
+					entity.SetBufferData(msg.Entity.Data)
+					if err := entity.Decode(); err != nil {
+						nabu.FromError(err).Log()
 					}
+					entity.MemoryAdd()
+
+					if err := e.Disk.DataWrite(msg.Entity.Data); err != nil {
+						nabu.FromError(err).Log()
+					}
+
+					if err := hc.Send(Message{
+						String: "Sample Here",
+					}); err != nil {
+						nabu.FromError(err).Log()
+					}
+					break
 				}
 			}
 		}
