@@ -15,6 +15,7 @@ import (
 func TestDataWrite(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
+	d.OpenFile()
 	t.Cleanup(func() { FileDelete(d.Path) })
 
 	if len(Entities) == 0 {
@@ -88,6 +89,7 @@ func TestDataWrite(t *testing.T) {
 func TestDataReadAll_InitialWrite(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
+	d.OpenFile()
 	t.Cleanup(func() { FileDelete(d.Path) })
 
 	if len(Entities) == 0 {
@@ -152,6 +154,7 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
+	d.OpenFile()
 	t.Cleanup(func() { FileDelete(d.Path) })
 
 	if len(Entities) == 0 {
@@ -230,6 +233,7 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
+	d.OpenFile()
 	t.Cleanup(func() { FileDelete(d.Path) })
 
 	if len(Entities) == 0 {
@@ -319,6 +323,7 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 func TestDataCleanup_NoDuplicates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
+	d.OpenFile()
 	t.Cleanup(func() { FileDelete(d.Path) })
 
 	if len(Entities) == 0 {
@@ -372,6 +377,7 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 func TestDataCleanup_WithDuplicates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
+	d.OpenFile()
 	t.Cleanup(func() { FileDelete(d.Path) })
 
 	if len(Entities) == 0 {

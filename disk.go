@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rah-0/nabu"
@@ -18,17 +19,15 @@ import (
 /*
 Disk will structure the bytes of an entity (row) in the following way:
 - Length: 8 Bytes
-- Status: 1 Byte
 - Data: any length
-
-Notes:
-- the length includes the Status 1 byte. So if Data is 10 bytes,
-its final length will be 1 (Status byte) + 10 (Data bytes) = 11 Bytes
 */
 type Disk struct {
-	Mu     sync.Mutex
-	Path   string
-	Entity *register.Entity
+	Mu         sync.Mutex
+	Path       string
+	Entity     *register.Entity
+	File       *os.File
+	syncTicker *time.Ticker
+	stopChan   chan struct{}
 }
 
 func NewDisk() *Disk {
@@ -50,56 +49,79 @@ func (x *Disk) WithPath(path string) *Disk {
 	return x
 }
 
+func (x *Disk) OpenFile() error {
+	x.Mu.Lock()
+	defer x.Mu.Unlock()
+
+	file, err := os.OpenFile(x.Path, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	x.File = file
+
+	// Start background sync loop
+	x.syncTicker = time.NewTicker(1 * time.Second)
+	x.stopChan = make(chan struct{})
+	go x.backgroundSync()
+
+	return nil
+}
+
+func (x *Disk) backgroundSync() {
+	for {
+		select {
+		case <-x.syncTicker.C:
+			x.Mu.Lock()
+			x.File.Sync()
+			x.Mu.Unlock()
+		case <-x.stopChan:
+			return
+		}
+	}
+}
+
 func (x *Disk) DataWrite(data []byte) error {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
-	file, err := os.OpenFile(x.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
 	length := uint64(len(data))
-	if err = binary.Write(file, binary.LittleEndian, length); err != nil {
+	if err := binary.Write(x.File, binary.LittleEndian, length); err != nil {
 		return err
 	}
 
-	_, err = file.Write(data)
+	_, err := x.File.Write(data)
 	if err != nil {
 		return err
 	}
 
-	return file.Sync()
+	return nil
 }
 
 func (x *Disk) DataReadAll() ([]register.Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
-	nabu.FromMessage("Starting data read for file: [" + x.Path + "]").Log()
-
-	file, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)
-	if err != nil {
+	if _, err := x.File.Seek(0, io.SeekStart); err != nil {
 		return nil, err
 	}
-	defer file.Close()
+
+	nabu.FromMessage("Starting data read for file: [" + x.Path + "]").Log()
 
 	// Get total file size
-	fileInfo, err := file.Stat()
+	fileInfo, err := x.File.Stat()
 	if err != nil {
 		return nil, err
 	}
 	fileSize := fileInfo.Size()
 	var bytesRead int64 = 0
-	var lastLoggedProgress float64 = -1.0
+	var lastLoggedProgress = -1.0
 
 	latestEntities := make(map[uuid.UUID]register.Model)
 
 	nabu.FromMessage("Reading entities from file...").Log()
 	for {
 		var length uint64
-		if err = binary.Read(file, binary.LittleEndian, &length); err != nil {
+		if err = binary.Read(x.File, binary.LittleEndian, &length); err != nil {
 			if err == io.EOF {
 				break
 			}
@@ -108,7 +130,7 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 		bytesRead += int64(binary.Size(length))
 
 		data := make([]byte, length)
-		if _, err = io.ReadFull(file, data); err != nil {
+		if _, err = io.ReadFull(x.File, data); err != nil {
 			return nil, err
 		}
 		bytesRead += int64(len(data))
@@ -145,6 +167,10 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 func (x *Disk) DataCleanup() error {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
+
+	if _, err := x.File.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 
 	nabu.FromMessage("Starting data cleanup for file: [" + x.Path + "]").Log()
 	originalFile, err := os.OpenFile(x.Path, os.O_RDONLY, 0644)

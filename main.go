@@ -144,8 +144,13 @@ func checkCurrentNodes() error {
 	for _, e := range GlobalNode.Entities {
 		for _, re := range register.Entities {
 			if e.Name == re.Name {
+				disk := NewDisk().WithPath(filepath.Join(GlobalNode.Path.Data, re.DbFileName)).WithEntity(re)
+				if err := disk.OpenFile(); err != nil {
+					return err
+				}
+
 				GlobalNode.EntitiesStorage = append(GlobalNode.EntitiesStorage, &EntityStorage{
-					Disk:   NewDisk().WithPath(filepath.Join(GlobalNode.Path.Data, re.DbFileName)).WithEntity(re),
+					Disk:   disk,
 					Memory: re,
 				})
 			}

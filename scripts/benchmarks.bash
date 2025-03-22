@@ -36,6 +36,7 @@ rm -rf ./pprof_svg/*
 
 # Example usage:
 # run_benchmark "node" "5s" "Undefined"
-run_benchmark "disk" "180s" "BenchmarkDataWrite"
+#run_benchmark "disk" "180s" "BenchmarkDataWrite"
+run_benchmark "msg" "10s" "BenchmarkMessageInsert"
 
 rm hyperion.test
