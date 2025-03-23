@@ -1,6 +1,6 @@
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/rah-0/nabu v0.0.3 h1:Gv5onnDzEvIF/+ZwurzOTyNaYJbxg6++4IpUe3KNbZg=
-github.com/rah-0/nabu v0.0.3/go.mod h1:MCTYZOSPbh+wkJHyqqE699jD0ap3keq9rBuX9kq6FzQ=
+github.com/rah-0/nabu v0.0.4 h1:O5NiE/zp3hn01zcTsFwlDfIxwaEb9Uo6xL0V1LvKeo0=
+github.com/rah-0/nabu v0.0.4/go.mod h1:MCTYZOSPbh+wkJHyqqE699jD0ap3keq9rBuX9kq6FzQ=
 golang.org/x/mod v0.24.0 h1:ZfthKaKaT4NrhGVZHO1/WDTwGES4De8KtWO0SIbNJMU=
 golang.org/x/mod v0.24.0/go.mod h1:IXM97Txy2VM4PJ3gI61r1YEk/gAj6zAHN3AdZt6S9Ww=

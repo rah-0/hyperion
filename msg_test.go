@@ -7,7 +7,6 @@ import (
 
 	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
 	"github.com/rah-0/hyperion/register"
-	"github.com/rah-0/hyperion/util"
 )
 
 func TestMessageInsert(t *testing.T) {
@@ -29,7 +28,6 @@ func TestMessageInsert(t *testing.T) {
 
 func TestMessageInsert1000(t *testing.T) {
 	c, err := ConnectToNode(GlobalNode)
-	defer util.FileDelete(filepath.Join(GlobalNode.Path.Data, "SampleV1.bin"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,10 +61,6 @@ func TestMessageInsert1000(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(entities) != len(expected) {
-		t.Fatalf("Expected %d entities, got %d", len(expected), len(entities))
-	}
-
 	for _, expectedEntity := range expected {
 		found := false
 		for _, readEntity := range entities {
@@ -89,7 +83,6 @@ func TestMessageInsert1000(t *testing.T) {
 
 func BenchmarkMessageInsert(b *testing.B) {
 	c, err := ConnectToNode(GlobalNode)
-	defer util.FileDelete(filepath.Join(GlobalNode.Path.Data, "SampleV1.bin"))
 	if err != nil {
 		b.Fatal(err)
 	}

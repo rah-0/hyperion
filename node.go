@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -101,33 +101,47 @@ func ConnectToNode(x *Node) (*HConn, error) {
 	}
 }
 
-func (x *Node) Start() {
-	x.handleErrors()
-
+func (x *Node) Start() error {
 	if err := x.checkDataDir(); err != nil {
-		x.errCh <- err
-		return
+		return err
+	}
+
+	// Config per node targets an entity by name but here we find all versions for that entity
+	for _, e := range x.Entities {
+		for _, re := range register.Entities {
+			if e.Name == re.Name {
+				disk := NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
+				if err := disk.OpenFile(); err != nil {
+					return err
+				}
+
+				x.EntitiesStorage = append(x.EntitiesStorage, &EntityStorage{
+					Disk:   disk,
+					Memory: re,
+				})
+			}
+		}
+	}
+
+	if err := x.loadEntitiesFromDisk(); err != nil {
+		return err
 	}
 
 	listener, err := net.Listen("tcp", x.getListenAddress())
 	if err != nil {
-		x.errCh <- nabu.FromError(err).WithArgs(x.Host)
-		return
+		return nabu.FromError(err).WithArgs(x.Host).Log()
 	}
 
-	if err = x.loadEntitiesFromDisk(); err != nil {
-		x.errCh <- err
-		return
-	}
-
+	x.handleErrors()
 	defer func() {
 		if err = listener.Close(); err != nil {
 			x.errCh <- err
 		}
 	}()
-
 	go x.connectToPeers()
 	x.acceptConnections(listener)
+
+	return nil
 }
 
 func (x *Node) checkDataDir() error {
@@ -282,12 +296,7 @@ func (x *Node) handleErrors() {
 					return
 				}
 				if err != nil {
-					if strings.Contains(err.Error(), "address already in use") {
-						nabu.FromError(err).WithLevelFatal().Log()
-						os.Exit(1)
-					} else {
-						nabu.FromError(err).Log()
-					}
+					nabu.FromError(err).WithLevelFatal().Log()
 				}
 			}
 		}

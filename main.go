@@ -2,15 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"os"
-	"path/filepath"
 	"sync"
+	"syscall"
 
 	"github.com/rah-0/nabu"
 
 	. "github.com/rah-0/hyperion/model"
-	"github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
 
@@ -49,7 +49,7 @@ func checkConfigs() error {
 		return nabu.FromError(err).Log()
 	}
 	checkForceHost()
-	if err := checkCurrentNodes(); err != nil {
+	if err := checkCurrentNode(); err != nil {
 		return nabu.FromError(err).Log()
 	}
 	return nil
@@ -61,7 +61,14 @@ func run() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		GlobalNode.Start()
+		if err := GlobalNode.Start(); err != nil {
+			if errors.Is(err, syscall.EADDRINUSE) {
+				nabu.FromError(err).WithLevelFatal().Log()
+				os.Exit(1)
+			} else {
+				nabu.FromError(err).Log()
+			}
+		}
 	}()
 
 	wg.Wait()
@@ -114,7 +121,7 @@ func checkConfig() error {
 	return nil
 }
 
-func checkCurrentNodes() error {
+func checkCurrentNode() error {
 	if len(GlobalConfig.Nodes) == 0 {
 		return ErrConfigNodesNotFound
 	}
@@ -138,23 +145,6 @@ func checkCurrentNodes() error {
 
 	if GlobalNode == nil {
 		return ErrConfigNodeNotFoundForHost
-	}
-
-	// Config per node targets an entity by name but here we find all versions for that entity
-	for _, e := range GlobalNode.Entities {
-		for _, re := range register.Entities {
-			if e.Name == re.Name {
-				disk := NewDisk().WithPath(filepath.Join(GlobalNode.Path.Data, re.DbFileName)).WithEntity(re)
-				if err := disk.OpenFile(); err != nil {
-					return err
-				}
-
-				GlobalNode.EntitiesStorage = append(GlobalNode.EntitiesStorage, &EntityStorage{
-					Disk:   disk,
-					Memory: re,
-				})
-			}
-		}
 	}
 
 	return nil

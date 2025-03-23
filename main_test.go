@@ -59,7 +59,9 @@ func TestMain(m *testing.M) {
 			return nil
 		},
 		UnloadResources: func() error {
-			return Pkill("hyperion_test_*")
+			err := Pkill("hyperion_test_*")
+			defer FileDelete(filepath.Join(GlobalNode.Path.Data, "SampleV1.bin"))
+			return err
 		},
 	})
 }
