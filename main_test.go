@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 				return err
 			}
 
-			pathConfig = p
+			GlobalPathConfig = p
 			err = checkConfigs()
 			if err != nil {
 				return err

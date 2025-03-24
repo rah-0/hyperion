@@ -22,15 +22,15 @@ type Config struct {
 }
 
 var (
-	GlobalNode   *Node
-	GlobalConfig Config
-	pathConfig   string
-	forceHost    string
+	GlobalNode       *Node
+	GlobalConfig     Config
+	GlobalPathConfig string
+	GlobalForceHost  string
 )
 
 func main() {
-	flag.StringVar(&pathConfig, "pathConfig", "", "")
-	flag.StringVar(&forceHost, "forceHost", "", "")
+	flag.StringVar(&GlobalPathConfig, "pathConfig", "", "")
+	flag.StringVar(&GlobalForceHost, "forceHost", "", "")
 	flag.Parse()
 
 	nabu.SetLogLevel(nabu.LevelDebug)
@@ -77,21 +77,21 @@ func run() {
 }
 
 func checkPathConfig() error {
-	if pathConfig == "" {
-		pathConfig = GetEnvKeyValue("HyperionPathConfig")
+	if GlobalPathConfig == "" {
+		GlobalPathConfig = GetEnvKeyValue("HyperionPathConfig")
 	}
-	if pathConfig == "" {
+	if GlobalPathConfig == "" {
 		return ErrPathConfigNotSpecified
 	}
 
-	exists, err := PathExists(pathConfig)
+	exists, err := PathExists(GlobalPathConfig)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return ErrPathConfigNotFound
 	}
-	if !FileIsEditable(pathConfig) {
+	if !FileIsEditable(GlobalPathConfig) {
 		return ErrPathConfigNotEditable
 	}
 
@@ -99,14 +99,14 @@ func checkPathConfig() error {
 }
 
 func checkForceHost() {
-	if forceHost == "" {
-		forceHost = GetEnvKeyValue("HyperionForceHost")
+	if GlobalForceHost == "" {
+		GlobalForceHost = GetEnvKeyValue("HyperionForceHost")
 	}
 	return
 }
 
 func checkConfig() error {
-	content, err := FileRead(pathConfig)
+	content, err := FileRead(GlobalPathConfig)
 	if err != nil {
 		return err
 	}
@@ -129,14 +129,14 @@ func checkCurrentNode() error {
 	}
 
 	var hostName string
-	if forceHost == "" {
+	if GlobalForceHost == "" {
 		var err error
 		hostName, err = os.Hostname()
 		if err != nil {
 			return err
 		}
 	} else {
-		hostName = forceHost
+		hostName = GlobalForceHost
 	}
 
 	for _, node := range GlobalConfig.Nodes {
