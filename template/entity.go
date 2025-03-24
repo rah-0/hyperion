@@ -9,7 +9,7 @@ import (
 )
 
 func TemplateEntity(s StructDef, v string) (string, error) {
-	mn, err := GetModuleName("go.mod")
+	mn, err := GetModuleName(pathGoMod)
 	if err != nil {
 		return "", err
 	}
@@ -20,6 +20,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "import (\n"
 	template += `"bytes"` + "\n"
 	template += `"encoding/gob"` + "\n"
+	template += `"errors"` + "\n"
 	template += `"sync"` + "\n\n"
 	template += `"github.com/google/uuid"` + "\n\n"
 	template += `. "` + filepath.Join(mn, "hconn") + `"` + "\n"
@@ -320,7 +321,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 }
 
 func TemplateMigrations(sPrevious StructDef, sCurrent StructDef, vPrevious string, vCurrent string) (string, error) {
-	mn, err := GetModuleName("go.mod")
+	mn, err := GetModuleName(pathGoMod)
 	if err != nil {
 		return "", err
 	}

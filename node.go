@@ -249,14 +249,16 @@ func (x *Node) handleConnection(hc *HConn) {
 		case MessageTypeInsert, MessageTypeDelete, MessageTypeUpdate:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
-				msgOut.Error = fmt.Errorf("entity not found: %s", msgIn.Entity.Name)
+				msgOut.Status = StatusError
+				msgOut.String = "entity not found: [" + msgIn.Entity.Name + "]"
 				break
 			}
 
 			entity := e.Memory.New()
 			entity.SetBufferData(msgIn.Entity.Data)
 			if err := entity.Decode(); err != nil {
-				msgOut.Error = err
+				msgOut.Status = StatusError
+				msgOut.String = err.Error()
 				break
 			}
 
@@ -270,7 +272,8 @@ func (x *Node) handleConnection(hc *HConn) {
 			}
 
 			if err := e.Disk.DataWrite(msgIn.Entity.Data); err != nil {
-				x.errCh <- nabu.FromError(err).Log()
+				msgOut.Status = StatusError
+				msgOut.String = err.Error()
 			} else {
 				msgOut.Status = StatusSuccess
 			}
@@ -278,7 +281,8 @@ func (x *Node) handleConnection(hc *HConn) {
 		case MessageTypeGetAll:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
-				msgOut.Error = fmt.Errorf("entity not found: %s", msgIn.Entity.Name)
+				msgOut.Status = StatusError
+				msgOut.String = "entity not found: [" + msgIn.Entity.Name + "]"
 			} else {
 				msgOut.Status = StatusSuccess
 				msgOut.Models = e.Memory.New().MemoryGetAll()

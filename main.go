@@ -10,6 +10,8 @@ import (
 
 	"github.com/rah-0/nabu"
 
+	_ "github.com/rah-0/hyperion/template"
+
 	. "github.com/rah-0/hyperion/model"
 	. "github.com/rah-0/hyperion/util"
 )

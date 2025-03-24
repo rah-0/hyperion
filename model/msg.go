@@ -26,6 +26,7 @@ type Status int
 
 const (
 	StatusSuccess Status = iota
+	StatusError
 )
 
 type Message struct {
@@ -36,5 +37,4 @@ type Message struct {
 	Bytes  []byte
 	Entity register.Entity
 	Models []register.Model
-	Error  error
 }

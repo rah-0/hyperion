@@ -1,4 +1,4 @@
-package main
+package template
 
 import (
 	"go/format"
@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	. "github.com/rah-0/hyperion/model"
-	. "github.com/rah-0/hyperion/template"
 	. "github.com/rah-0/hyperion/util"
 
 	//
@@ -26,10 +25,13 @@ var (
 			Type: "bool",
 		},
 	}
+
+	pathEntities = filepath.Join("..", "entities")
+	pathGoMod    = filepath.Join("..", "go.mod")
 )
 
 func Generate() error {
-	pathEntities, err := filepath.Abs("entities")
+	pathEntities, err := filepath.Abs(pathEntities)
 	if err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func Generate() error {
 }
 
 func updateDynamicImports(pathEntities string) error {
-	mn, err := GetModuleName("go.mod")
+	mn, err := GetModuleName(pathGoMod)
 	if err != nil {
 		return err
 	}
