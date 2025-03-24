@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/rah-0/hyperion/model"
 	. "github.com/rah-0/hyperion/util"
@@ -156,5 +157,28 @@ func BenchmarkListenPortForStatus(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+func BenchmarkConnectionEstablishment(b *testing.B) {
+	// Ensure the node is reachable once before benchmarking
+	for {
+		warmupConn, err := ConnectToNode(GlobalNode)
+		if err == nil {
+			warmupConn.C.Close()
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		conn, err := ConnectToNode(GlobalNode)
+		if err != nil {
+			b.Fatalf("Connection failed on iteration %d: %v", i, err)
+		}
+		conn.C.Close()
 	}
 }

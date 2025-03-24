@@ -36,4 +36,5 @@ type Message struct {
 	Bytes  []byte
 	Entity register.Entity
 	Models []register.Model
+	Error  error
 }

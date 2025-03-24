@@ -3,11 +3,14 @@ package hconn
 import (
 	"encoding/binary"
 	"net"
+	"time"
 
 	"github.com/rah-0/nabu"
 
 	. "github.com/rah-0/hyperion/model"
 )
+
+var Timeout = 5 * time.Second
 
 type HConn struct {
 	C net.Conn
@@ -46,6 +49,10 @@ func (hc *HConn) Send(a any) error {
 
 // Receive reads a message using the length-prefixed format
 func (hc *HConn) Receive() (msg Message, err error) {
+	if err = hc.C.SetReadDeadline(time.Now().Add(Timeout)); err != nil {
+		return
+	}
+
 	lengthPrefix, err := hc.read(8)
 	if err != nil {
 		return

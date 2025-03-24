@@ -2,6 +2,7 @@ package hconn
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"net"
 	"reflect"
@@ -224,5 +225,38 @@ func TestCorruptedData(t *testing.T) {
 	_, err := serverConn.Receive()
 	if err == nil {
 		t.Errorf("Expected error due to corrupted data, but got none")
+	}
+}
+
+func TestReceiveTimeout(t *testing.T) {
+	originalTimeout := Timeout
+	defer func() { Timeout = originalTimeout }()
+	Timeout = 500 * time.Millisecond
+
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+
+	hc := NewHConn(server)
+
+	done := make(chan struct{})
+	go func() {
+		_, err := hc.Receive()
+		if err == nil {
+			t.Error("Expected timeout error, but got nil")
+		} else {
+			var netErr net.Error
+			if !errors.As(err, &netErr) || !netErr.Timeout() {
+				t.Errorf("Expected timeout error, got: %v", err)
+			}
+		}
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// OK, finished in time
+	case <-time.After(2 * Timeout):
+		t.Error("Receive did not time out as expected")
 	}
 }
