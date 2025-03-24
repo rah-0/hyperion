@@ -14,6 +14,13 @@ import (
 	. "github.com/rah-0/hyperion/util"
 )
 
+const (
+	FieldUuid    = 1
+	FieldDeleted = 2
+	FieldName    = 3
+	FieldSurname = 4
+)
+
 func TestDataWrite(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
@@ -30,9 +37,9 @@ func TestDataWrite(t *testing.T) {
 		}
 
 		instance := e.New()
-		instance.SetFieldValue("Uuid", uuid.New())
-		instance.SetFieldValue("Name", "John")
-		instance.SetFieldValue("Surname", "Doe")
+		instance.SetFieldValue(FieldUuid, uuid.New())
+		instance.SetFieldValue(FieldName, "John")
+		instance.SetFieldValue(FieldSurname, "Doe")
 		if err := instance.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -73,15 +80,15 @@ func TestDataWrite(t *testing.T) {
 		}
 
 		// Verify UUID, Name, and Surname
-		if readInstance.GetFieldValue("Uuid") != instance.GetFieldValue("Uuid") {
+		if readInstance.GetFieldValue(FieldUuid) != instance.GetFieldValue(FieldUuid) {
 			t.Fatalf("UUID mismatch: expected %v, got %v",
-				instance.GetFieldValue("Uuid"), readInstance.GetFieldValue("Uuid"))
+				instance.GetFieldValue(FieldUuid), readInstance.GetFieldValue(FieldUuid))
 		}
-		if readInstance.GetFieldValue("Name") != "John" {
-			t.Fatalf("Incorrect Name: expected 'John', got %s", readInstance.GetFieldValue("Name"))
+		if readInstance.GetFieldValue(FieldName) != "John" {
+			t.Fatalf("Incorrect Name: expected 'John', got %s", readInstance.GetFieldValue(FieldName))
 		}
-		if readInstance.GetFieldValue("Surname") != "Doe" {
-			t.Fatalf("Incorrect Surname: expected 'Doe', got %s", readInstance.GetFieldValue("Surname"))
+		if readInstance.GetFieldValue(FieldSurname) != "Doe" {
+			t.Fatalf("Incorrect Surname: expected 'Doe', got %s", readInstance.GetFieldValue(FieldSurname))
 		}
 
 		instance.BufferReset()
@@ -108,9 +115,9 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 		expectedEntities := make(map[uuid.UUID]Model)
 		for i := 0; i < 50; i++ {
 			instance := e.New()
-			instance.SetFieldValue("Uuid", uuid.New())
-			instance.SetFieldValue("Name", "User"+uuid.NewString())
-			instance.SetFieldValue("Surname", "Surname"+uuid.NewString())
+			instance.SetFieldValue(FieldUuid, uuid.New())
+			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
+			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
 
 			if err := instance.Encode(); err != nil {
 				t.Fatal(err)
@@ -143,10 +150,10 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 
 			// Verify field values
 			expected := expectedEntities[entityUUID]
-			if entity.GetFieldValue("Name") != expected.GetFieldValue("Name") {
+			if entity.GetFieldValue(FieldName) != expected.GetFieldValue(FieldName) {
 				t.Fatalf("Mismatch in Name for UUID %v", entityUUID)
 			}
-			if entity.GetFieldValue("Surname") != expected.GetFieldValue("Surname") {
+			if entity.GetFieldValue(FieldSurname) != expected.GetFieldValue(FieldSurname) {
 				t.Fatalf("Mismatch in Surname for UUID %v", entityUUID)
 			}
 		}
@@ -171,8 +178,8 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 
 		// Write Initial Entity
 		instance := e.New()
-		instance.SetFieldValue("Name", "OriginalUser")
-		instance.SetFieldValue("Surname", "OriginalSurname")
+		instance.SetFieldValue(FieldName, "OriginalUser")
+		instance.SetFieldValue(FieldSurname, "OriginalSurname")
 		if err := instance.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -190,9 +197,9 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 
 		for i := range updateNames {
 			updatedInstance := e.New()
-			updatedInstance.SetFieldValue("Uuid", entityUUID) // Keep same UUID
-			updatedInstance.SetFieldValue("Name", updateNames[i])
-			updatedInstance.SetFieldValue("Surname", updateSurnames[i])
+			updatedInstance.SetFieldValue(FieldUuid, entityUUID) // Keep same UUID
+			updatedInstance.SetFieldValue(FieldName, updateNames[i])
+			updatedInstance.SetFieldValue(FieldSurname, updateSurnames[i])
 			if err = updatedInstance.Encode(); err != nil {
 				t.Fatal(err)
 			}
@@ -215,19 +222,19 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 
 		finalEntity := entities[0]
 
-		if finalEntity.GetFieldValue("Uuid") != entityUUID {
+		if finalEntity.GetFieldValue(FieldUuid) != entityUUID {
 			t.Fatalf("UUID mismatch: expected %v, got %v",
-				entityUUID, finalEntity.GetFieldValue("Uuid"))
+				entityUUID, finalEntity.GetFieldValue(FieldUuid))
 		}
 
-		if finalEntity.GetFieldValue("Name") != "FinalUpdate" {
+		if finalEntity.GetFieldValue(FieldName) != "FinalUpdate" {
 			t.Fatalf("Incorrect Name: expected 'FinalUpdate', got %s",
-				finalEntity.GetFieldValue("Name"))
+				finalEntity.GetFieldValue(FieldName))
 		}
 
-		if finalEntity.GetFieldValue("Surname") != "FinalSurname" {
+		if finalEntity.GetFieldValue(FieldSurname) != "FinalSurname" {
 			t.Fatalf("Incorrect Surname: expected 'FinalSurname', got %s",
-				finalEntity.GetFieldValue("Surname"))
+				finalEntity.GetFieldValue(FieldSurname))
 		}
 	}
 }
@@ -252,9 +259,9 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 		expectedEntities := make(map[uuid.UUID]Model)
 		for i := 0; i < 10; i++ {
 			instance := e.New()
-			instance.SetFieldValue("Uuid", uuid.New())
-			instance.SetFieldValue("Name", "User"+uuid.NewString())
-			instance.SetFieldValue("Surname", "Surname"+uuid.NewString())
+			instance.SetFieldValue(FieldUuid, uuid.New())
+			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
+			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
 
 			if err := instance.Encode(); err != nil {
 				t.Fatal(err)
@@ -280,9 +287,9 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 
 			// Create an updated version
 			updatedInstance := e.New()
-			updatedInstance.SetFieldValue("Uuid", entityUUID) // Keep same UUID
-			updatedInstance.SetFieldValue("Name", "UpdatedUser")
-			updatedInstance.SetFieldValue("Surname", "UpdatedSurname")
+			updatedInstance.SetFieldValue(FieldUuid, entityUUID) // Keep same UUID
+			updatedInstance.SetFieldValue(FieldName, "UpdatedUser")
+			updatedInstance.SetFieldValue(FieldSurname, "UpdatedSurname")
 
 			if err = updatedInstance.Encode(); err != nil {
 				t.Fatal(err)
@@ -312,10 +319,10 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 			entityUUID := entity.GetUuid()
 			expected := expectedEntities[entityUUID]
 
-			if entity.GetFieldValue("Name") != expected.GetFieldValue("Name") {
+			if entity.GetFieldValue(FieldName) != expected.GetFieldValue(FieldName) {
 				t.Fatalf("Mismatch in Name for UUID %v", entityUUID)
 			}
-			if entity.GetFieldValue("Surname") != expected.GetFieldValue("Surname") {
+			if entity.GetFieldValue(FieldSurname) != expected.GetFieldValue(FieldSurname) {
 				t.Fatalf("Mismatch in Surname for UUID %v", entityUUID)
 			}
 		}
@@ -342,9 +349,9 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 		expectedEntities := make(map[uuid.UUID]Model)
 		for i := 0; i < 1000; i++ {
 			instance := e.New()
-			instance.SetFieldValue("Uuid", uuid.New())
-			instance.SetFieldValue("Name", "User"+uuid.NewString())
-			instance.SetFieldValue("Surname", "Surname"+uuid.NewString())
+			instance.SetFieldValue(FieldUuid, uuid.New())
+			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
+			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
 
 			if err := instance.Encode(); err != nil {
 				t.Fatal(err)
@@ -396,9 +403,9 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 		expectedEntities := make(map[uuid.UUID]Model)
 		for i := 0; i < 1000; i++ {
 			instance := e.New()
-			instance.SetFieldValue("Uuid", uuid.New())
-			instance.SetFieldValue("Name", "User"+uuid.NewString())
-			instance.SetFieldValue("Surname", "Surname"+uuid.NewString())
+			instance.SetFieldValue(FieldUuid, uuid.New())
+			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
+			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
 
 			if err := instance.Encode(); err != nil {
 				t.Fatal(err)
@@ -420,9 +427,9 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 
 			// Create a newer version
 			updatedInstance := e.New()
-			updatedInstance.SetFieldValue("Uuid", entityUUID) // Same UUID
-			updatedInstance.SetFieldValue("Name", "UpdatedUser")
-			updatedInstance.SetFieldValue("Surname", "UpdatedSurname")
+			updatedInstance.SetFieldValue(FieldUuid, entityUUID) // Same UUID
+			updatedInstance.SetFieldValue(FieldName, "UpdatedUser")
+			updatedInstance.SetFieldValue(FieldSurname, "UpdatedSurname")
 
 			if err := updatedInstance.Encode(); err != nil {
 				t.Fatal(err)
@@ -458,10 +465,10 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 			entityUUID := entity.GetUuid()
 			expected := expectedEntities[entityUUID]
 
-			if entity.GetFieldValue("Name") != expected.GetFieldValue("Name") {
+			if entity.GetFieldValue(FieldName) != expected.GetFieldValue(FieldName) {
 				t.Fatalf("Mismatch in Name for UUID %v", entityUUID)
 			}
-			if entity.GetFieldValue("Surname") != expected.GetFieldValue("Surname") {
+			if entity.GetFieldValue(FieldSurname) != expected.GetFieldValue(FieldSurname) {
 				t.Fatalf("Mismatch in Surname for UUID %v", entityUUID)
 			}
 		}
@@ -499,9 +506,9 @@ func BenchmarkDataWrite(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				for j := 0; j < numRows; j++ {
 					instance := testEntity.New()
-					instance.SetFieldValue("Uuid", uuid.New())
-					instance.SetFieldValue("Name", "User"+uuid.NewString())
-					instance.SetFieldValue("Surname", "Surname"+uuid.NewString())
+					instance.SetFieldValue(FieldUuid, uuid.New())
+					instance.SetFieldValue(FieldName, "User"+uuid.NewString())
+					instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
 
 					if err := instance.Encode(); err != nil {
 						b.Fatal(err)
@@ -540,9 +547,9 @@ func BenchmarkDataReadAll(b *testing.B) {
 			// Populate file with numRows entities
 			for i := 0; i < numRows; i++ {
 				instance := testEntity.New()
-				instance.SetFieldValue("Uuid", uuid.New())
-				instance.SetFieldValue("Name", "User"+uuid.NewString())
-				instance.SetFieldValue("Surname", "Surname"+uuid.NewString())
+				instance.SetFieldValue(FieldUuid, uuid.New())
+				instance.SetFieldValue(FieldName, "User"+uuid.NewString())
+				instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
 
 				if err := instance.Encode(); err != nil {
 					b.Fatal(err)
@@ -597,9 +604,9 @@ func TestGenerateLargeDataset(t *testing.T) {
 	ticks := 0
 	for i := 0; i < numRows; i++ {
 		instance := testEntity.New()
-		instance.SetFieldValue("Uuid", uuid.New())
-		instance.SetFieldValue("Name", fmt.Sprintf("User_%d", i))
-		instance.SetFieldValue("Surname", fmt.Sprintf("Surname_%d", i))
+		instance.SetFieldValue(FieldUuid, uuid.New())
+		instance.SetFieldValue(FieldName, fmt.Sprintf("User_%d", i))
+		instance.SetFieldValue(FieldSurname, fmt.Sprintf("Surname_%d", i))
 
 		if err := instance.Encode(); err != nil {
 			t.Fatal(err)
@@ -639,9 +646,9 @@ func TestDataReadAll_WithDeletedEntity(t *testing.T) {
 
 		// Create and write entity
 		instance := e.New()
-		instance.SetFieldValue("Uuid", uuid.New())
-		instance.SetFieldValue("Name", "ToBeDeleted")
-		instance.SetFieldValue("Surname", "ShouldNotAppear")
+		instance.SetFieldValue(FieldUuid, uuid.New())
+		instance.SetFieldValue(FieldName, "ToBeDeleted")
+		instance.SetFieldValue(FieldSurname, "ShouldNotAppear")
 		if err := instance.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -653,8 +660,8 @@ func TestDataReadAll_WithDeletedEntity(t *testing.T) {
 
 		// Mark entity as deleted
 		tombstone := e.New()
-		tombstone.SetFieldValue("Uuid", entityUUID)
-		tombstone.SetFieldValue("Deleted", true)
+		tombstone.SetFieldValue(FieldUuid, entityUUID)
+		tombstone.SetFieldValue(FieldDeleted, true)
 		if err := tombstone.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -694,8 +701,8 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 
 		// Write deleted tombstone first
 		del := e.New()
-		del.SetFieldValue("Uuid", u)
-		del.SetFieldValue("Deleted", true)
+		del.SetFieldValue(FieldUuid, u)
+		del.SetFieldValue(FieldDeleted, true)
 		if err := del.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -706,9 +713,9 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 
 		// Write a new version after deletion
 		ins := e.New()
-		ins.SetFieldValue("Uuid", u)
-		ins.SetFieldValue("Name", "Alive")
-		ins.SetFieldValue("Surname", "User")
+		ins.SetFieldValue(FieldUuid, u)
+		ins.SetFieldValue(FieldName, "Alive")
+		ins.SetFieldValue(FieldSurname, "User")
 		if err := ins.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -724,8 +731,8 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 		if len(entities) != 1 {
 			t.Fatalf("Expected 1 entity after insert following delete, got %d", len(entities))
 		}
-		if entities[0].GetFieldValue("Name") != "Alive" {
-			t.Fatalf("Expected Name 'Alive', got %v", entities[0].GetFieldValue("Name"))
+		if entities[0].GetFieldValue(FieldName) != "Alive" {
+			t.Fatalf("Expected Name 'Alive', got %v", entities[0].GetFieldValue(FieldName))
 		}
 	}
 }
@@ -750,9 +757,9 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 
 		// Insert then delete
 		ins := e.New()
-		ins.SetFieldValue("Uuid", u)
-		ins.SetFieldValue("Name", "Deleted")
-		ins.SetFieldValue("Surname", "Entity")
+		ins.SetFieldValue(FieldUuid, u)
+		ins.SetFieldValue(FieldName, FieldDeleted)
+		ins.SetFieldValue(FieldSurname, "Entity")
 		if err := ins.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -762,8 +769,8 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 		ins.BufferReset()
 
 		del := e.New()
-		del.SetFieldValue("Uuid", u)
-		del.SetFieldValue("Deleted", true)
+		del.SetFieldValue(FieldUuid, u)
+		del.SetFieldValue(FieldDeleted, true)
 		if err := del.Encode(); err != nil {
 			t.Fatal(err)
 		}

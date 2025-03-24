@@ -36,8 +36,8 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 		}
 
 		instanceOld := e.New()
-		instanceOld.SetFieldValue("Name", "John")
-		instanceOld.SetFieldValue("Surname", "Doe")
+		instanceOld.SetFieldValue(FieldName, "John")
+		instanceOld.SetFieldValue(FieldSurname, "Doe")
 		err := instanceOld.Encode()
 		if err != nil {
 			t.Fatalf("Encoding failed for %s: %v", e.Name, err)
@@ -50,9 +50,9 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 		}
 		instanceNew.BufferReset()
 
-		if instanceNew.GetFieldValue("Name") != "John" || instanceNew.GetFieldValue("Surname") != "Doe" {
+		if instanceNew.GetFieldValue(FieldName) != "John" || instanceNew.GetFieldValue(FieldSurname) != "Doe" {
 			t.Fatalf("Decoded values mismatch for %s: got Name=%s, Surname=%s",
-				e.Name, instanceNew.GetFieldValue("Name"), instanceNew.GetFieldValue("Surname"))
+				e.Name, instanceNew.GetFieldValue(FieldName), instanceNew.GetFieldValue(FieldSurname))
 		}
 	}
 }

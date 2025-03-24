@@ -19,8 +19,8 @@ func TestMemoryAdd(t *testing.T) {
 		}
 
 		instance := e.New()
-		instance.SetFieldValue("Name", "Alice")
-		instance.SetFieldValue("Surname", "Smith")
+		instance.SetFieldValue(FieldName, "Alice")
+		instance.SetFieldValue(FieldSurname, "Smith")
 		instance.MemoryAdd()
 
 		allInstances := instance.MemoryGetAll()
@@ -41,12 +41,12 @@ func TestMemoryClear(t *testing.T) {
 		}
 
 		instance1 := e.New()
-		instance1.SetFieldValue("Name", "Charlie")
-		instance1.SetFieldValue("Surname", "Brown")
+		instance1.SetFieldValue(FieldName, "Charlie")
+		instance1.SetFieldValue(FieldSurname, "Brown")
 
 		instance2 := e.New()
-		instance2.SetFieldValue("Name", "Daisy")
-		instance2.SetFieldValue("Surname", "Williams")
+		instance2.SetFieldValue(FieldName, "Daisy")
+		instance2.SetFieldValue(FieldSurname, "Williams")
 
 		instance1.MemoryAdd()
 		instance2.MemoryAdd()
@@ -71,12 +71,12 @@ func TestMemoryGetAll(t *testing.T) {
 		}
 
 		instance1 := e.New()
-		instance1.SetFieldValue("Name", "Eve")
-		instance1.SetFieldValue("Surname", "Clark")
+		instance1.SetFieldValue(FieldName, "Eve")
+		instance1.SetFieldValue(FieldSurname, "Clark")
 
 		instance2 := e.New()
-		instance2.SetFieldValue("Name", "Frank")
-		instance2.SetFieldValue("Surname", "Harris")
+		instance2.SetFieldValue(FieldName, "Frank")
+		instance2.SetFieldValue(FieldSurname, "Harris")
 
 		instance1.MemoryAdd()
 		instance2.MemoryAdd()
@@ -99,12 +99,12 @@ func TestMemoryContains(t *testing.T) {
 		}
 
 		instance1 := e.New()
-		instance1.SetFieldValue("Name", "Grace")
-		instance1.SetFieldValue("Surname", "Lee")
+		instance1.SetFieldValue(FieldName, "Grace")
+		instance1.SetFieldValue(FieldSurname, "Lee")
 
 		instance2 := e.New()
-		instance2.SetFieldValue("Name", "Hank")
-		instance2.SetFieldValue("Surname", "Martinez")
+		instance2.SetFieldValue(FieldName, "Hank")
+		instance2.SetFieldValue(FieldSurname, "Martinez")
 
 		instance1.MemoryAdd()
 
@@ -128,9 +128,9 @@ func TestMemoryRemove(t *testing.T) {
 
 		instance := e.New()
 		u := uuid.New()
-		instance.SetFieldValue("Uuid", u)
-		instance.SetFieldValue("Name", "Ian")
-		instance.SetFieldValue("Surname", "Miller")
+		instance.SetFieldValue(FieldUuid, u)
+		instance.SetFieldValue(FieldName, "Ian")
+		instance.SetFieldValue(FieldSurname, "Miller")
 		instance.MemoryAdd()
 
 		instance.MemoryRemove()
@@ -152,12 +152,12 @@ func TestMemoryUpdate(t *testing.T) {
 
 		u := uuid.New()
 		instance := e.New()
-		instance.SetFieldValue("Uuid", u)
-		instance.SetFieldValue("Name", "Jane")
-		instance.SetFieldValue("Surname", "Doe")
+		instance.SetFieldValue(FieldUuid, u)
+		instance.SetFieldValue(FieldName, "Jane")
+		instance.SetFieldValue(FieldSurname, "Doe")
 		instance.MemoryAdd()
 
-		instance.SetFieldValue("Name", "Janet")
+		instance.SetFieldValue(FieldName, "Janet")
 		instance.MemoryUpdate()
 
 		all := instance.MemoryGetAll()
@@ -165,8 +165,8 @@ func TestMemoryUpdate(t *testing.T) {
 		for _, m := range all {
 			if m.GetUuid() == u {
 				found = true
-				if m.GetFieldValue("Name") != "Janet" {
-					t.Fatalf("Expected name to be 'Janet', got %v", m.GetFieldValue("Name"))
+				if m.GetFieldValue(FieldName) != "Janet" {
+					t.Fatalf("Expected name to be 'Janet', got %v", m.GetFieldValue(FieldName))
 				}
 			}
 		}
@@ -184,13 +184,13 @@ func TestMemorySet(t *testing.T) {
 
 		instance1 := e.New()
 		u1 := uuid.New()
-		instance1.SetFieldValue("Uuid", u1)
-		instance1.SetFieldValue("Name", "Kyle")
+		instance1.SetFieldValue(FieldUuid, u1)
+		instance1.SetFieldValue(FieldName, "Kyle")
 
 		instance2 := e.New()
 		u2 := uuid.New()
-		instance2.SetFieldValue("Uuid", u2)
-		instance2.SetFieldValue("Name", "Laura")
+		instance2.SetFieldValue(FieldUuid, u2)
+		instance2.SetFieldValue(FieldName, "Laura")
 
 		models := []Model{instance1, instance2}
 		instance1.MemorySet(models)

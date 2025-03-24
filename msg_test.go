@@ -11,6 +11,11 @@ import (
 	"github.com/rah-0/hyperion/register"
 )
 
+const (
+	FieldName    = 3
+	FieldSurname = 4
+)
+
 func TestMessageInsert(t *testing.T) {
 	c, err := ConnectToNode(GlobalNode)
 	if err != nil {
@@ -108,10 +113,10 @@ func TestMessageInsert1000(t *testing.T) {
 		for _, readEntity := range entities {
 			if readEntity.GetUuid() == expectedEntity.GetUuid() {
 				found = true
-				if readEntity.GetFieldValue("Name") != expectedEntity.GetFieldValue("Name") {
+				if readEntity.GetFieldValue(FieldName) != expectedEntity.GetFieldValue(FieldName) {
 					t.Fatalf("Name mismatch for UUID %v", readEntity.GetUuid())
 				}
-				if readEntity.GetFieldValue("Surname") != expectedEntity.GetFieldValue("Surname") {
+				if readEntity.GetFieldValue(FieldSurname) != expectedEntity.GetFieldValue(FieldSurname) {
 					t.Fatalf("Surname mismatch for UUID %v", readEntity.GetUuid())
 				}
 				break

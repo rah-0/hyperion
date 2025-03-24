@@ -10,10 +10,10 @@ import (
 
 	"github.com/rah-0/nabu"
 
-	"github.com/rah-0/hyperion/disk"
+	. "github.com/rah-0/hyperion/disk"
 	. "github.com/rah-0/hyperion/hconn"
 	. "github.com/rah-0/hyperion/model"
-	"github.com/rah-0/hyperion/register"
+	. "github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
 
@@ -39,8 +39,8 @@ type EntityConfig struct {
 }
 
 type EntityStorage struct {
-	Disk   *disk.Disk
-	Memory *register.Entity
+	Disk   *Disk
+	Memory *Entity
 }
 
 type Node struct {
@@ -103,9 +103,9 @@ func (x *Node) Start() error {
 
 	// Config per node targets an entity by name but here we find all versions for that entity
 	for _, e := range x.Entities {
-		for _, re := range register.Entities {
+		for _, re := range Entities {
 			if e.Name == re.Name {
-				disk := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
+				disk := NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
 				if err := disk.OpenFile(); err != nil {
 					return err
 				}

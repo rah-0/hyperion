@@ -13,7 +13,6 @@ type Entity struct {
 	Version    string
 	Name       string
 	DbFileName string
-	Fields     map[string]int
 	New        func() Model
 	Data       []byte
 }
@@ -27,8 +26,8 @@ type Model interface {
 	SetUuid(uuid uuid.UUID)
 	WithNewUuid()
 	IsDeleted() bool
-	SetFieldValue(string, any)
-	GetFieldValue(string) any
+	SetFieldValue(int, any)
+	GetFieldValue(int) any
 
 	Encode() error
 	Decode() error
