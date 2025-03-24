@@ -12,6 +12,7 @@ const (
 	MessageTypeInsert
 	MessageTypeDelete
 	MessageTypeUpdate
+	MessageTypeGetAll
 )
 
 type Mode int
@@ -34,4 +35,5 @@ type Message struct {
 	String string
 	Bytes  []byte
 	Entity register.Entity
+	Models []register.Model
 }

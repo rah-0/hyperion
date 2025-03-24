@@ -285,6 +285,20 @@ func (x *Node) handleConnection(hc *HConn) {
 			if err := hc.Send(Message{Status: StatusSuccess}); err != nil {
 				nabu.FromError(err).Log()
 			}
+		} else if msg.Type == MessageTypeGetAll {
+			e := x.findEntityStorage(msg.Entity.Version, msg.Entity.Name)
+			if e == nil {
+				nabu.FromMessage("entity not found: " + msg.Entity.Name).WithLevelError().Log()
+				break
+			}
+
+			m := Message{
+				Status: StatusSuccess,
+				Models: e.Memory.New().MemoryGetAll(),
+			}
+			if err := hc.Send(m); err != nil {
+				nabu.FromError(err).Log()
+			}
 		}
 
 		if err != nil {

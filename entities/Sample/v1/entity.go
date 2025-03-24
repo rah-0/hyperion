@@ -5,6 +5,7 @@ package Sample
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"sync"
 
 	"github.com/google/uuid"
@@ -37,7 +38,7 @@ var (
 )
 
 func init() {
-	gob.Register(Sample{})
+	gob.Register(&Sample{})
 
 	// The following process initializes the encoder and decoder by preloading metadata.
 	// This prevents metadata from being stored with the first encoded struct.
@@ -277,4 +278,56 @@ func (s *Sample) DbDelete(c *HConn) (Message, error) {
 	}
 
 	return c.Receive()
+}
+
+func (s *Sample) DbUpdate(c *HConn) (Message, error) {
+	if s.Uuid == uuid.Nil {
+		return Message{}, errors.New("cannot update entity without UUID")
+	}
+	if err := s.Encode(); err != nil {
+		return Message{}, err
+	}
+
+	msg := Message{
+		Type: MessageTypeUpdate,
+		Entity: Entity{
+			Version: Version,
+			Name:    Name,
+			Data:    s.GetBufferData(),
+		},
+	}
+	s.BufferReset()
+
+	if err := c.Send(msg); err != nil {
+		return Message{}, err
+	}
+	return c.Receive()
+}
+
+func DbGetAll(c *HConn) ([]*Sample, error) {
+	msg := Message{
+		Type: MessageTypeGetAll,
+		Entity: Entity{
+			Version: Version,
+			Name:    Name,
+		},
+	}
+
+	if err := c.Send(msg); err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Receive()
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*Sample
+	for _, m := range resp.Models {
+		if s, ok := m.(*Sample); ok {
+			results = append(results, s)
+		}
+	}
+
+	return results, nil
 }
