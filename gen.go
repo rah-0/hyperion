@@ -21,6 +21,9 @@ var (
 		{
 			Name: "Uuid",
 			Type: "uuid.UUID",
+		}, {
+			Name: "Deleted",
+			Type: "bool",
 		},
 	}
 )

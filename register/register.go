@@ -26,6 +26,7 @@ type Model interface {
 	GetUuid() uuid.UUID
 	SetUuid(uuid uuid.UUID)
 	WithNewUuid()
+	IsDeleted() bool
 	SetFieldValue(string, any)
 	GetFieldValue(string) any
 
@@ -38,7 +39,8 @@ type Model interface {
 	SetBufferData([]byte)
 
 	MemoryAdd()
-	MemoryRemove() bool
+	MemoryRemove()
+	MemoryUpdate()
 	MemoryClear()
 	MemoryGetAll() []Model
 	MemoryContains(Model) bool

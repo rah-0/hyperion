@@ -256,27 +256,34 @@ func (x *Node) handleConnection(hc *HConn) {
 		if msg.Type == MessageTypeTest {
 			msg.String += "Received"
 			err = hc.Send(msg)
-		} else if msg.Type == MessageTypeInsert {
-			for _, e := range x.EntitiesStorage {
-				if e.Memory.Name == msg.Entity.Name && e.Memory.Version == msg.Entity.Version {
-					entity := e.Memory.New()
-					entity.SetBufferData(msg.Entity.Data)
-					if err := entity.Decode(); err != nil {
-						nabu.FromError(err).Log()
-					}
-					entity.MemoryAdd()
+		} else if msg.Type == MessageTypeInsert || msg.Type == MessageTypeDelete || msg.Type == MessageTypeUpdate {
+			e := x.findEntityStorage(msg.Entity.Version, msg.Entity.Name)
+			if e == nil {
+				nabu.FromMessage("entity not found: " + msg.Entity.Name).WithLevelError().Log()
+				break
+			}
 
-					if err := e.Disk.DataWrite(msg.Entity.Data); err != nil {
-						nabu.FromError(err).Log()
-					}
+			entity := e.Memory.New()
+			entity.SetBufferData(msg.Entity.Data)
+			if err := entity.Decode(); err != nil {
+				nabu.FromError(err).Log()
+			}
 
-					if err := hc.Send(Message{
-						String: "Sample Here",
-					}); err != nil {
-						nabu.FromError(err).Log()
-					}
-					break
-				}
+			switch msg.Type {
+			case MessageTypeInsert:
+				entity.MemoryAdd()
+			case MessageTypeDelete:
+				entity.MemoryRemove()
+			case MessageTypeUpdate:
+				entity.MemoryUpdate()
+			}
+
+			if err := e.Disk.DataWrite(msg.Entity.Data); err != nil {
+				nabu.FromError(err).Log()
+			}
+
+			if err := hc.Send(Message{Status: StatusSuccess}); err != nil {
+				nabu.FromError(err).Log()
 			}
 		}
 
@@ -285,6 +292,15 @@ func (x *Node) handleConnection(hc *HConn) {
 			break
 		}
 	}
+}
+
+func (x *Node) findEntityStorage(version, name string) *EntityStorage {
+	for _, e := range x.EntitiesStorage {
+		if e.Memory.Version == version && e.Memory.Name == name {
+			return e
+		}
+	}
+	return nil
 }
 
 func (x *Node) handleErrors() {

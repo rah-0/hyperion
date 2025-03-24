@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
+	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/register"
 )
 
@@ -20,9 +21,43 @@ func TestMessageInsert(t *testing.T) {
 		Surname: "Else",
 	}
 
-	_, err = entity.DbInsert(c)
+	msg, err := entity.DbInsert(c)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if msg.Status != model.StatusSuccess {
+		t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
+	}
+}
+
+func TestMessageInsertAndDelete(t *testing.T) {
+	c, err := ConnectToNode(GlobalNode)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entity := SampleV1.Sample{
+		Name:    "Something",
+		Surname: "Else",
+	}
+
+	msg, err := entity.DbInsert(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if msg.Status != model.StatusSuccess {
+		t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
+	}
+
+	msg, err = entity.DbDelete(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if msg.Status != model.StatusSuccess {
+		t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
 	}
 }
 
@@ -38,9 +73,15 @@ func TestMessageInsert1000(t *testing.T) {
 			Name:    fmt.Sprintf("Something%d", i),
 			Surname: fmt.Sprintf("Else%d", i),
 		}
-		if _, err := entity.DbInsert(c); err != nil {
+
+		msg, err := entity.DbInsert(c)
+		if err != nil {
 			t.Fatal(err)
 		}
+		if msg.Status != model.StatusSuccess {
+			t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
+		}
+
 		expected = append(expected, entity)
 	}
 
@@ -94,8 +135,14 @@ func BenchmarkMessageInsert(b *testing.B) {
 			Name:    fmt.Sprintf("Something%d", i),
 			Surname: fmt.Sprintf("Else%d", i),
 		}
-		if _, err := entity.DbInsert(c); err != nil {
+
+		msg, err := entity.DbInsert(c)
+		if err != nil {
 			b.Fatal(err)
+		}
+
+		if msg.Status != model.StatusSuccess {
+			b.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
 		}
 	}
 }

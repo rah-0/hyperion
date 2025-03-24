@@ -22,8 +22,9 @@ const (
 
 var Fields = map[string]int{
 	"Uuid":    1,
-	"Name":    2,
-	"Surname": 3,
+	"Deleted": 2,
+	"Name":    3,
+	"Surname": 4,
 }
 
 var (
@@ -63,6 +64,7 @@ func init() {
 
 type Sample struct {
 	Uuid    uuid.UUID
+	Deleted bool
 	Name    string
 	Surname string
 }
@@ -83,6 +85,10 @@ func (s *Sample) GetUuid() uuid.UUID {
 	return s.Uuid
 }
 
+func (s *Sample) IsDeleted() bool {
+	return s.Deleted
+}
+
 func (s *Sample) SetFieldValue(fieldName string, value any) {
 	switch Fields[fieldName] {
 	case 1:
@@ -90,10 +96,14 @@ func (s *Sample) SetFieldValue(fieldName string, value any) {
 			s.Uuid = v
 		}
 	case 2:
+		if v, ok := value.(bool); ok {
+			s.Deleted = v
+		}
+	case 3:
 		if v, ok := value.(string); ok {
 			s.Name = v
 		}
-	case 3:
+	case 4:
 		if v, ok := value.(string); ok {
 			s.Surname = v
 		}
@@ -105,8 +115,10 @@ func (s *Sample) GetFieldValue(fieldName string) any {
 	case 1:
 		return s.Uuid
 	case 2:
-		return s.Name
+		return s.Deleted
 	case 3:
+		return s.Name
+	case 4:
 		return s.Surname
 	}
 	return nil
@@ -154,7 +166,7 @@ func (s *Sample) MemoryAdd() {
 	Mem = append(Mem, s)
 }
 
-func (s *Sample) MemoryRemove() bool {
+func (s *Sample) MemoryRemove() {
 	mu.Lock()
 	defer mu.Unlock()
 	for i, instance := range Mem {
@@ -162,10 +174,21 @@ func (s *Sample) MemoryRemove() bool {
 			lastIndex := len(Mem) - 1
 			Mem[i] = Mem[lastIndex]
 			Mem = Mem[:lastIndex]
-			return true
+			break
 		}
 	}
-	return false
+}
+
+func (s *Sample) MemoryUpdate() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i, instance := range Mem {
+		if instance.Uuid == s.Uuid {
+			Mem[i] = s
+			break
+		}
+	}
 }
 
 func (s *Sample) MemoryClear() {
@@ -229,5 +252,29 @@ func (s *Sample) DbInsert(c *HConn) (Message, error) {
 	if err := c.Send(msg); err != nil {
 		return Message{}, err
 	}
+
+	return c.Receive()
+}
+
+func (s *Sample) DbDelete(c *HConn) (Message, error) {
+	s.Deleted = true
+	if err := s.Encode(); err != nil {
+		return Message{}, err
+	}
+
+	msg := Message{
+		Type: MessageTypeDelete,
+		Entity: Entity{
+			Version: Version,
+			Name:    Name,
+			Data:    s.GetBufferData(),
+		},
+	}
+	s.BufferReset()
+
+	if err := c.Send(msg); err != nil {
+		return Message{}, err
+	}
+
 	return c.Receive()
 }

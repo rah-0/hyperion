@@ -618,3 +618,169 @@ func TestGenerateLargeDataset(t *testing.T) {
 	fmt.Println("\nData writing completed.")
 	fmt.Println("File Path:", d.Path)
 }
+
+func TestDataReadAll_WithDeletedEntity(t *testing.T) {
+	d := NewDisk()
+	d.WithNewRandomPath()
+	d.OpenFile()
+	t.Cleanup(func() { FileDelete(d.Path) })
+
+	if len(Entities) == 0 {
+		t.Fatal("No entities generated")
+	}
+
+	for _, e := range Entities {
+		if e.Name != "Sample" {
+			continue
+		}
+		d.WithEntity(e)
+
+		// Create and write entity
+		instance := e.New()
+		instance.SetFieldValue("Uuid", uuid.New())
+		instance.SetFieldValue("Name", "ToBeDeleted")
+		instance.SetFieldValue("Surname", "ShouldNotAppear")
+		if err := instance.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(instance.GetBufferData()); err != nil {
+			t.Fatalf("Write failed: %v", err)
+		}
+		entityUUID := instance.GetUuid()
+		instance.BufferReset()
+
+		// Mark entity as deleted
+		tombstone := e.New()
+		tombstone.SetFieldValue("Uuid", entityUUID)
+		tombstone.SetFieldValue("Deleted", true)
+		if err := tombstone.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(tombstone.GetBufferData()); err != nil {
+			t.Fatalf("Delete marker write failed: %v", err)
+		}
+		tombstone.BufferReset()
+
+		// Read all
+		entities, err := d.DataReadAll()
+		if err != nil {
+			t.Fatalf("Read failed: %v", err)
+		}
+		if len(entities) != 0 {
+			t.Fatalf("Expected 0 entities after delete, got %d", len(entities))
+		}
+	}
+}
+
+func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
+	d := NewDisk()
+	d.WithNewRandomPath()
+	d.OpenFile()
+	t.Cleanup(func() { FileDelete(d.Path) })
+
+	if len(Entities) == 0 {
+		t.Fatal("No entities generated")
+	}
+
+	for _, e := range Entities {
+		if e.Name != "Sample" {
+			continue
+		}
+		d.WithEntity(e)
+
+		u := uuid.New()
+
+		// Write deleted tombstone first
+		del := e.New()
+		del.SetFieldValue("Uuid", u)
+		del.SetFieldValue("Deleted", true)
+		if err := del.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(del.GetBufferData()); err != nil {
+			t.Fatal(err)
+		}
+		del.BufferReset()
+
+		// Write a new version after deletion
+		ins := e.New()
+		ins.SetFieldValue("Uuid", u)
+		ins.SetFieldValue("Name", "Alive")
+		ins.SetFieldValue("Surname", "User")
+		if err := ins.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(ins.GetBufferData()); err != nil {
+			t.Fatal(err)
+		}
+		ins.BufferReset()
+
+		entities, err := d.DataReadAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entities) != 1 {
+			t.Fatalf("Expected 1 entity after insert following delete, got %d", len(entities))
+		}
+		if entities[0].GetFieldValue("Name") != "Alive" {
+			t.Fatalf("Expected Name 'Alive', got %v", entities[0].GetFieldValue("Name"))
+		}
+	}
+}
+
+func TestDataCleanup_DeletesArePurged(t *testing.T) {
+	d := NewDisk()
+	d.WithNewRandomPath()
+	d.OpenFile()
+	t.Cleanup(func() { FileDelete(d.Path) })
+
+	if len(Entities) == 0 {
+		t.Fatal("No entities generated")
+	}
+
+	for _, e := range Entities {
+		if e.Name != "Sample" {
+			continue
+		}
+		d.WithEntity(e)
+
+		u := uuid.New()
+
+		// Insert then delete
+		ins := e.New()
+		ins.SetFieldValue("Uuid", u)
+		ins.SetFieldValue("Name", "Deleted")
+		ins.SetFieldValue("Surname", "Entity")
+		if err := ins.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(ins.GetBufferData()); err != nil {
+			t.Fatal(err)
+		}
+		ins.BufferReset()
+
+		del := e.New()
+		del.SetFieldValue("Uuid", u)
+		del.SetFieldValue("Deleted", true)
+		if err := del.Encode(); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.DataWrite(del.GetBufferData()); err != nil {
+			t.Fatal(err)
+		}
+		del.BufferReset()
+
+		// Cleanup should purge both
+		if err := d.DataCleanup(); err != nil {
+			t.Fatal(err)
+		}
+
+		entities, err := d.DataReadAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entities) != 0 {
+			t.Fatalf("Expected 0 entities after cleanup, got %d", len(entities))
+		}
+	}
+}
