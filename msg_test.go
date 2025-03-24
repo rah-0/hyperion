@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rah-0/hyperion/disk"
 	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/register"
@@ -85,7 +86,7 @@ func TestMessageInsert1000(t *testing.T) {
 		expected = append(expected, entity)
 	}
 
-	d := NewDisk()
+	d := disk.NewDisk()
 	d.WithPath(filepath.Join(GlobalNode.Path.Data, "SampleV1.bin"))
 	if err = d.OpenFile(); err != nil {
 		t.Fatal(err)

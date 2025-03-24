@@ -1,4 +1,4 @@
-package main
+package disk
 
 import (
 	"encoding/binary"
@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+
+	_ "github.com/rah-0/hyperion/template"
 
 	. "github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"

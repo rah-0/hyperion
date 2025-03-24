@@ -16,7 +16,6 @@ func TestNodeDirectConnectionIpAndPort(t *testing.T) {
 
 	msg := Message{
 		Type:   MessageTypeTest,
-		Mode:   ModeSync,
 		String: "Test",
 	}
 
@@ -42,7 +41,6 @@ func TestNodeDirectConnection(t *testing.T) {
 
 	msg := Message{
 		Type:   MessageTypeTest,
-		Mode:   ModeSync,
 		String: "Test",
 	}
 
@@ -73,7 +71,6 @@ func TestNodesDirectConnection(t *testing.T) {
 
 		msg := Message{
 			Type:   MessageTypeTest,
-			Mode:   ModeSync,
 			String: "Test",
 		}
 
@@ -134,7 +131,6 @@ func BenchmarkListenPortForStatus(b *testing.B) {
 			}
 
 			msg := Message{
-				Mode:   ModeSync,
 				String: testStr,
 			}
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rah-0/nabu"
 
+	"github.com/rah-0/hyperion/disk"
 	. "github.com/rah-0/hyperion/hconn"
 	. "github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/register"
@@ -38,7 +39,7 @@ type EntityConfig struct {
 }
 
 type EntityStorage struct {
-	Disk   *Disk
+	Disk   *disk.Disk
 	Memory *register.Entity
 }
 
@@ -104,7 +105,7 @@ func (x *Node) Start() error {
 	for _, e := range x.Entities {
 		for _, re := range register.Entities {
 			if e.Name == re.Name {
-				disk := NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
+				disk := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
 				if err := disk.OpenFile(); err != nil {
 					return err
 				}

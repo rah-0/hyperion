@@ -15,13 +15,6 @@ const (
 	MessageTypeGetAll
 )
 
-type Mode int
-
-const (
-	ModeSync Mode = iota
-	ModeAsync
-)
-
 type Status int
 
 const (
@@ -31,7 +24,6 @@ const (
 
 type Message struct {
 	Type   MessageType
-	Mode   Mode
 	Status Status
 	String string
 	Bytes  []byte

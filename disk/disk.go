@@ -1,4 +1,4 @@
-package main
+package disk
 
 import (
 	"encoding/binary"
@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rah-0/nabu"
 
-	"github.com/rah-0/hyperion/register"
+	. "github.com/rah-0/hyperion/register"
 	. "github.com/rah-0/hyperion/util"
 )
 
@@ -24,7 +24,7 @@ Disk will structure the bytes of an entity (row) in the following way:
 type Disk struct {
 	Mu         sync.Mutex
 	Path       string
-	Entity     *register.Entity
+	Entity     *Entity
 	File       *os.File
 	syncTicker *time.Ticker
 	stopChan   chan struct{}
@@ -39,7 +39,7 @@ func (x *Disk) WithNewRandomPath() *Disk {
 	return x
 }
 
-func (x *Disk) WithEntity(e *register.Entity) *Disk {
+func (x *Disk) WithEntity(e *Entity) *Disk {
 	x.Entity = e
 	return x
 }
@@ -97,7 +97,7 @@ func (x *Disk) DataWrite(data []byte) error {
 	return nil
 }
 
-func (x *Disk) DataReadAll() ([]register.Model, error) {
+func (x *Disk) DataReadAll() ([]Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
@@ -116,7 +116,7 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 	var bytesRead int64 = 0
 	var lastLoggedProgress = -1.0
 
-	latestEntities := make(map[uuid.UUID]register.Model)
+	latestEntities := make(map[uuid.UUID]Model)
 
 	nabu.FromMessage("Reading entities from file...").Log()
 	for {
@@ -160,7 +160,7 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 	}
 
 	// Convert map to slice
-	entities := make([]register.Model, 0, len(latestEntities))
+	entities := make([]Model, 0, len(latestEntities))
 	for _, model := range latestEntities {
 		entities = append(entities, model)
 	}
