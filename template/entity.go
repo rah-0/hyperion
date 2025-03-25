@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/rah-0/hyperion/util"
+	"github.com/rah-0/hyperion/util"
 )
 
-func TemplateEntity(s StructDef, v string) (string, error) {
-	mn, err := GetModuleName(pathGoMod)
+func TemplateEntity(s util.StructDef, v string) (string, error) {
+	mn, err := util.GetModuleName(pathGoMod)
 	if err != nil {
 		return "", err
 	}
@@ -25,9 +25,9 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += `"errors"` + "\n"
 	template += `"sync"` + "\n\n"
 	template += `"github.com/google/uuid"` + "\n\n"
-	template += `. "` + filepath.Join(mn, "hconn") + `"` + "\n"
-	template += `. "` + filepath.Join(mn, "model") + `"` + "\n"
-	template += `. "` + filepath.Join(mn, "register") + `"` + "\n"
+	template += `"` + filepath.Join(mn, "hconn") + `"` + "\n"
+	template += `"` + filepath.Join(mn, "model") + `"` + "\n"
+	template += `"` + filepath.Join(mn, "register") + `"` + "\n"
 	template += ")\n"
 
 	template += "const (\n"
@@ -55,7 +55,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	*/
 
 	template += "var (" + "\n"
-	template += "_ Model = (*" + s.Name + ")(nil)" + "\n"
+	template += "_ register.Model = (*" + s.Name + ")(nil)" + "\n"
 	template += "mu sync.Mutex" + "\n"
 	template += "Buffer = new(bytes.Buffer)" + "\n"
 	template += "Encoder = gob.NewEncoder(Buffer)" + "\n"
@@ -77,7 +77,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n"
 	template += "x.BufferReset()\n\n"
 	template += "Mem = []*" + s.Name + "{}\n\n"
-	template += "RegisterEntity(&Entity{\n"
+	template += "register.RegisterEntity(&register.Entity{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "DbFileName: DbFileName,\n"
@@ -92,7 +92,7 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	}
 	template += "}\n"
 
-	template += "func New() Model {\n"
+	template += "func New() register.Model {\n"
 	template += "return &" + s.Name + "{\n"
 	template += "}\n"
 	template += "}\n\n"
@@ -209,17 +209,17 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "Mem = []*" + s.Name + "{}\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") MemoryGetAll() []Model {\n"
+	template += "func (s *" + s.Name + ") MemoryGetAll() []register.Model {\n"
 	template += "mu.Lock()\n"
 	template += "defer mu.Unlock()\n"
-	template += "instances := make([]Model, len(Mem))\n"
+	template += "instances := make([]register.Model, len(Mem))\n"
 	template += "for i, instance := range Mem {\n"
 	template += "instances[i] = instance\n"
 	template += "}\n"
 	template += "return instances\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") MemoryContains(target Model) bool {\n"
+	template += "func (s *" + s.Name + ") MemoryContains(target register.Model) bool {\n"
 	template += "mu.Lock()\n"
 	template += "defer mu.Unlock()\n\n"
 	template += "for _, instance := range Mem {\n"
@@ -230,27 +230,27 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "return false\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") MemorySet(models []Model) {\n"
+	template += "func (s *" + s.Name + ") MemorySet(models []register.Model) {\n"
 	template += "mu.Lock()\n"
 	template += "defer mu.Unlock()\n\n"
 	template += "Mem = make([]*" + s.Name + ", 0, len(models))\n"
-	template += "for _, model := range models {\n"
-	template += "if instance, ok := model.(*" + s.Name + "); ok {\n"
+	template += "for _, m := range models {\n"
+	template += "if instance, ok := m.(*" + s.Name + "); ok {\n"
 	template += "Mem = append(Mem, instance)\n"
 	template += "}\n"
 	template += "}\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") DbInsert(c *HConn) (Message, error) {\n"
+	template += "func (s *" + s.Name + ") DbInsert(c *hconn.HConn) (model.Message, error) {\n"
 	template += "if s.Uuid == uuid.Nil {\n"
 	template += "s.WithNewUuid()\n"
 	template += "}\n"
 	template += "if err := s.Encode(); err != nil {\n"
-	template += "return Message{}, err\n"
+	template += "return model.Message{}, err\n"
 	template += "}\n\n"
-	template += "msg := Message{\n"
-	template += "Type: MessageTypeInsert,\n"
-	template += "Entity: Entity{\n"
+	template += "msg := model.Message{\n"
+	template += "Type: model.MessageTypeInsert,\n"
+	template += "Entity: register.Entity{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "Data: s.GetBufferData(),\n"
@@ -258,19 +258,19 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n"
 	template += "s.BufferReset()\n\n"
 	template += "if err := c.Send(msg); err != nil {\n"
-	template += "return Message{}, err\n"
+	template += "return model.Message{}, err\n"
 	template += "}\n\n"
 	template += "return c.Receive()\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") DbDelete(c *HConn) (Message, error) {\n"
+	template += "func (s *" + s.Name + ") DbDelete(c *hconn.HConn) (model.Message, error) {\n"
 	template += "s.Deleted = true\n"
 	template += "if err := s.Encode(); err != nil {\n"
-	template += "return Message{}, err\n"
+	template += "return model.Message{}, err\n"
 	template += "}\n\n"
-	template += "msg := Message{\n"
-	template += "Type: MessageTypeDelete,\n"
-	template += "Entity: Entity{\n"
+	template += "msg := model.Message{\n"
+	template += "Type: model.MessageTypeDelete,\n"
+	template += "Entity: register.Entity{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "Data: s.GetBufferData(),\n"
@@ -278,21 +278,21 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n"
 	template += "s.BufferReset()\n\n"
 	template += "if err := c.Send(msg); err != nil {\n"
-	template += "return Message{}, err\n"
+	template += "return model.Message{}, err\n"
 	template += "}\n\n"
 	template += "return c.Receive()\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") DbUpdate(c *HConn) (Message, error) {\n"
+	template += "func (s *" + s.Name + ") DbUpdate(c *hconn.HConn) (model.Message, error) {\n"
 	template += "if s.Uuid == uuid.Nil {\n"
-	template += "return Message{}, errors.New(\"cannot update entity without UUID\")\n"
+	template += "return model.Message{}, errors.New(\"cannot update entity without UUID\")\n"
 	template += "}\n"
 	template += "if err := s.Encode(); err != nil {\n"
-	template += "return Message{}, err\n"
+	template += "return model.Message{}, err\n"
 	template += "}\n\n"
-	template += "msg := Message{\n"
-	template += "Type: MessageTypeUpdate,\n"
-	template += "Entity: Entity{\n"
+	template += "msg := model.Message{\n"
+	template += "Type: model.MessageTypeUpdate,\n"
+	template += "Entity: register.Entity{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "Data: s.GetBufferData(),\n"
@@ -300,15 +300,15 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	template += "}\n"
 	template += "s.BufferReset()\n\n"
 	template += "if err := c.Send(msg); err != nil {\n"
-	template += "return Message{}, err\n"
+	template += "return model.Message{}, err\n"
 	template += "}\n"
 	template += "return c.Receive()\n"
 	template += "}\n\n"
 
-	template += "func DbGetAll(c *HConn) ([]*" + s.Name + ", error) {\n"
-	template += "msg := Message{\n"
-	template += "Type: MessageTypeGetAll,\n"
-	template += "Entity: Entity{\n"
+	template += "func DbGetAll(c *hconn.HConn) ([]*" + s.Name + ", error) {\n"
+	template += "msg := model.Message{\n"
+	template += "Type: model.MessageTypeGetAll,\n"
+	template += "Entity: register.Entity{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "},\n"
@@ -332,8 +332,8 @@ func TemplateEntity(s StructDef, v string) (string, error) {
 	return template, nil
 }
 
-func TemplateMigrations(sPrevious StructDef, sCurrent StructDef, vPrevious string, vCurrent string) (string, error) {
-	mn, err := GetModuleName(pathGoMod)
+func TemplateMigrations(sPrevious util.StructDef, sCurrent util.StructDef, vPrevious string, vCurrent string) (string, error) {
+	mn, err := util.GetModuleName(pathGoMod)
 	if err != nil {
 		return "", err
 	}
@@ -356,7 +356,7 @@ func TemplateMigrations(sPrevious StructDef, sCurrent StructDef, vPrevious strin
 	return template, nil
 }
 
-func TemplateMigrationsTests(sCurrent StructDef) (string, error) {
+func TemplateMigrationsTests(sCurrent util.StructDef) (string, error) {
 	template := "package " + sCurrent.Name + "\n"
 	template += "// NOTE: this file is generated only once, if you want to update it you can delete it and run the generator again!" + "\n\n"
 

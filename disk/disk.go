@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/rah-0/nabu"
 
-	. "github.com/rah-0/hyperion/register"
-	. "github.com/rah-0/hyperion/util"
+	"github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/util"
 )
 
 /*
@@ -24,10 +24,10 @@ Disk will structure the bytes of an entity (row) in the following way:
 type Disk struct {
 	Mu         sync.Mutex
 	Path       string
-	Entity     *Entity
+	Entity     *register.Entity
 	File       *os.File
-	syncTicker *time.Ticker
-	stopChan   chan struct{}
+	SyncTicker *time.Ticker
+	StopChan   chan struct{}
 }
 
 func NewDisk() *Disk {
@@ -39,7 +39,7 @@ func (x *Disk) WithNewRandomPath() *Disk {
 	return x
 }
 
-func (x *Disk) WithEntity(e *Entity) *Disk {
+func (x *Disk) WithEntity(e *register.Entity) *Disk {
 	x.Entity = e
 	return x
 }
@@ -60,8 +60,8 @@ func (x *Disk) OpenFile() error {
 	x.File = file
 
 	// Start background sync loop
-	x.syncTicker = time.NewTicker(1 * time.Second)
-	x.stopChan = make(chan struct{})
+	x.SyncTicker = time.NewTicker(1 * time.Second)
+	x.StopChan = make(chan struct{})
 	go x.backgroundSync()
 
 	return nil
@@ -70,11 +70,11 @@ func (x *Disk) OpenFile() error {
 func (x *Disk) backgroundSync() {
 	for {
 		select {
-		case <-x.syncTicker.C:
+		case <-x.SyncTicker.C:
 			x.Mu.Lock()
 			x.File.Sync()
 			x.Mu.Unlock()
-		case <-x.stopChan:
+		case <-x.StopChan:
 			return
 		}
 	}
@@ -97,7 +97,7 @@ func (x *Disk) DataWrite(data []byte) error {
 	return nil
 }
 
-func (x *Disk) DataReadAll() ([]Model, error) {
+func (x *Disk) DataReadAll() ([]register.Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()
 
@@ -116,7 +116,7 @@ func (x *Disk) DataReadAll() ([]Model, error) {
 	var bytesRead int64 = 0
 	var lastLoggedProgress = -1.0
 
-	latestEntities := make(map[uuid.UUID]Model)
+	latestEntities := make(map[uuid.UUID]register.Model)
 
 	nabu.FromMessage("Reading entities from file...").Log()
 	for {
@@ -160,7 +160,7 @@ func (x *Disk) DataReadAll() ([]Model, error) {
 	}
 
 	// Convert map to slice
-	entities := make([]Model, 0, len(latestEntities))
+	entities := make([]register.Model, 0, len(latestEntities))
 	for _, model := range latestEntities {
 		entities = append(entities, model)
 	}
@@ -288,10 +288,10 @@ func (x *Disk) DataCleanup() error {
 
 	// Write compacted file
 	tempPath := x.Path + ".tmp"
-	if exists, err := PathExists(tempPath); err != nil {
+	if exists, err := util.PathExists(tempPath); err != nil {
 		return err
 	} else if exists {
-		if err = FileDelete(tempPath); err != nil {
+		if err = util.FileDelete(tempPath); err != nil {
 			return err
 		}
 	}

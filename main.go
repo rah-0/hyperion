@@ -10,60 +10,54 @@ import (
 
 	"github.com/rah-0/nabu"
 
+	"github.com/rah-0/hyperion/config"
+	"github.com/rah-0/hyperion/node"
 	_ "github.com/rah-0/hyperion/template"
 
-	. "github.com/rah-0/hyperion/model"
-	. "github.com/rah-0/hyperion/util"
-)
-
-type Config struct {
-	ClusterName string
-	Nodes       []*Node
-}
-
-var (
-	GlobalNode       *Node
-	GlobalConfig     Config
-	GlobalPathConfig string
-	GlobalForceHost  string
+	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/util"
 )
 
 func main() {
-	flag.StringVar(&GlobalPathConfig, "pathConfig", "", "")
-	flag.StringVar(&GlobalForceHost, "forceHost", "", "")
+	flag.StringVar(&config.Path, "pathConfig", "", "")
+	flag.StringVar(&config.ForceHost, "forceHost", "", "")
 	flag.Parse()
 
 	nabu.SetLogLevel(nabu.LevelDebug)
 
-	if err := checkConfigs(); err != nil {
+	n, err := checkConfigs()
+	if err != nil {
 		nabu.FromError(err).WithLevelFatal().Log()
 		os.Exit(1)
 	}
 
-	run()
+	run(n)
 }
 
-func checkConfigs() error {
+func checkConfigs() (*node.Node, error) {
 	if err := checkPathConfig(); err != nil {
-		return nabu.FromError(err).Log()
+		return nil, nabu.FromError(err).Log()
 	}
 	if err := checkConfig(); err != nil {
-		return nabu.FromError(err).Log()
+		return nil, nabu.FromError(err).Log()
 	}
 	checkForceHost()
-	if err := checkCurrentNode(); err != nil {
-		return nabu.FromError(err).Log()
+
+	n, err := checkCurrentNode()
+	if err != nil {
+		return nil, nabu.FromError(err).Log()
 	}
-	return nil
+
+	return n, nil
 }
 
-func run() {
+func run(n *node.Node) {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := GlobalNode.Start(); err != nil {
+		if err := n.Start(); err != nil {
 			if errors.Is(err, syscall.EADDRINUSE) {
 				nabu.FromError(err).WithLevelFatal().Log()
 				os.Exit(1)
@@ -77,45 +71,45 @@ func run() {
 }
 
 func checkPathConfig() error {
-	if GlobalPathConfig == "" {
-		GlobalPathConfig = GetEnvKeyValue("HyperionPathConfig")
+	if config.Path == "" {
+		config.Path = util.GetEnvKeyValue("HyperionPathConfig")
 	}
-	if GlobalPathConfig == "" {
-		return ErrPathConfigNotSpecified
+	if config.Path == "" {
+		return model.ErrPathConfigNotSpecified
 	}
 
-	exists, err := PathExists(GlobalPathConfig)
+	exists, err := util.PathExists(config.Path)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return ErrPathConfigNotFound
+		return model.ErrPathConfigNotFound
 	}
-	if !FileIsEditable(GlobalPathConfig) {
-		return ErrPathConfigNotEditable
+	if !util.FileIsEditable(config.Path) {
+		return model.ErrPathConfigNotEditable
 	}
 
 	return nil
 }
 
 func checkForceHost() {
-	if GlobalForceHost == "" {
-		GlobalForceHost = GetEnvKeyValue("HyperionForceHost")
+	if config.ForceHost == "" {
+		config.ForceHost = util.GetEnvKeyValue("HyperionForceHost")
 	}
 	return
 }
 
 func checkConfig() error {
-	content, err := FileRead(GlobalPathConfig)
+	content, err := util.FileRead(config.Path)
 	if err != nil {
 		return err
 	}
 
 	if len(content) == 0 {
-		return ErrPathConfigNoContent
+		return model.ErrPathConfigNoContent
 	}
 
-	err = json.Unmarshal(content, &GlobalConfig)
+	err = json.Unmarshal(content, &config.Loaded)
 	if err != nil {
 		return err
 	}
@@ -123,31 +117,53 @@ func checkConfig() error {
 	return nil
 }
 
-func checkCurrentNode() error {
-	if len(GlobalConfig.Nodes) == 0 {
-		return ErrConfigNodesNotFound
+func checkCurrentNode() (*node.Node, error) {
+	if len(config.Loaded.Nodes) == 0 {
+		return nil, model.ErrConfigNodesNotFound
 	}
 
-	var hostName string
-	if GlobalForceHost == "" {
-		var err error
-		hostName, err = os.Hostname()
+	hostName := config.ForceHost
+	if hostName == "" {
+		h, err := os.Hostname()
 		if err != nil {
-			return err
+			return nil, err
 		}
-	} else {
-		hostName = GlobalForceHost
+		hostName = h
 	}
 
-	for _, node := range GlobalConfig.Nodes {
-		if node.Host.Name == hostName {
-			GlobalNode = NewNode(node.Host, node.Path, node.Entities)
+	for _, nodeConfig := range config.Loaded.Nodes {
+		if nodeConfig.Host.Name == hostName {
+			n := node.NewNode().
+				WithHost(nodeConfig.Host.Name, nodeConfig.Host.Port).
+				WithPath(nodeConfig.Path.Data)
+
+			for _, e := range nodeConfig.Entities {
+				n.AddEntity(e.Name)
+			}
+
+			addNodePeers(n, config.Loaded)
+			return n, nil
 		}
 	}
 
-	if GlobalNode == nil {
-		return ErrConfigNodeNotFoundForHost
-	}
+	return nil, model.ErrConfigNodeNotFoundForHost
+}
 
-	return nil
+func addNodePeers(n *node.Node, c config.Config) {
+	for _, nc := range c.Nodes {
+		// Skip self
+		if n.Host.Name == nc.Host.Name && n.Host.Port == nc.Host.Port {
+			continue
+		}
+
+		peer := node.NewNode().
+			WithHost(nc.Host.Name, nc.Host.Port).
+			WithPath(nc.Path.Data)
+
+		for _, e := range nc.Entities {
+			peer.AddEntity(e.Name)
+		}
+
+		n.AddPeer(peer)
+	}
 }

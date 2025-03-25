@@ -3,7 +3,7 @@ package Sample
 import (
 	"testing"
 
-	. "github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/register"
 )
 
 func TestSample_EncodeDecode(t *testing.T) {
@@ -27,10 +27,10 @@ func TestSample_EncodeDecode(t *testing.T) {
 }
 
 func TestGeneratedSampleSerializer(t *testing.T) {
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("no entities generated")
 	}
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}

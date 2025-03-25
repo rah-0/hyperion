@@ -10,8 +10,8 @@ import (
 
 	_ "github.com/rah-0/hyperion/template"
 
-	. "github.com/rah-0/hyperion/register"
-	. "github.com/rah-0/hyperion/util"
+	"github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/util"
 )
 
 const (
@@ -25,13 +25,13 @@ func TestDataWrite(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -99,20 +99,20 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
 
 		// Write multiple unique entities
-		expectedEntities := make(map[uuid.UUID]Model)
+		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 50; i++ {
 			instance := e.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
@@ -138,7 +138,7 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 
 		// Ensure correct entity count
 		if len(entities) != len(expectedEntities) {
-			t.Fatalf("Mismatch in entity count: expected %d, got %d", len(expectedEntities), len(entities))
+			t.Fatalf("Mismatch in entity count: expected %d, got %d", len(expectedEntities), len(register.Entities))
 		}
 
 		// Ensure UUIDs match
@@ -164,13 +164,13 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -216,8 +216,8 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 		}
 
 		// Validate Data
-		if len(entities) != 1 {
-			t.Fatalf("Expected only 1 entity after updates, but got %d", len(entities))
+		if len(register.Entities) != 1 {
+			t.Fatalf("Expected only 1 entity after updates, but got %d", len(register.Entities))
 		}
 
 		finalEntity := entities[0]
@@ -243,20 +243,20 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
 
 		// Write initial entities
-		expectedEntities := make(map[uuid.UUID]Model)
+		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 10; i++ {
 			instance := e.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
@@ -311,7 +311,7 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 
 		// Ensure count is still correct
 		if len(entities) != len(expectedEntities) {
-			t.Fatalf("Expected %d entities after updates, got %d", len(expectedEntities), len(entities))
+			t.Fatalf("Expected %d entities after updates, got %d", len(expectedEntities), len(register.Entities))
 		}
 
 		// Validate updated entities
@@ -333,20 +333,20 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
 
 		// Write multiple unique entities
-		expectedEntities := make(map[uuid.UUID]Model)
+		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 1000; i++ {
 			instance := e.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
@@ -378,7 +378,7 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 
 		// Ensure the number of entities remains unchanged
 		if len(entities) != len(expectedEntities) {
-			t.Fatalf("Mismatch in entity count after cleanup: expected %d, got %d", len(expectedEntities), len(entities))
+			t.Fatalf("Mismatch in entity count after cleanup: expected %d, got %d", len(expectedEntities), len(register.Entities))
 		}
 	}
 }
@@ -387,20 +387,20 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
 
 		// Write initial entities
-		expectedEntities := make(map[uuid.UUID]Model)
+		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 1000; i++ {
 			instance := e.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
@@ -457,7 +457,7 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 
 		// Ensure only 10 entities remain (latest versions)
 		if len(entities) != len(expectedEntities) {
-			t.Fatalf("Mismatch in entity count after cleanup: expected %d, got %d", len(expectedEntities), len(entities))
+			t.Fatalf("Mismatch in entity count after cleanup: expected %d, got %d", len(expectedEntities), len(register.Entities))
 		}
 
 		// Validate updated entities
@@ -482,14 +482,14 @@ func BenchmarkDataWrite(b *testing.B) {
 		b.Run(fmt.Sprintf("%d_Rows", numRows), func(b *testing.B) {
 			d := NewDisk()
 			d.WithNewRandomPath()
-			defer FileDelete(d.Path)
+			defer util.FileDelete(d.Path)
 
-			if len(Entities) == 0 {
+			if len(register.Entities) == 0 {
 				b.Fatal("No entities generated")
 			}
 
-			var testEntity *Entity
-			for _, e := range Entities {
+			var testEntity *register.Entity
+			for _, e := range register.Entities {
 				if e.Name == "Sample" {
 					testEntity = e
 					break
@@ -530,14 +530,14 @@ func BenchmarkDataReadAll(b *testing.B) {
 		b.Run(fmt.Sprintf("%d_Rows", numRows), func(b *testing.B) {
 			d := NewDisk()
 			d.WithNewRandomPath()
-			defer FileDelete(d.Path)
+			defer util.FileDelete(d.Path)
 
-			if len(Entities) == 0 {
+			if len(register.Entities) == 0 {
 				b.Fatal("No entities generated")
 			}
 
-			var testEntity *Entity
-			for _, e := range Entities {
+			var testEntity *register.Entity
+			for _, e := range register.Entities {
 				if e.Name == "Sample" {
 					testEntity = e
 					break
@@ -578,14 +578,14 @@ func TestGenerateLargeDataset(t *testing.T) {
 
 	d := NewDisk()
 	d.WithNewRandomPath()
-	// t.Cleanup(func() { FileDelete(d.Path) })
+	// t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	var testEntity *Entity
-	for _, e := range Entities {
+	var testEntity *register.Entity
+	for _, e := range register.Entities {
 		if e.Name == "Sample" {
 			testEntity = e
 			break
@@ -632,13 +632,13 @@ func TestDataReadAll_WithDeletedEntity(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -676,7 +676,7 @@ func TestDataReadAll_WithDeletedEntity(t *testing.T) {
 			t.Fatalf("Read failed: %v", err)
 		}
 		if len(entities) != 0 {
-			t.Fatalf("Expected 0 entities after delete, got %d", len(entities))
+			t.Fatalf("Expected 0 entities after delete, got %d", len(register.Entities))
 		}
 	}
 }
@@ -685,13 +685,13 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -728,8 +728,8 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(entities) != 1 {
-			t.Fatalf("Expected 1 entity after insert following delete, got %d", len(entities))
+		if len(register.Entities) != 1 {
+			t.Fatalf("Expected 1 entity after insert following delete, got %d", len(register.Entities))
 		}
 		if entities[0].GetFieldValue(FieldName) != "Alive" {
 			t.Fatalf("Expected Name 'Alive', got %v", entities[0].GetFieldValue(FieldName))
@@ -741,13 +741,13 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()
 	d.OpenFile()
-	t.Cleanup(func() { FileDelete(d.Path) })
+	t.Cleanup(func() { util.FileDelete(d.Path) })
 
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -789,7 +789,7 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 			t.Fatal(err)
 		}
 		if len(entities) != 0 {
-			t.Fatalf("Expected 0 entities after cleanup, got %d", len(entities))
+			t.Fatalf("Expected 0 entities after cleanup, got %d", len(register.Entities))
 		}
 	}
 }

@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/uuid"
 
-	. "github.com/rah-0/hyperion/hconn"
-	. "github.com/rah-0/hyperion/model"
-	. "github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/hconn"
+	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/register"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	_       Model = (*Sample)(nil)
+	_       register.Model = (*Sample)(nil)
 	mu      sync.Mutex
 	Buffer  = new(bytes.Buffer)
 	Encoder = gob.NewEncoder(Buffer)
@@ -56,7 +56,7 @@ func init() {
 
 	Mem = []*Sample{}
 
-	RegisterEntity(&Entity{
+	register.RegisterEntity(&register.Entity{
 		Version:    Version,
 		Name:       Name,
 		DbFileName: DbFileName,
@@ -71,7 +71,7 @@ type Sample struct {
 	Surname string
 }
 
-func New() Model {
+func New() register.Model {
 	return &Sample{}
 }
 
@@ -199,17 +199,17 @@ func (s *Sample) MemoryClear() {
 	Mem = []*Sample{}
 }
 
-func (s *Sample) MemoryGetAll() []Model {
+func (s *Sample) MemoryGetAll() []register.Model {
 	mu.Lock()
 	defer mu.Unlock()
-	instances := make([]Model, len(Mem))
+	instances := make([]register.Model, len(Mem))
 	for i, instance := range Mem {
 		instances[i] = instance
 	}
 	return instances
 }
 
-func (s *Sample) MemoryContains(target Model) bool {
+func (s *Sample) MemoryContains(target register.Model) bool {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -221,29 +221,29 @@ func (s *Sample) MemoryContains(target Model) bool {
 	return false
 }
 
-func (s *Sample) MemorySet(models []Model) {
+func (s *Sample) MemorySet(models []register.Model) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	Mem = make([]*Sample, 0, len(models))
-	for _, model := range models {
-		if instance, ok := model.(*Sample); ok {
+	for _, m := range models {
+		if instance, ok := m.(*Sample); ok {
 			Mem = append(Mem, instance)
 		}
 	}
 }
 
-func (s *Sample) DbInsert(c *HConn) (Message, error) {
+func (s *Sample) DbInsert(c *hconn.HConn) (model.Message, error) {
 	if s.Uuid == uuid.Nil {
 		s.WithNewUuid()
 	}
 	if err := s.Encode(); err != nil {
-		return Message{}, err
+		return model.Message{}, err
 	}
 
-	msg := Message{
-		Type: MessageTypeInsert,
-		Entity: Entity{
+	msg := model.Message{
+		Type: model.MessageTypeInsert,
+		Entity: register.Entity{
 			Version: Version,
 			Name:    Name,
 			Data:    s.GetBufferData(),
@@ -252,21 +252,21 @@ func (s *Sample) DbInsert(c *HConn) (Message, error) {
 	s.BufferReset()
 
 	if err := c.Send(msg); err != nil {
-		return Message{}, err
+		return model.Message{}, err
 	}
 
 	return c.Receive()
 }
 
-func (s *Sample) DbDelete(c *HConn) (Message, error) {
+func (s *Sample) DbDelete(c *hconn.HConn) (model.Message, error) {
 	s.Deleted = true
 	if err := s.Encode(); err != nil {
-		return Message{}, err
+		return model.Message{}, err
 	}
 
-	msg := Message{
-		Type: MessageTypeDelete,
-		Entity: Entity{
+	msg := model.Message{
+		Type: model.MessageTypeDelete,
+		Entity: register.Entity{
 			Version: Version,
 			Name:    Name,
 			Data:    s.GetBufferData(),
@@ -275,23 +275,23 @@ func (s *Sample) DbDelete(c *HConn) (Message, error) {
 	s.BufferReset()
 
 	if err := c.Send(msg); err != nil {
-		return Message{}, err
+		return model.Message{}, err
 	}
 
 	return c.Receive()
 }
 
-func (s *Sample) DbUpdate(c *HConn) (Message, error) {
+func (s *Sample) DbUpdate(c *hconn.HConn) (model.Message, error) {
 	if s.Uuid == uuid.Nil {
-		return Message{}, errors.New("cannot update entity without UUID")
+		return model.Message{}, errors.New("cannot update entity without UUID")
 	}
 	if err := s.Encode(); err != nil {
-		return Message{}, err
+		return model.Message{}, err
 	}
 
-	msg := Message{
-		Type: MessageTypeUpdate,
-		Entity: Entity{
+	msg := model.Message{
+		Type: model.MessageTypeUpdate,
+		Entity: register.Entity{
 			Version: Version,
 			Name:    Name,
 			Data:    s.GetBufferData(),
@@ -300,15 +300,15 @@ func (s *Sample) DbUpdate(c *HConn) (Message, error) {
 	s.BufferReset()
 
 	if err := c.Send(msg); err != nil {
-		return Message{}, err
+		return model.Message{}, err
 	}
 	return c.Receive()
 }
 
-func DbGetAll(c *HConn) ([]*Sample, error) {
-	msg := Message{
-		Type: MessageTypeGetAll,
-		Entity: Entity{
+func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
+	msg := model.Message{
+		Type: model.MessageTypeGetAll,
+		Entity: register.Entity{
 			Version: Version,
 			Name:    Name,
 		},

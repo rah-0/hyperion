@@ -102,7 +102,7 @@ func FileSizeHuman(path string) (string, error) {
 	return fmt.Sprintf("%.2f %s", floatSize, units[i]), nil
 }
 
-func FileCOpy(pathSource, pathDestiny string) error {
+func FileCopy(pathSource, pathDestiny string) error {
 	// Open the source file
 	sourceFile, err := os.Open(pathSource)
 	if err != nil {

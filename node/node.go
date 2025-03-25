@@ -1,4 +1,4 @@
-package main
+package node
 
 import (
 	"fmt"
@@ -10,23 +10,32 @@ import (
 
 	"github.com/rah-0/nabu"
 
-	. "github.com/rah-0/hyperion/disk"
-	. "github.com/rah-0/hyperion/hconn"
-	. "github.com/rah-0/hyperion/model"
-	. "github.com/rah-0/hyperion/register"
-	. "github.com/rah-0/hyperion/util"
+	"github.com/rah-0/hyperion/disk"
+	"github.com/rah-0/hyperion/hconn"
+	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/util"
 )
 
-type NodeStatus int
+type Status int
 
 const (
-	NodeStatusStarting NodeStatus = iota
-	NodeStatusActive
-	NodeStatusReady
+	StatusStarting Status = iota
+	StatusActive
+	StatusReady
 )
 
+type EntityStorage struct {
+	Disk   *disk.Disk
+	Memory *register.Entity
+}
+
+type Entity struct {
+	Name string
+}
+
 type Path struct {
-	Data string // Where data will be stored
+	Data string
 }
 
 type Host struct {
@@ -34,43 +43,54 @@ type Host struct {
 	Port int
 }
 
-type EntityConfig struct {
-	Name string
-}
-
-type EntityStorage struct {
-	Disk   *Disk
-	Memory *Entity
-}
-
 type Node struct {
-	Host            Host
-	Path            Path
-	errCh           chan error
-	Status          NodeStatus
-	HConn           *HConn
+	// Props coming from json config
+	Host     Host
+	Path     Path
+	Entities []Entity
+
+	ErrCh           chan error
+	Status          Status
+	HConn           *hconn.HConn
 	Peers           []*Node
-	Entities        []*EntityConfig
 	EntitiesStorage []*EntityStorage
+	PeerConnected   bool
 
 	Mu sync.Mutex
 }
 
-func NewNode(h Host, p Path, ecs []*EntityConfig) *Node {
+func NewNode() *Node {
 	return &Node{
-		Host:     h,
-		Path:     p,
-		Entities: ecs,
-		errCh:    make(chan error, 1),
-		Peers:    []*Node{},
+		ErrCh: make(chan error, 1),
 	}
 }
 
-func ConnectToNodeWithHostAndPort(ip string, port string) (*HConn, error) {
+func (x *Node) WithHost(name string, port int) *Node {
+	x.Host.Name = name
+	x.Host.Port = port
+	return x
+}
+
+func (x *Node) WithPath(pathData string) *Node {
+	x.Path.Data = pathData
+	return x
+}
+
+func (x *Node) AddEntity(name string) *Node {
+	x.Entities = append(x.Entities, Entity{Name: name})
+	return x
+}
+
+func (x *Node) AddPeer(p *Node) *Node {
+	x.Peers = append(x.Peers, p)
+	return x
+}
+
+func ConnectToNodeWithHostAndPort(ip string, port string) (*hconn.HConn, error) {
 	for {
 		conn, err := net.Dial("tcp", ip+":"+port)
 		if err == nil {
-			return NewHConn(conn), nil
+			return hconn.NewHConn(conn), nil
 		}
 		if strings.Contains(err.Error(), "connection refused") {
 			nabu.FromMessage("trying to connect to: [" + ip + ":" + port + "]").Log()
@@ -81,11 +101,11 @@ func ConnectToNodeWithHostAndPort(ip string, port string) (*HConn, error) {
 	}
 }
 
-func ConnectToNode(x *Node) (*HConn, error) {
+func ConnectToNode(x *Node) (*hconn.HConn, error) {
 	for {
 		conn, err := net.Dial("tcp", x.getListenAddress())
 		if err == nil {
-			return NewHConn(conn), nil
+			return hconn.NewHConn(conn), nil
 		}
 		if strings.Contains(err.Error(), "connection refused") {
 			nabu.FromMessage("trying to connect to: [" + x.getListenAddress() + "]").Log()
@@ -103,9 +123,9 @@ func (x *Node) Start() error {
 
 	// Config per node targets an entity by name but here we find all versions for that entity
 	for _, e := range x.Entities {
-		for _, re := range Entities {
+		for _, re := range register.Entities {
 			if e.Name == re.Name {
-				disk := NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
+				disk := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
 				if err := disk.OpenFile(); err != nil {
 					return err
 				}
@@ -130,7 +150,7 @@ func (x *Node) Start() error {
 	x.handleErrors()
 	defer func() {
 		if err = listener.Close(); err != nil {
-			x.errCh <- err
+			x.ErrCh <- err
 		}
 	}()
 	go x.connectToPeers()
@@ -140,12 +160,12 @@ func (x *Node) Start() error {
 }
 
 func (x *Node) checkDataDir() error {
-	exists, err := PathExists(x.Path.Data)
+	exists, err := util.PathExists(x.Path.Data)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		err = DirectoryCreate(x.Path.Data)
+		err = util.DirectoryCreate(x.Path.Data)
 		if err != nil {
 			return err
 		}
@@ -156,7 +176,7 @@ func (x *Node) checkDataDir() error {
 func (x *Node) loadEntitiesFromDisk() error {
 	for _, s := range x.EntitiesStorage {
 		d := s.Disk
-		exists, err := PathExists(d.Path)
+		exists, err := util.PathExists(d.Path)
 		if err != nil {
 			return err
 		}
@@ -182,29 +202,21 @@ func (x *Node) loadEntitiesFromDisk() error {
 func (x *Node) connectToPeers() {
 	x.WaitStatusActive()
 
-	var newPeers []*Node
-	for _, node := range GlobalConfig.Nodes {
-		// Skip self
-		if node.Host.Name == x.Host.Name && node.Host.Port == x.Host.Port {
-			continue
-		}
-
+	for _, node := range x.Peers {
 		c, err := ConnectToNode(node)
 		if err != nil {
-			x.errCh <- nabu.FromError(err).Log()
+			x.ErrCh <- nabu.FromError(err).Log()
 			continue
 		}
 
 		node.Mu.Lock()
+		node.PeerConnected = true
 		node.HConn = c
 		node.Mu.Unlock()
-		newPeers = append(newPeers, node)
 	}
 
-	// Update the peer list
 	x.Mu.Lock()
-	x.Peers = newPeers
-	x.Status = NodeStatusReady
+	x.Status = StatusReady
 	x.Mu.Unlock()
 }
 
@@ -214,25 +226,25 @@ func (x *Node) getListenAddress() string {
 
 func (x *Node) acceptConnections(listener net.Listener) {
 	x.Mu.Lock()
-	x.Status = NodeStatusActive
+	x.Status = StatusActive
 	x.Mu.Unlock()
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			x.errCh <- err
+			x.ErrCh <- err
 			return
 		}
 
-		c := NewHConn(conn)
+		c := hconn.NewHConn(conn)
 		go x.handleConnection(c)
 	}
 }
 
-func (x *Node) handleConnection(hc *HConn) {
+func (x *Node) handleConnection(hc *hconn.HConn) {
 	defer func() {
-		if err := hc.C.Close(); err != nil {
-			x.errCh <- nabu.FromError(err).Log()
+		if err := hc.Close(); err != nil {
+			x.ErrCh <- nabu.FromError(err).Log()
 		}
 	}()
 
@@ -241,16 +253,16 @@ func (x *Node) handleConnection(hc *HConn) {
 	for {
 		msgIn, err := hc.Receive()
 		if err != nil {
-			x.errCh <- nabu.FromError(err).Log()
+			x.ErrCh <- nabu.FromError(err).Log()
 			break
 		}
 
-		msgOut := Message{}
+		msgOut := model.Message{}
 		switch msgIn.Type {
-		case MessageTypeInsert, MessageTypeDelete, MessageTypeUpdate:
+		case model.MessageTypeInsert, model.MessageTypeDelete, model.MessageTypeUpdate:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
-				msgOut.Status = StatusError
+				msgOut.Status = model.StatusError
 				msgOut.String = "entity not found: [" + msgIn.Entity.Name + "]"
 				break
 			}
@@ -258,43 +270,43 @@ func (x *Node) handleConnection(hc *HConn) {
 			entity := e.Memory.New()
 			entity.SetBufferData(msgIn.Entity.Data)
 			if err := entity.Decode(); err != nil {
-				msgOut.Status = StatusError
+				msgOut.Status = model.StatusError
 				msgOut.String = err.Error()
 				break
 			}
 
 			switch msgIn.Type {
-			case MessageTypeInsert:
+			case model.MessageTypeInsert:
 				entity.MemoryAdd()
-			case MessageTypeDelete:
+			case model.MessageTypeDelete:
 				entity.MemoryRemove()
-			case MessageTypeUpdate:
+			case model.MessageTypeUpdate:
 				entity.MemoryUpdate()
 			}
 
 			if err := e.Disk.DataWrite(msgIn.Entity.Data); err != nil {
-				msgOut.Status = StatusError
+				msgOut.Status = model.StatusError
 				msgOut.String = err.Error()
 			} else {
-				msgOut.Status = StatusSuccess
+				msgOut.Status = model.StatusSuccess
 			}
 
-		case MessageTypeGetAll:
+		case model.MessageTypeGetAll:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
-				msgOut.Status = StatusError
+				msgOut.Status = model.StatusError
 				msgOut.String = "entity not found: [" + msgIn.Entity.Name + "]"
 			} else {
-				msgOut.Status = StatusSuccess
+				msgOut.Status = model.StatusSuccess
 				msgOut.Models = e.Memory.New().MemoryGetAll()
 			}
 
-		case MessageTypeTest:
+		case model.MessageTypeTest:
 			msgOut.String = msgIn.String + "Received"
 		}
 
 		if err := hc.Send(msgOut); err != nil {
-			x.errCh <- nabu.FromError(err).Log()
+			x.ErrCh <- nabu.FromError(err).Log()
 		}
 	}
 }
@@ -312,7 +324,7 @@ func (x *Node) handleErrors() {
 	go func(n *Node) {
 		for {
 			select {
-			case err, ok := <-n.errCh:
+			case err, ok := <-n.ErrCh:
 				if !ok {
 					return
 				}
@@ -329,7 +341,7 @@ func (x *Node) WaitStatusActive() {
 		x.Mu.Lock()
 		status := x.Status
 		x.Mu.Unlock()
-		if status == NodeStatusActive {
+		if status == StatusActive {
 			break
 		} else {
 			time.Sleep(1 * time.Second)

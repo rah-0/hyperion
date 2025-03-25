@@ -7,31 +7,35 @@ import (
 
 	"github.com/rah-0/nabu"
 
-	. "github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/model"
 )
 
 var Timeout = 5 * time.Second
 
 type HConn struct {
 	C net.Conn
-	s *Serializer
+	S *Serializer
 }
 
 func NewHConn(conn net.Conn) *HConn {
 	return &HConn{
 		C: conn,
-		s: NewSerializer(),
+		S: NewSerializer(),
 	}
+}
+
+func (hc *HConn) Close() error {
+	return hc.C.Close()
 }
 
 // Send sends a message with a length-prefixed format over the connection
 func (hc *HConn) Send(a any) error {
-	if err := hc.s.Encode(a); err != nil {
+	if err := hc.S.Encode(a); err != nil {
 		return nabu.FromError(err).Log()
 	}
 
-	data := hc.s.GetData()
-	hc.s.Reset()
+	data := hc.S.GetData()
+	hc.S.Reset()
 
 	dataLen := uint64(len(data))
 	lengthPrefix := make([]byte, 8)
@@ -48,7 +52,7 @@ func (hc *HConn) Send(a any) error {
 }
 
 // Receive reads a message using the length-prefixed format
-func (hc *HConn) Receive() (msg Message, err error) {
+func (hc *HConn) Receive() (msg model.Message, err error) {
 	if err = hc.C.SetReadDeadline(time.Now().Add(Timeout)); err != nil {
 		return
 	}
@@ -60,7 +64,7 @@ func (hc *HConn) Receive() (msg Message, err error) {
 
 	messageLength := binary.BigEndian.Uint64(lengthPrefix)
 	if messageLength == 0 {
-		err = ErrMessageEmpty
+		err = model.ErrMessageEmpty
 		return
 	}
 
@@ -69,9 +73,9 @@ func (hc *HConn) Receive() (msg Message, err error) {
 		return
 	}
 
-	hc.s.SetData(message)
-	err = hc.s.Decode(&msg)
-	hc.s.Reset()
+	hc.S.SetData(message)
+	err = hc.S.Decode(&msg)
+	hc.S.Reset()
 	return msg, err
 }
 

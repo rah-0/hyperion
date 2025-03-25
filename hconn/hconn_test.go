@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/model"
 )
 
 // TestSendAndReceive tests sending and receiving a Message using HConn
@@ -21,8 +21,8 @@ func TestSendAndReceive(t *testing.T) {
 	serverConn := NewHConn(server)
 	clientConn := NewHConn(client)
 
-	testMessage := Message{
-		Type:   MessageTypeTest,
+	testMessage := model.Message{
+		Type:   model.MessageTypeTest,
 		String: "Test",
 	}
 
@@ -52,10 +52,10 @@ func TestMultipleMessages(t *testing.T) {
 	serverConn := NewHConn(server)
 	clientConn := NewHConn(client)
 
-	messages := []Message{
-		{Type: MessageTypeTest, String: "First Message"},
-		{Type: MessageTypeTest, String: "Second Message"},
-		{Type: MessageTypeTest, String: "Third Message"},
+	messages := []model.Message{
+		{Type: model.MessageTypeTest, String: "First Message"},
+		{Type: model.MessageTypeTest, String: "Second Message"},
+		{Type: model.MessageTypeTest, String: "Third Message"},
 	}
 
 	go func() {
@@ -91,7 +91,7 @@ func TestLargeMessage(t *testing.T) {
 	for i := range largeStr {
 		largeStr[i] = byte(i % 256)
 	}
-	largeMessage := Message{Type: MessageTypeTest, String: string(largeStr)}
+	largeMessage := model.Message{Type: model.MessageTypeTest, String: string(largeStr)}
 
 	go func() {
 		if err := clientConn.Send(largeMessage); err != nil {
@@ -144,7 +144,7 @@ func TestPartialRead(t *testing.T) {
 
 	clientConn := NewHConn(client)
 
-	testMessage := Message{Type: MessageTypeTest, String: "Hello, Chunked Read!"}
+	testMessage := model.Message{Type: model.MessageTypeTest, String: "Hello, Chunked Read!"}
 
 	go func() {
 		if err := clientConn.Send(testMessage); err != nil {
@@ -178,9 +178,9 @@ func TestPartialRead(t *testing.T) {
 	}
 
 	hc := NewHConn(server)
-	hc.s.SetData(receivedBuf)
-	var decoded Message
-	err = hc.s.Decode(&decoded)
+	hc.S.SetData(receivedBuf)
+	var decoded model.Message
+	err = hc.S.Decode(&decoded)
 	if err != nil {
 		t.Fatalf("Decoding failed: %v", err)
 	}

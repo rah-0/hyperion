@@ -70,15 +70,18 @@ func BuildBinary(suffix string) error {
 	binaryPath := filepath.Join(os.TempDir(), "hyperion_test_"+suffix)
 	fmt.Println("Building binary at:", binaryPath)
 
-	// Build the Go binary
-	cmd := exec.Command("go", "build", "-o", binaryPath)
+	projectRoot, err := filepath.Abs(filepath.Join(".."))
+	if err != nil {
+		return fmt.Errorf("failed to resolve project root: %w", err)
+	}
+
+	cmd := exec.Command("go", "build", "-o", binaryPath, projectRoot)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to build binary: %w", err)
 	}
 
-	// Give execution permissions to the binary
 	if err := os.Chmod(binaryPath, 0755); err != nil {
 		return fmt.Errorf("failed to set execute permissions: %w", err)
 	}

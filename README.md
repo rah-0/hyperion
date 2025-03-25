@@ -76,7 +76,7 @@ Since the config can be big enough, JSON is preferred for flexibility.
 - Hot Reload: required to modify the config without causing downtime
   - HTTP Endpoint: a POST request that will send the updated JSON config
 
-See a configuration sample [here](https://github.com/rah-0/hyperion/blob/master/config.json)
+See a configuration sample [here](https://github.com/rah-0/hyperion/blob/master/config/config.json)
 
 **Details and considerations:**
 - all nodes will have the same config

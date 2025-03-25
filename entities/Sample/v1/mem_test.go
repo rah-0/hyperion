@@ -5,15 +5,15 @@ import (
 
 	"github.com/google/uuid"
 
-	. "github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/register"
 )
 
 func TestMemoryAdd(t *testing.T) {
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -31,11 +31,11 @@ func TestMemoryAdd(t *testing.T) {
 }
 
 func TestMemoryClear(t *testing.T) {
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -61,11 +61,11 @@ func TestMemoryClear(t *testing.T) {
 }
 
 func TestMemoryGetAll(t *testing.T) {
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -89,11 +89,11 @@ func TestMemoryGetAll(t *testing.T) {
 }
 
 func TestMemoryContains(t *testing.T) {
-	if len(Entities) == 0 {
+	if len(register.Entities) == 0 {
 		t.Fatal("No entities generated")
 	}
 
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -121,7 +121,7 @@ func TestMemoryContains(t *testing.T) {
 }
 
 func TestMemoryRemove(t *testing.T) {
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -145,7 +145,7 @@ func TestMemoryRemove(t *testing.T) {
 }
 
 func TestMemoryUpdate(t *testing.T) {
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -177,7 +177,7 @@ func TestMemoryUpdate(t *testing.T) {
 }
 
 func TestMemorySet(t *testing.T) {
-	for _, e := range Entities {
+	for _, e := range register.Entities {
 		if e.Name != "Sample" {
 			continue
 		}
@@ -192,7 +192,7 @@ func TestMemorySet(t *testing.T) {
 		instance2.SetFieldValue(FieldUuid, u2)
 		instance2.SetFieldValue(FieldName, "Laura")
 
-		models := []Model{instance1, instance2}
+		models := []register.Model{instance1, instance2}
 		instance1.MemorySet(models)
 
 		all := instance1.MemoryGetAll()

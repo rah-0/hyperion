@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"reflect"
 
-	. "github.com/rah-0/hyperion/model"
-	. "github.com/rah-0/hyperion/util"
+	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/util"
 
 	//
 	// Dynamic Imports Start
@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	GlobalStructFields = []StructField{
+	GlobalStructFields = []util.StructField{
 		{
 			Name: "Uuid",
 			Type: "uuid.UUID",
@@ -31,27 +31,27 @@ var (
 )
 
 func Generate() error {
-	pathEntities, err := filepath.Abs(pathEntities)
+	pe, err := filepath.Abs(pathEntities)
 	if err != nil {
 		return err
 	}
 
-	structs, err := StructsExtractFromPackage(pathEntities, false)
+	structs, err := util.StructsExtractFromPackage(pe, false)
 	if err != nil {
 		return err
 	}
 
-	err = createDirectoriesForStructs(pathEntities, structs)
+	err = createDirectoriesForStructs(pe, structs)
 	if err != nil {
 		return err
 	}
 
-	err = createEntities(structs, pathEntities)
+	err = createEntities(structs, pe)
 	if err != nil {
 		return err
 	}
 
-	err = updateDynamicImports(pathEntities)
+	err = updateDynamicImports(pe)
 	if err != nil {
 		return err
 	}
@@ -60,19 +60,19 @@ func Generate() error {
 }
 
 func updateDynamicImports(pathEntities string) error {
-	mn, err := GetModuleName(pathGoMod)
+	mn, err := util.GetModuleName(pathGoMod)
 	if err != nil {
 		return err
 	}
 
-	ds, err := DirectoriesInPath(pathEntities)
+	ds, err := util.DirectoriesInPath(pathEntities)
 	if err != nil {
 		return err
 	}
 
 	var imports = ""
 	for _, entityName := range ds {
-		versions, err := DirectoriesInPath(filepath.Join(pathEntities, entityName))
+		versions, err := util.DirectoriesInPath(filepath.Join(pathEntities, entityName))
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func updateDynamicImports(pathEntities string) error {
 		}
 	}
 
-	err = FileExpand("gen.go", []FileExpanderTags{{
+	err = util.FileExpand("gen.go", []util.FileExpanderTags{{
 		StartTag:   []byte("// Dynamic Imports Start"),
 		EndTag:     []byte("// Dynamic Imports End"),
 		ExpandWith: []byte(imports),
@@ -97,8 +97,8 @@ func updateDynamicImports(pathEntities string) error {
 	return nil
 }
 
-func createEntityAtPath(s StructDef, v string, p string) error {
-	var newFields []StructField
+func createEntityAtPath(s util.StructDef, v string, p string) error {
+	var newFields []util.StructField
 	newFields = append(newFields, GlobalStructFields...)
 	newFields = append(newFields, s.Fields...)
 	s.Fields = newFields
@@ -113,7 +113,7 @@ func createEntityAtPath(s StructDef, v string, p string) error {
 		return err
 	}
 
-	err = FileCreate(p, f)
+	err = util.FileCreate(p, f)
 	if err != nil {
 		return err
 	}
@@ -121,9 +121,9 @@ func createEntityAtPath(s StructDef, v string, p string) error {
 	return nil
 }
 
-func createEntityFirstVersion(s StructDef, pathEntities string) error {
+func createEntityFirstVersion(s util.StructDef, pathEntities string) error {
 	p := path.Join(pathEntities, s.Name, "v1")
-	err := DirectoryCreate(p)
+	err := util.DirectoryCreate(p)
 	if err != nil {
 		return err
 	}
@@ -139,14 +139,14 @@ func createEntityFirstVersion(s StructDef, pathEntities string) error {
 
 // isMigrationRequired checks the entity defined by the user with the latest
 // version that was generated. This verifies if all fields and types match.
-func isMigrationRequired(s StructDef, p string) (bool, string, error) {
-	hv, err := DirectoryGetHighestVersion(p)
+func isMigrationRequired(s util.StructDef, p string) (bool, string, error) {
+	hv, err := util.DirectoryGetHighestVersion(p)
 	if err != nil {
 		return false, hv, err
 	}
 
 	p = path.Join(p, hv)
-	svs, err := StructsExtractFromPackage(p, false)
+	svs, err := util.StructsExtractFromPackage(p, false)
 	if err != nil {
 		return false, hv, err
 	}
@@ -157,17 +157,17 @@ func isMigrationRequired(s StructDef, p string) (bool, string, error) {
 		}
 	}
 
-	return false, hv, ErrGeneratorStructNotFound
+	return false, hv, model.ErrGeneratorStructNotFound
 }
 
 // compareStructFields compares two StructDefs while ignoring GlobalStructFields.
-func compareStructFields(a, b StructDef) bool {
+func compareStructFields(a, b util.StructDef) bool {
 	ignoredFields := make(map[string]bool)
 	for _, f := range GlobalStructFields {
 		ignoredFields[f.Name] = true
 	}
 
-	var filteredA, filteredB []StructField
+	var filteredA, filteredB []util.StructField
 	for _, f := range a.Fields {
 		if !ignoredFields[f.Name] {
 			filteredA = append(filteredA, f)
@@ -184,13 +184,13 @@ func compareStructFields(a, b StructDef) bool {
 
 // createEntityMigration will create upgrade and downgrade functions together with tests.
 // It is mandatory to modify the functions body and the tests
-func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p string) error {
-	svs, err := StructsExtractFromPackage(path.Join(p, vPrevious), false)
+func createEntityMigration(sCurrent util.StructDef, vPrevious string, vCurrent, p string) error {
+	svs, err := util.StructsExtractFromPackage(path.Join(p, vPrevious), false)
 	if err != nil {
 		return err
 	}
 
-	var sPrevious StructDef
+	var sPrevious util.StructDef
 	for _, x := range svs {
 		if x.Name == sCurrent.Name {
 			sPrevious = x
@@ -198,7 +198,7 @@ func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p str
 		}
 	}
 	if sPrevious.Name == "" {
-		return ErrGeneratorStructNotFound
+		return model.ErrGeneratorStructNotFound
 	}
 
 	t, err := TemplateMigrations(sPrevious, sCurrent, vPrevious, vCurrent)
@@ -211,7 +211,7 @@ func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p str
 		return err
 	}
 
-	err = FileCreate(filepath.Join(p, vCurrent, "migrations.go"), f)
+	err = util.FileCreate(filepath.Join(p, vCurrent, "migrations.go"), f)
 	if err != nil {
 		return err
 	}
@@ -226,7 +226,7 @@ func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p str
 		return err
 	}
 
-	err = FileCreate(filepath.Join(p, vCurrent, "migrations_test.go"), f)
+	err = util.FileCreate(filepath.Join(p, vCurrent, "migrations_test.go"), f)
 	if err != nil {
 		return err
 	}
@@ -234,10 +234,10 @@ func createEntityMigration(sCurrent StructDef, vPrevious string, vCurrent, p str
 	return nil
 }
 
-func createEntities(structs []StructDef, pathEntities string) error {
+func createEntities(structs []util.StructDef, pathEntities string) error {
 	for _, s := range structs {
 		p := path.Join(pathEntities, s.Name)
-		versions, err := DirectoriesInPath(p)
+		versions, err := util.DirectoriesInPath(p)
 		if err != nil {
 			return err
 		}
@@ -254,7 +254,7 @@ func createEntities(structs []StructDef, pathEntities string) error {
 			}
 
 			if mr {
-				nv, err := StringNextVersion(hv)
+				nv, err := util.StringNextVersion(hv)
 				if err != nil {
 					return err
 				}
@@ -279,10 +279,10 @@ func createEntities(structs []StructDef, pathEntities string) error {
 	return nil
 }
 
-func createDirectoriesForStructs(pathEntities string, structs []StructDef) (err error) {
+func createDirectoriesForStructs(pathEntities string, structs []util.StructDef) (err error) {
 	for _, s := range structs {
 		pathEntity := path.Join(pathEntities, s.Name)
-		err = DirectoryCreate(pathEntity)
+		err = util.DirectoryCreate(pathEntity)
 		if err != nil {
 			return
 		}
