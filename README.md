@@ -9,9 +9,10 @@ Hyperion is a distributed, memory-first database written in Golang and for Golan
   - [x] Protocols
   - [x] Serializers
   - [x] Compression
-  - [ ] Databases
-    - [ ] MariaDB
-    - [ ] PostgreSQL
+  - [x] Databases
+    - [x] MariaDB
+    - [x] PostgreSQL
+    - [x] SQLite
   - [x] Cache
     - [x] Redis
     - [x] Memcached

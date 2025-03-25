@@ -45,13 +45,13 @@ type Product struct {
 	// Expected struct definitions
 	expected := map[string][]StructField{
 		"User": {
-			{"ID", "int"},
-			{"Name", "string"},
-			{"Email", "string"},
+			{"ID", "int", ""},
+			{"Name", "string", ""},
+			{"Email", "string", ""},
 		},
 		"Product": {
-			{"Name", "string"},
-			{"Price", "float64"},
+			{"Name", "string", ""},
+			{"Price", "float64", ""},
 		},
 	}
 

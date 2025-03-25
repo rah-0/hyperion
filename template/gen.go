@@ -20,9 +20,11 @@ var (
 		{
 			Name: "Uuid",
 			Type: "uuid.UUID",
+			Tag:  "`json:\",omitzero\"`",
 		}, {
 			Name: "Deleted",
 			Type: "bool",
+			Tag:  "`json:\",omitzero\"`",
 		},
 	}
 
@@ -170,12 +172,20 @@ func compareStructFields(a, b util.StructDef) bool {
 	var filteredA, filteredB []util.StructField
 	for _, f := range a.Fields {
 		if !ignoredFields[f.Name] {
-			filteredA = append(filteredA, f)
+			filteredA = append(filteredA, util.StructField{
+				Name: f.Name,
+				Type: f.Type,
+				Tag:  "", // ignore tag
+			})
 		}
 	}
 	for _, f := range b.Fields {
 		if !ignoredFields[f.Name] {
-			filteredB = append(filteredB, f)
+			filteredB = append(filteredB, util.StructField{
+				Name: f.Name,
+				Type: f.Type,
+				Tag:  "", // ignore tag
+			})
 		}
 	}
 
@@ -216,7 +226,7 @@ func createEntityMigration(sCurrent util.StructDef, vPrevious string, vCurrent, 
 		return err
 	}
 
-	t, err = TemplateMigrationsTests(sCurrent)
+	t, err = TemplateMigrationsTests(sCurrent, vCurrent)
 	if err != nil {
 		return err
 	}

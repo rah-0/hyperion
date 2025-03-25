@@ -20,6 +20,7 @@ const (
 type StructField struct {
 	Name string
 	Type string
+	Tag  string
 }
 
 // StructDef represents the whole struct definition

@@ -61,6 +61,11 @@ func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef,
 
 				fieldType := exprToString(field.Type)
 
+				tag := ""
+				if field.Tag != nil {
+					tag = field.Tag.Value
+				}
+
 				for _, name := range field.Names {
 					if !includePrivate && unicode.IsLower(rune(name.Name[0])) {
 						continue // Skip private fields if flag is false
@@ -69,6 +74,7 @@ func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef,
 					fields = append(fields, StructField{
 						Name: name.Name,
 						Type: fieldType,
+						Tag:  tag,
 					})
 				}
 			}
