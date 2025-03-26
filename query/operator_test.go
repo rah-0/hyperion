@@ -7,6 +7,41 @@ import (
 	"github.com/google/uuid"
 )
 
+func TestEvaluateOp_CoversAllOpsRegistryTypes(t *testing.T) {
+	// Dummy inputs by type
+	dummies := map[string][2]any{
+		"string":    {"a", "a"},
+		"bool":      {true, true},
+		"int":       {1, 1},
+		"int8":      {int8(1), int8(1)},
+		"int16":     {int16(1), int16(1)},
+		"int32":     {int32(1), int32(1)},
+		"int64":     {int64(1), int64(1)},
+		"uint":      {uint(1), uint(1)},
+		"uint8":     {uint8(1), uint8(1)},
+		"uint16":    {uint16(1), uint16(1)},
+		"uint32":    {uint32(1), uint32(1)},
+		"uint64":    {uint64(1), uint64(1)},
+		"float32":   {float32(1.0), float32(1.0)},
+		"float64":   {float64(1.0), float64(1.0)},
+		"uuid.UUID": {uuid.New(), uuid.New()},
+		"time.Time": {time.Now(), time.Now()},
+	}
+
+	for fieldType := range OpsRegistry {
+		d, ok := dummies[fieldType]
+		if !ok {
+			t.Errorf("missing test dummy values for type: %s", fieldType)
+			continue
+		}
+
+		_, err := EvaluateOp(OpTypeEqual, fieldType, d[0], d[1])
+		if err != nil {
+			t.Errorf("EvaluateOp missing case for type %q or failed: %v", fieldType, err)
+		}
+	}
+}
+
 func TestStringOps_All(t *testing.T) {
 	tests := []struct {
 		op       OpType
@@ -19,8 +54,8 @@ func TestStringOps_All(t *testing.T) {
 		{OpTypeNotEqual, "hello", "hello", false},
 		{OpTypeContains, "hello world", "world", true},
 		{OpTypeContains, "hello world", "mars", false},
-		{OpTypeNotContain, "hello world", "mars", true},
-		{OpTypeNotContain, "hello world", "world", false},
+		{OpTypeNotContains, "hello world", "mars", true},
+		{OpTypeNotContains, "hello world", "world", false},
 		{OpTypeStartsWith, "golang", "go", true},
 		{OpTypeStartsWith, "golang", "lang", false},
 		{OpTypeEndsWith, "golang", "lang", true},

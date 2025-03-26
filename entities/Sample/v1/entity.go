@@ -14,6 +14,7 @@ import (
 
 	"github.com/rah-0/hyperion/hconn"
 	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/query"
 	"github.com/rah-0/hyperion/register"
 )
 
@@ -47,11 +48,17 @@ var (
 )
 
 func init() {
-	gob.Register(&Sample{})
+	// Validate all FieldTypes have an operator set
+	for _, typ := range FieldTypes {
+		if _, ok := query.OpsRegistry[typ]; !ok {
+			panic("missing operator set for field type: " + typ)
+		}
+	}
 
 	// The following process initializes the encoder and decoder by preloading metadata.
 	// This prevents metadata from being stored with the first encoded struct.
 	// If the metadata were missing or inconsistent, decoding the struct later could fail.
+	gob.Register(&Sample{})
 	x := New()
 	if err := x.Encode(); err != nil {
 		panic("failed to encode type metadata: " + err.Error())
@@ -61,13 +68,14 @@ func init() {
 	}
 	x.BufferReset()
 
+	// Initializations
 	Mem = []*Sample{}
-
 	register.RegisterEntity(&register.Entity{
 		Version:    Version,
 		Name:       Name,
 		DbFileName: DbFileName,
 		New:        New,
+		FieldTypes: FieldTypes,
 	})
 }
 
