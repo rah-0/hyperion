@@ -24,9 +24,29 @@ const (
 	OpTypeEndsWith
 )
 
-var UuidOps = map[OpType]func(a, b uuid.UUID) bool{
-	OpTypeEqual:    func(a, b uuid.UUID) bool { return a == b },
-	OpTypeNotEqual: func(a, b uuid.UUID) bool { return a != b },
+var OpsRegistry = map[string]any{
+	"string": StringOps,
+
+	"bool": BoolOps,
+
+	"int":   IntOps,
+	"int8":  Int8Ops,
+	"int16": Int16Ops,
+	"int32": Int32Ops,
+	"int64": Int64Ops,
+
+	"uint":   UintOps,
+	"uint8":  Uint8Ops,
+	"uint16": Uint16Ops,
+	"uint32": Uint32Ops,
+	"uint64": Uint64Ops,
+
+	"float32": Float32Ops,
+	"float64": Float64Ops,
+
+	"uuid.UUID": UuidOps,
+
+	"time.Time": TimeOps,
 }
 
 var StringOps = map[OpType]func(a, b string) bool{
@@ -41,15 +61,6 @@ var StringOps = map[OpType]func(a, b string) bool{
 var BoolOps = map[OpType]func(a, b bool) bool{
 	OpTypeEqual:    func(a, b bool) bool { return a == b },
 	OpTypeNotEqual: func(a, b bool) bool { return a != b },
-}
-
-var TimeOps = map[OpType]func(a, b time.Time) bool{
-	OpTypeEqual:            func(a, b time.Time) bool { return a.Equal(b) },
-	OpTypeNotEqual:         func(a, b time.Time) bool { return !a.Equal(b) },
-	OpTypeGreaterThan:      func(a, b time.Time) bool { return a.After(b) },
-	OpTypeLessThan:         func(a, b time.Time) bool { return a.Before(b) },
-	OpTypeGreaterThanEqual: func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
-	OpTypeLessThanEqual:    func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
 }
 
 var IntOps = map[OpType]func(a, b int) bool{
@@ -149,4 +160,18 @@ var Float64Ops = map[OpType]func(a, b float64) bool{
 	OpTypeLessThan:         func(a, b float64) bool { return a < b },
 	OpTypeGreaterThanEqual: func(a, b float64) bool { return a >= b },
 	OpTypeLessThanEqual:    func(a, b float64) bool { return a <= b },
+}
+
+var UuidOps = map[OpType]func(a, b uuid.UUID) bool{
+	OpTypeEqual:    func(a, b uuid.UUID) bool { return a == b },
+	OpTypeNotEqual: func(a, b uuid.UUID) bool { return a != b },
+}
+
+var TimeOps = map[OpType]func(a, b time.Time) bool{
+	OpTypeEqual:            func(a, b time.Time) bool { return a.Equal(b) },
+	OpTypeNotEqual:         func(a, b time.Time) bool { return !a.Equal(b) },
+	OpTypeGreaterThan:      func(a, b time.Time) bool { return a.After(b) },
+	OpTypeLessThan:         func(a, b time.Time) bool { return a.Before(b) },
+	OpTypeGreaterThanEqual: func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
+	OpTypeLessThanEqual:    func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
 }
