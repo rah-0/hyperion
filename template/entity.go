@@ -44,15 +44,13 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	}
 	template += ")\n\n"
 
-	/*
-		i = 1
-		template += "var Fields = map[string]int{" + "\n"
-		for _, f := range s.Fields {
-			template += `"` + f.Name + `": ` + strconv.Itoa(i) + "," + "\n"
-			i++
-		}
-		template += "}" + "\n\n"
-	*/
+	i = 1
+	template += "var FieldTypes = map[int]string{" + "\n"
+	for _, f := range s.Fields {
+		template += `Field` + f.Name + `: "` + f.Type + `",` + "\n"
+		i++
+	}
+	template += "}" + "\n\n"
 
 	template += "var (" + "\n"
 	template += "_ register.Model = (*" + s.Name + ")(nil)" + "\n"

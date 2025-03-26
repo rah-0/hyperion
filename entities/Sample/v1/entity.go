@@ -30,6 +30,13 @@ const (
 	FieldSurname = 4
 )
 
+var FieldTypes = map[int]string{
+	FieldUuid:    "uuid.UUID",
+	FieldDeleted: "bool",
+	FieldName:    "string",
+	FieldSurname: "string",
+}
+
 var (
 	_       register.Model = (*Sample)(nil)
 	mu      sync.Mutex
