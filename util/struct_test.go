@@ -37,7 +37,7 @@ type Product struct {
 	}
 
 	// Run the function to extract structs
-	structs, err := StructsExtractFromPackage(tempDir, false)
+	structs, err := StructsExtractFromPackage(tempDir, false, 0)
 	if err != nil {
 		t.Fatalf("Failed to extract structs: %v", err)
 	}
@@ -76,5 +76,74 @@ type Product struct {
 					structDef.Name, expFields[i].Name, expFields[i].Type, field.Name, field.Type)
 			}
 		}
+	}
+}
+
+func TestExtractStructsWithLimit(t *testing.T) {
+	tempDir := filepath.Join(os.TempDir(), "testpkg_"+uuid.New().String())
+	err := DirectoryCreate(tempDir)
+	if err != nil {
+		t.Fatalf("Failed to create temp test directory: %v", err)
+	}
+	defer DirectoryRemove(tempDir)
+
+	goFileContent := `package testpkg
+
+type A struct {}
+type B struct {}
+type C struct {}
+type D struct {}`
+
+	err = FileCreate(filepath.Join(tempDir, "models.go"), []byte(goFileContent))
+	if err != nil {
+		t.Fatalf("Failed to create Go file: %v", err)
+	}
+
+	structs, err := StructsExtractFromPackage(tempDir, false, 2)
+	if err != nil {
+		t.Fatalf("Failed to extract structs: %v", err)
+	}
+
+	if len(structs) != 2 {
+		t.Errorf("Expected 2 structs due to limit, got %d", len(structs))
+	}
+}
+
+func TestExtractStructsIncludePrivate(t *testing.T) {
+	tempDir := filepath.Join(os.TempDir(), "testpkg_"+uuid.New().String())
+	err := DirectoryCreate(tempDir)
+	if err != nil {
+		t.Fatalf("Failed to create temp test directory: %v", err)
+	}
+	defer DirectoryRemove(tempDir)
+
+	goFileContent := `package testpkg
+
+type Demo struct {
+	PublicField  string
+	privateField int
+}`
+
+	err = FileCreate(filepath.Join(tempDir, "model.go"), []byte(goFileContent))
+	if err != nil {
+		t.Fatalf("Failed to create Go file: %v", err)
+	}
+
+	structs, err := StructsExtractFromPackage(tempDir, true, 0)
+	if err != nil {
+		t.Fatalf("Failed to extract structs: %v", err)
+	}
+
+	if len(structs) != 1 {
+		t.Fatalf("Expected 1 struct, got %d", len(structs))
+	}
+
+	fieldNames := map[string]bool{}
+	for _, f := range structs[0].Fields {
+		fieldNames[f.Name] = true
+	}
+
+	if !fieldNames["PublicField"] || !fieldNames["privateField"] {
+		t.Errorf("Expected both exported and unexported fields, got: %v", fieldNames)
 	}
 }

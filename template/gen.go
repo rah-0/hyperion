@@ -38,7 +38,7 @@ func Generate() error {
 		return err
 	}
 
-	structs, err := util.StructsExtractFromPackage(pe, false)
+	structs, err := util.StructsExtractFromPackage(pe, false, 0)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func isMigrationRequired(s util.StructDef, p string) (bool, string, error) {
 	}
 
 	p = path.Join(p, hv)
-	svs, err := util.StructsExtractFromPackage(p, false)
+	svs, err := util.StructsExtractFromPackage(p, false, 1)
 	if err != nil {
 		return false, hv, err
 	}
@@ -195,7 +195,7 @@ func compareStructFields(a, b util.StructDef) bool {
 // createEntityMigration will create upgrade and downgrade functions together with tests.
 // It is mandatory to modify the functions body and the tests
 func createEntityMigration(sCurrent util.StructDef, vPrevious string, vCurrent, p string) error {
-	svs, err := util.StructsExtractFromPackage(path.Join(p, vPrevious), false)
+	svs, err := util.StructsExtractFromPackage(path.Join(p, vPrevious), false, 1)
 	if err != nil {
 		return err
 	}

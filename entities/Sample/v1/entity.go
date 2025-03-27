@@ -248,12 +248,12 @@ func (s *Sample) MemorySet(models []register.Model) {
 	}
 }
 
-func (s *Sample) DbInsert(c *hconn.HConn) (model.Message, error) {
+func (s *Sample) DbInsert(c *hconn.HConn) error {
 	if s.Uuid == uuid.Nil {
 		s.WithNewUuid()
 	}
 	if err := s.Encode(); err != nil {
-		return model.Message{}, err
+		return err
 	}
 
 	msg := model.Message{
@@ -267,16 +267,24 @@ func (s *Sample) DbInsert(c *hconn.HConn) (model.Message, error) {
 	s.BufferReset()
 
 	if err := c.Send(msg); err != nil {
-		return model.Message{}, err
+		return err
 	}
 
-	return c.Receive()
+	resp, err := c.Receive()
+	if err != nil {
+		return err
+	}
+	if resp.Status == model.StatusError {
+		return errors.New(resp.String)
+	}
+
+	return nil
 }
 
-func (s *Sample) DbDelete(c *hconn.HConn) (model.Message, error) {
+func (s *Sample) DbDelete(c *hconn.HConn) error {
 	s.Deleted = true
 	if err := s.Encode(); err != nil {
-		return model.Message{}, err
+		return err
 	}
 
 	msg := model.Message{
@@ -290,18 +298,26 @@ func (s *Sample) DbDelete(c *hconn.HConn) (model.Message, error) {
 	s.BufferReset()
 
 	if err := c.Send(msg); err != nil {
-		return model.Message{}, err
+		return err
 	}
 
-	return c.Receive()
+	resp, err := c.Receive()
+	if err != nil {
+		return err
+	}
+	if resp.Status == model.StatusError {
+		return errors.New(resp.String)
+	}
+
+	return nil
 }
 
-func (s *Sample) DbUpdate(c *hconn.HConn) (model.Message, error) {
+func (s *Sample) DbUpdate(c *hconn.HConn) error {
 	if s.Uuid == uuid.Nil {
-		return model.Message{}, errors.New("cannot update entity without UUID")
+		return errors.New("cannot update entity without UUID")
 	}
 	if err := s.Encode(); err != nil {
-		return model.Message{}, err
+		return err
 	}
 
 	msg := model.Message{
@@ -315,9 +331,18 @@ func (s *Sample) DbUpdate(c *hconn.HConn) (model.Message, error) {
 	s.BufferReset()
 
 	if err := c.Send(msg); err != nil {
-		return model.Message{}, err
+		return err
 	}
-	return c.Receive()
+
+	resp, err := c.Receive()
+	if err != nil {
+		return err
+	}
+	if resp.Status == model.StatusError {
+		return errors.New(resp.String)
+	}
+
+	return nil
 }
 
 func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
@@ -338,12 +363,53 @@ func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
 		return nil, err
 	}
 
-	var results []*Sample
-	for _, m := range resp.Models {
-		if s, ok := m.(*Sample); ok {
-			results = append(results, s)
-		}
+	if resp.Status == model.StatusError {
+		return nil, errors.New(resp.String)
 	}
 
-	return results, nil
+	return Cast(resp.Models), nil
+}
+
+func Cast(models []register.Model) []*Sample {
+	out := make([]*Sample, len(models))
+	for i, m := range models {
+		out[i] = m.(*Sample)
+	}
+	return out
+}
+
+type Query struct {
+	*query.Query
+}
+
+func NewQuery() *Query {
+	return &Query{Query: query.NewQuery()}
+}
+
+func (x *Query) Execute(c *hconn.HConn) ([]*Sample, error) {
+	x.SortFilters()
+
+	msg := model.Message{
+		Type: model.MessageTypeQuery,
+		Entity: register.Entity{
+			Version: Version,
+			Name:    Name,
+		},
+		Query: *x.Query,
+	}
+
+	if err := c.Send(msg); err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Receive()
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Status == model.StatusError {
+		return nil, errors.New(resp.String)
+	}
+
+	return Cast(resp.Models), nil
 }

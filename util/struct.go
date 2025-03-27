@@ -13,8 +13,9 @@ import (
 )
 
 // StructsExtractFromPackage scans a package directory and extracts struct definitions
-// The `includePrivate` flag determines whether to include unexported (private) fields
-func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef, error) {
+// includePrivate determines whether to include unexported (private) fields
+// limit specifies the maximum number of structs to extract (0 means no limit)
+func StructsExtractFromPackage(pkgDir string, includePrivate bool, limit int) ([]StructDef, error) {
 	var structs []StructDef
 
 	files, err := os.ReadDir(pkgDir)
@@ -40,7 +41,12 @@ func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef,
 			return nil, err
 		}
 
+		done := false
 		ast.Inspect(node, func(n ast.Node) bool {
+			if done {
+				return false
+			}
+
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
 				return true
@@ -53,14 +59,12 @@ func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef,
 
 			var fields []StructField
 			for _, field := range st.Fields.List {
-				// If the field is embedded (anonymous), return an error
 				if len(field.Names) == 0 {
 					err = fmt.Errorf("embedded fields are not supported in struct %s", ts.Name.Name)
 					return false
 				}
 
 				fieldType := exprToString(field.Type)
-
 				tag := ""
 				if field.Tag != nil {
 					tag = field.Tag.Value
@@ -68,7 +72,7 @@ func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef,
 
 				for _, name := range field.Names {
 					if !includePrivate && unicode.IsLower(rune(name.Name[0])) {
-						continue // Skip private fields if flag is false
+						continue
 					}
 
 					fields = append(fields, StructField{
@@ -84,11 +88,20 @@ func StructsExtractFromPackage(pkgDir string, includePrivate bool) ([]StructDef,
 				Fields: fields,
 			})
 
+			if limit > 0 && len(structs) >= limit {
+				// Stop traversal
+				done = true
+				return false
+			}
+
 			return true
 		})
-
 		if err != nil {
 			return nil, err
+		}
+
+		if done || (limit > 0 && len(structs) >= limit) {
+			break
 		}
 	}
 

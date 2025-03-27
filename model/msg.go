@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/gob"
 
+	"github.com/rah-0/hyperion/query"
 	"github.com/rah-0/hyperion/register"
 )
 
@@ -19,6 +20,7 @@ const (
 	MessageTypeDelete
 	MessageTypeUpdate
 	MessageTypeGetAll
+	MessageTypeQuery
 )
 
 type Status int
@@ -35,4 +37,5 @@ type Message struct {
 	Bytes  []byte
 	Entity register.Entity
 	Models []register.Model
+	Query  query.Query
 }

@@ -175,13 +175,9 @@ func TestMessageInsert(t *testing.T) {
 		Surname: "Else",
 	}
 
-	msg, err := entity.DbInsert(connection)
+	err := entity.DbInsert(connection)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if msg.Status != model.StatusSuccess {
-		t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
 	}
 }
 
@@ -191,22 +187,14 @@ func TestMessageInsertAndDelete(t *testing.T) {
 		Surname: "Else",
 	}
 
-	msg, err := entity.DbInsert(connection)
+	err := entity.DbInsert(connection)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if msg.Status != model.StatusSuccess {
-		t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
-	}
-
-	msg, err = entity.DbDelete(connection)
+	err = entity.DbDelete(connection)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if msg.Status != model.StatusSuccess {
-		t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
 	}
 }
 
@@ -218,12 +206,9 @@ func TestMessageInsert1000(t *testing.T) {
 			Surname: fmt.Sprintf("Else%d", i),
 		}
 
-		msg, err := entity.DbInsert(connection)
+		err := entity.DbInsert(connection)
 		if err != nil {
 			t.Fatal(err)
-		}
-		if msg.Status != model.StatusSuccess {
-			t.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
 		}
 
 		expected = append(expected, entity)
@@ -259,7 +244,7 @@ func TestMessageUpdate(t *testing.T) {
 		Name:    "Initial",
 		Surname: "User",
 	}
-	if _, err := entity.DbInsert(connection); err != nil {
+	if err := entity.DbInsert(connection); err != nil {
 		t.Fatal(err)
 	}
 
@@ -267,12 +252,9 @@ func TestMessageUpdate(t *testing.T) {
 	entity.Name = "Updated"
 	entity.Surname = "User"
 
-	resp, err := entity.DbUpdate(connection)
+	err := entity.DbUpdate(connection)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if resp.Status != model.StatusSuccess {
-		t.Fatalf("Unexpected update response status: %v", resp.Status)
 	}
 
 	all, err := SampleV1.DbGetAll(connection)
@@ -305,7 +287,7 @@ func TestMessageGetAll(t *testing.T) {
 			Name:    fmt.Sprintf("Name%d", i),
 			Surname: fmt.Sprintf("Surname%d", i),
 		}
-		if _, err := entity.DbInsert(connection); err != nil {
+		if err := entity.DbInsert(connection); err != nil {
 			t.Fatal(err)
 		}
 		inserted = append(inserted, entity)
@@ -424,13 +406,41 @@ func BenchmarkMessageInsert(b *testing.B) {
 			Surname: fmt.Sprintf("Else%d", i),
 		}
 
-		msg, err := entity.DbInsert(connection)
+		err := entity.DbInsert(connection)
 		if err != nil {
 			b.Fatal(err)
 		}
+	}
+}
 
-		if msg.Status != model.StatusSuccess {
-			b.Fatalf("Unexpected status: got %v, want %v", msg.Status, model.StatusSuccess)
-		}
+func BenchmarkDbGetAll(b *testing.B) {
+	counts := []int{1, 10, 100, 1000}
+
+	for _, count := range counts {
+		b.Run(fmt.Sprintf("Count%d", count), func(b *testing.B) {
+			// Insert 'count' entities before benchmarking
+			for i := 0; i < count; i++ {
+				entity := SampleV1.Sample{
+					Name:    fmt.Sprintf("Name%d", i),
+					Surname: fmt.Sprintf("Surname%d", i),
+				}
+				err := entity.DbInsert(connection)
+				if err != nil {
+					b.Fatalf("Insert failed for count %d at i=%d: %v", count, i, err)
+				}
+			}
+
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				entities, err := SampleV1.DbGetAll(connection)
+				if err != nil {
+					b.Fatal(err)
+				}
+				if len(entities) < count {
+					b.Fatalf("Expected at least %d entities, got %d", count, len(entities))
+				}
+			}
+		})
 	}
 }
