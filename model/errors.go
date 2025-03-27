@@ -16,4 +16,7 @@ var (
 	ErrPathConfigNotSpecified = errors.New("pathConfig: not specified in either command line argument or environment variable")
 	ErrPathConfigNotFound     = errors.New("pathConfig: specified path cannot be found")
 	ErrPathConfigNotEditable  = errors.New("pathConfig: specified path is not editable")
+
+	ErrQueryNil               = errors.New("query: cannot be nil")
+	ErrQueryInvalidFilterType = errors.New("query: invalid specified filter type")
 )

@@ -1,7 +1,11 @@
 package query
 
-import (
-	"sort"
+type FilterType int
+
+const (
+	FilterTypeUndefined FilterType = iota
+	FilterTypeOr
+	FilterTypeAnd
 )
 
 type Filter struct {
@@ -10,28 +14,20 @@ type Filter struct {
 	Op    OpType
 }
 
-type Query struct {
+type Filters struct {
+	Type    FilterType
 	Filters []Filter
 }
 
+type Query struct {
+	Filters Filters
+}
+
 func NewQuery() *Query {
-	return &Query{
-		Filters: []Filter{},
-	}
+	return &Query{}
 }
 
-func (x *Query) AddFilter(field int, op OpType, value any) *Query {
-	x.Filters = append(x.Filters, Filter{
-		Field: field,
-		Op:    op,
-		Value: value,
-	})
+func (x *Query) SetFilters(filters Filters) *Query {
+	x.Filters = filters
 	return x
-}
-
-// SortFilters orders filters by ascending Field ID.
-func (x *Query) SortFilters() {
-	sort.SliceStable(x.Filters, func(i, j int) bool {
-		return x.Filters[i].Field < x.Filters[j].Field
-	})
 }

@@ -370,32 +370,27 @@ func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
 	return Cast(resp.Models), nil
 }
 
-func Cast(models []register.Model) []*Sample {
-	out := make([]*Sample, len(models))
-	for i, m := range models {
-		out[i] = m.(*Sample)
-	}
-	return out
+type DbQuery struct {
+	Q *query.Query
 }
 
-type Query struct {
-	*query.Query
+func NewQuery() *DbQuery {
+	return &DbQuery{Q: query.NewQuery()}
 }
 
-func NewQuery() *Query {
-	return &Query{Query: query.NewQuery()}
+func (x *DbQuery) SetFilters(filters query.Filters) *DbQuery {
+	x.Q.SetFilters(filters)
+	return x
 }
 
-func (x *Query) Execute(c *hconn.HConn) ([]*Sample, error) {
-	x.SortFilters()
-
+func (x *DbQuery) Execute(c *hconn.HConn) ([]*Sample, error) {
 	msg := model.Message{
 		Type: model.MessageTypeQuery,
 		Entity: register.Entity{
 			Version: Version,
 			Name:    Name,
 		},
-		Query: *x.Query,
+		Query: x.Q,
 	}
 
 	if err := c.Send(msg); err != nil {
@@ -412,4 +407,12 @@ func (x *Query) Execute(c *hconn.HConn) ([]*Sample, error) {
 	}
 
 	return Cast(resp.Models), nil
+}
+
+func Cast(models []register.Model) []*Sample {
+	out := make([]*Sample, len(models))
+	for i, m := range models {
+		out[i] = m.(*Sample)
+	}
+	return out
 }

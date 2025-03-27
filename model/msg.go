@@ -37,5 +37,11 @@ type Message struct {
 	Bytes  []byte
 	Entity register.Entity
 	Models []register.Model
-	Query  query.Query
+	Query  *query.Query
+}
+
+func (x *Message) Error(errMsg string) *Message {
+	x.Status = StatusError
+	x.String = errMsg
+	return x
 }

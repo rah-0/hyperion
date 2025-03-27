@@ -26,6 +26,7 @@ const (
 )
 
 type EntityStorage struct {
+	Entity *register.Entity
 	Disk   *disk.Disk
 	Memory *register.Entity
 }
@@ -125,13 +126,14 @@ func (x *Node) Start() error {
 	for _, e := range x.Entities {
 		for _, re := range register.Entities {
 			if e.Name == re.Name {
-				disk := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
-				if err := disk.OpenFile(); err != nil {
+				d := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
+				if err := d.OpenFile(); err != nil {
 					return err
 				}
 
 				x.EntitiesStorage = append(x.EntitiesStorage, &EntityStorage{
-					Disk:   disk,
+					Entity: re,
+					Disk:   d,
 					Memory: re,
 				})
 			}
@@ -262,16 +264,14 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 		case model.MessageTypeInsert, model.MessageTypeDelete, model.MessageTypeUpdate:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
-				msgOut.Status = model.StatusError
-				msgOut.String = "entity not found: [" + msgIn.Entity.Name + "]"
+				msgOut.Error("entity not found: [" + msgIn.Entity.Name + "]")
 				break
 			}
 
 			entity := e.Memory.New()
 			entity.SetBufferData(msgIn.Entity.Data)
 			if err := entity.Decode(); err != nil {
-				msgOut.Status = model.StatusError
-				msgOut.String = err.Error()
+				msgOut.Error(err.Error())
 				break
 			}
 
@@ -285,24 +285,38 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 			}
 
 			if err := e.Disk.DataWrite(msgIn.Entity.Data); err != nil {
-				msgOut.Status = model.StatusError
-				msgOut.String = err.Error()
-			} else {
-				msgOut.Status = model.StatusSuccess
+				msgOut.Error(err.Error())
+				break
 			}
+			msgOut.Status = model.StatusSuccess
 
 		case model.MessageTypeGetAll:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
-				msgOut.Status = model.StatusError
-				msgOut.String = "entity not found: [" + msgIn.Entity.Name + "]"
-			} else {
-				msgOut.Status = model.StatusSuccess
-				msgOut.Models = e.Memory.New().MemoryGetAll()
+				msgOut.Error("entity not found: [" + msgIn.Entity.Name + "]")
+				break
 			}
+			msgOut.Status = model.StatusSuccess
+			msgOut.Models = e.Memory.New().MemoryGetAll()
 
 		case model.MessageTypeTest:
 			msgOut.String = msgIn.String + "Received"
+
+		case model.MessageTypeQuery:
+			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
+			if e == nil {
+				msgOut.Error("entity not found: [" + msgIn.Entity.Name + "]")
+				break
+			}
+
+			r, err := e.HandleQuery(msgIn.Query)
+			if err != nil {
+				msgOut.Error(err.Error())
+				break
+			}
+
+			msgOut.Status = model.StatusSuccess
+			msgOut.Models = r
 		}
 
 		if err := hc.Send(msgOut); err != nil {

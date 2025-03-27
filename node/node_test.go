@@ -14,6 +14,7 @@ import (
 	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
 	"github.com/rah-0/hyperion/hconn"
 	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/query"
 	"github.com/rah-0/hyperion/util"
 )
 
@@ -315,6 +316,123 @@ func TestMessageGetAll(t *testing.T) {
 		if !found {
 			t.Fatalf("Expected UUID %v not found in response", ins.Uuid)
 		}
+	}
+}
+
+func TestQueryStringFilter(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Alice", Surname: "Smith"},
+		{Name: "Bob", Surname: "Jones"},
+		{Name: "Charlie", Surname: "Smith"},
+		{Name: "Diana", Surname: "Brown"},
+	}
+
+	for _, e := range entities {
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatalf("insert failed: %v", err)
+		}
+	}
+
+	all, err := SampleV1.DbGetAll(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, inserted := range entities {
+		found := false
+		for _, fetched := range all {
+			if inserted.GetUuid() == fetched.GetUuid() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("entity with UUID %v not found in DbGetAll results", inserted.GetUuid())
+		}
+	}
+
+	q := SampleV1.NewQuery().SetFilters(query.Filters{
+		Type: query.FilterTypeOr,
+		Filters: []query.Filter{
+			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith"},
+		},
+	})
+
+	results, err := q.Execute(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range results {
+		if r.Surname != "Smith" {
+			t.Fatalf("unexpected result: %+v", r)
+		}
+	}
+
+	expectedCount := 0
+	for _, e := range entities {
+		if e.Surname == "Smith" {
+			expectedCount++
+		}
+	}
+	if len(results) != expectedCount {
+		t.Fatalf("expected %d results for surname=Smith, got %d", expectedCount, len(results))
+	}
+}
+
+func TestQueryStringFilterAnd(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Alice", Surname: "Smith"},
+		{Name: "Alice", Surname: "Brown"},
+		{Name: "Bob", Surname: "Smith"},
+		{Name: "Diana", Surname: "Jones"},
+	}
+
+	for _, e := range entities {
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatalf("insert failed: %v", err)
+		}
+	}
+
+	all, err := SampleV1.DbGetAll(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, inserted := range entities {
+		found := false
+		for _, fetched := range all {
+			if inserted.GetUuid() == fetched.GetUuid() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("entity with UUID %v not found in DbGetAll results", inserted.GetUuid())
+		}
+	}
+
+	q := SampleV1.NewQuery().SetFilters(query.Filters{
+		Type: query.FilterTypeAnd,
+		Filters: []query.Filter{
+			{Field: SampleV1.FieldName, Op: query.OpTypeEqual, Value: "Alice"},
+			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith"},
+		},
+	})
+
+	results, err := q.Execute(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range results {
+		if r.Name != "Alice" || r.Surname != "Smith" {
+			t.Fatalf("unexpected result: %+v", r)
+		}
+	}
+
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result for Name='Alice' AND Surname='Smith', got %d", len(results))
 	}
 }
 
