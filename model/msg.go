@@ -1,15 +1,9 @@
 package model
 
 import (
-	"encoding/gob"
-
 	"github.com/rah-0/hyperion/query"
 	"github.com/rah-0/hyperion/register"
 )
-
-func init() {
-	gob.Register(&Message{})
-}
 
 type MessageType int
 

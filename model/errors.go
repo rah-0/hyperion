@@ -17,6 +17,7 @@ var (
 	ErrPathConfigNotFound     = errors.New("pathConfig: specified path cannot be found")
 	ErrPathConfigNotEditable  = errors.New("pathConfig: specified path is not editable")
 
+	ErrQueryMemoryEmpty       = errors.New("query: memory is empty")
 	ErrQueryNil               = errors.New("query: cannot be nil")
 	ErrQueryInvalidFilterType = errors.New("query: invalid specified filter type")
 )

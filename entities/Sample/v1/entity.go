@@ -370,27 +370,14 @@ func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
 	return Cast(resp.Models), nil
 }
 
-type DbQuery struct {
-	Q *query.Query
-}
-
-func NewQuery() *DbQuery {
-	return &DbQuery{Q: query.NewQuery()}
-}
-
-func (x *DbQuery) SetFilters(filters query.Filters) *DbQuery {
-	x.Q.SetFilters(filters)
-	return x
-}
-
-func (x *DbQuery) Execute(c *hconn.HConn) ([]*Sample, error) {
+func DbQuery(c *hconn.HConn, q *query.Query) ([]*Sample, error) {
 	msg := model.Message{
 		Type: model.MessageTypeQuery,
 		Entity: register.Entity{
 			Version: Version,
 			Name:    Name,
 		},
-		Query: x.Q,
+		Query: q,
 	}
 
 	if err := c.Send(msg); err != nil {

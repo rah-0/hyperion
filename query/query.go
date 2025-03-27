@@ -21,6 +21,7 @@ type Filters struct {
 
 type Query struct {
 	Filters Filters
+	Limit   int
 }
 
 func NewQuery() *Query {
@@ -29,5 +30,10 @@ func NewQuery() *Query {
 
 func (x *Query) SetFilters(filters Filters) *Query {
 	x.Filters = filters
+	return x
+}
+
+func (x *Query) SetLimit(limit int) *Query {
+	x.Limit = limit
 	return x
 }

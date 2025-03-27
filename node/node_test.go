@@ -351,14 +351,14 @@ func TestQueryStringFilter(t *testing.T) {
 		}
 	}
 
-	q := SampleV1.NewQuery().SetFilters(query.Filters{
+	q := query.NewQuery().SetFilters(query.Filters{
 		Type: query.FilterTypeOr,
 		Filters: []query.Filter{
 			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith"},
 		},
 	})
 
-	results, err := q.Execute(connection)
+	results, err := SampleV1.DbQuery(connection, q)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,8 +382,8 @@ func TestQueryStringFilter(t *testing.T) {
 
 func TestQueryStringFilterAnd(t *testing.T) {
 	entities := []*SampleV1.Sample{
-		{Name: "Alice", Surname: "Smith"},
-		{Name: "Alice", Surname: "Brown"},
+		{Name: "Alice1", Surname: "Smith1"},
+		{Name: "Alice1", Surname: "Brown"},
 		{Name: "Bob", Surname: "Smith"},
 		{Name: "Diana", Surname: "Jones"},
 	}
@@ -412,21 +412,21 @@ func TestQueryStringFilterAnd(t *testing.T) {
 		}
 	}
 
-	q := SampleV1.NewQuery().SetFilters(query.Filters{
+	q := query.NewQuery().SetFilters(query.Filters{
 		Type: query.FilterTypeAnd,
 		Filters: []query.Filter{
-			{Field: SampleV1.FieldName, Op: query.OpTypeEqual, Value: "Alice"},
-			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith"},
+			{Field: SampleV1.FieldName, Op: query.OpTypeEqual, Value: "Alice1"},
+			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith1"},
 		},
 	})
 
-	results, err := q.Execute(connection)
+	results, err := SampleV1.DbQuery(connection, q)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, r := range results {
-		if r.Name != "Alice" || r.Surname != "Smith" {
+		if r.Name != "Alice1" || r.Surname != "Smith1" {
 			t.Fatalf("unexpected result: %+v", r)
 		}
 	}
@@ -557,6 +557,49 @@ func BenchmarkDbGetAll(b *testing.B) {
 				}
 				if len(entities) < count {
 					b.Fatalf("Expected at least %d entities, got %d", count, len(entities))
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkQueryExecution(b *testing.B) {
+	counts := []int{10, 100, 1000, 10000, 100000, 1000000}
+
+	for _, count := range counts {
+		b.Run(fmt.Sprintf("Count%d", count), func(b *testing.B) {
+			var inserted []*SampleV1.Sample
+			for i := 0; i < count; i++ {
+				entity := &SampleV1.Sample{
+					Name:    fmt.Sprintf("Name%d", i),
+					Surname: fmt.Sprintf("Surname%d", i),
+				}
+				if err := entity.DbInsert(connection); err != nil {
+					b.Fatalf("insert failed at i=%d: %v", i, err)
+				}
+				inserted = append(inserted, entity)
+			}
+
+			// Pick one known UUID to query for
+			target := inserted[count/2]
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				q := query.NewQuery().SetFilters(query.Filters{
+					Type: query.FilterTypeAnd,
+					Filters: []query.Filter{
+						{Field: SampleV1.FieldUuid, Op: query.OpTypeEqual, Value: target.Uuid},
+					},
+				}).SetLimit(1)
+
+				results, err := SampleV1.DbQuery(connection, q)
+				if err != nil {
+					b.Fatal(err)
+				}
+				if len(results) != 1 || results[0].GetUuid() != target.GetUuid() {
+					b.Fatalf("expected match for UUID %v not found", target.GetUuid())
 				}
 			}
 		})

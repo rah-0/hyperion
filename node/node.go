@@ -26,7 +26,6 @@ const (
 )
 
 type EntityStorage struct {
-	Entity *register.Entity
 	Disk   *disk.Disk
 	Memory *register.Entity
 }
@@ -132,7 +131,6 @@ func (x *Node) Start() error {
 				}
 
 				x.EntitiesStorage = append(x.EntitiesStorage, &EntityStorage{
-					Entity: re,
 					Disk:   d,
 					Memory: re,
 				})
