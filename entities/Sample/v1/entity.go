@@ -314,7 +314,7 @@ func (s *Sample) DbDelete(c *hconn.HConn) error {
 
 func (s *Sample) DbUpdate(c *hconn.HConn) error {
 	if s.Uuid == uuid.Nil {
-		return errors.New("cannot update entity without UUID")
+		return model.ErrQueryEntityNoUuid
 	}
 	if err := s.Encode(); err != nil {
 		return err

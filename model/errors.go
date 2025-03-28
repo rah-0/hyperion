@@ -20,4 +20,5 @@ var (
 	ErrQueryMemoryEmpty       = errors.New("query: memory is empty")
 	ErrQueryNil               = errors.New("query: cannot be nil")
 	ErrQueryInvalidFilterType = errors.New("query: invalid specified filter type")
+	ErrQueryEntityNoUuid      = errors.New("query: entity has no uuid")
 )

@@ -66,7 +66,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "// Validate all FieldTypes have an operator set\n"
 	template += "for _, typ := range FieldTypes {\n"
 	template += "if _, ok := query.OpsRegistry[typ]; !ok {\n"
-	template += "panic(\"missing operator set for field type: \" + typ)\n"
+	template += `panic("missing operator set for field type: " + typ)` + "\n"
 	template += "}\n"
 	template += "}\n\n"
 	template += "//The following process initializes the encoder and decoder by preloading metadata." + "\n"
@@ -305,7 +305,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 
 	template += "func (s *" + s.Name + ") DbUpdate(c *hconn.HConn) error {\n"
 	template += "if s.Uuid == uuid.Nil {\n"
-	template += "return errors.New(\"cannot update entity without UUID\")\n"
+	template += `return model.ErrQueryEntityNoUuid` + "\n"
 	template += "}\n"
 	template += "if err := s.Encode(); err != nil {\n"
 	template += "return err\n"
