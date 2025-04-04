@@ -6,16 +6,20 @@ import (
 	"github.com/google/uuid"
 )
 
+type IndexAccessor func(value any) []Model
+
 var Entities []*Entity
 
 type Entity struct {
 	// These fields are used for dynamic loading
-	Version    string
-	Name       string
-	DbFileName string
-	New        func() Model
-	Data       []byte
-	FieldTypes map[int]string
+	Version        string
+	Name           string
+	DbFileName     string
+	New            func() Model
+	Data           []byte
+	FieldTypes     map[int]string
+	Indexes        map[int]any
+	IndexAccessors map[int]IndexAccessor
 }
 
 func RegisterEntity(entity *Entity) {

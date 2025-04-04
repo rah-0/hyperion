@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rah-0/testmark/testutil"
+
 	"github.com/rah-0/hyperion/config"
 	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
 	"github.com/rah-0/hyperion/hconn"
@@ -28,7 +30,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	util.TestMainWrapper(util.TestConfig{
+	testutil.TestMainWrapper(testutil.TestConfig{
 		M: m,
 		LoadResources: func() error {
 			p, err := filepath.Abs(filepath.Join("..", "config", "config.json"))
@@ -351,11 +353,8 @@ func TestQueryStringFilter(t *testing.T) {
 		}
 	}
 
-	q := query.NewQuery().SetFilters(query.Filters{
-		Type: query.FilterTypeOr,
-		Filters: []query.Filter{
-			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith"},
-		},
+	q := query.NewQuery().SetFilters(query.FilterTypeOr, []query.Filter{
+		{Field: SampleV1.FieldSurname, Op: query.OperatorTypeEqual, Value: "Smith"},
 	})
 
 	results, err := SampleV1.DbQuery(connection, q)
@@ -412,12 +411,9 @@ func TestQueryStringFilterAnd(t *testing.T) {
 		}
 	}
 
-	q := query.NewQuery().SetFilters(query.Filters{
-		Type: query.FilterTypeAnd,
-		Filters: []query.Filter{
-			{Field: SampleV1.FieldName, Op: query.OpTypeEqual, Value: "Alice1"},
-			{Field: SampleV1.FieldSurname, Op: query.OpTypeEqual, Value: "Smith1"},
-		},
+	q := query.NewQuery().SetFilters(query.FilterTypeAnd, []query.Filter{
+		{Field: SampleV1.FieldName, Op: query.OperatorTypeEqual, Value: "Alice1"},
+		{Field: SampleV1.FieldSurname, Op: query.OperatorTypeEqual, Value: "Smith1"},
 	})
 
 	results, err := SampleV1.DbQuery(connection, q)
@@ -433,6 +429,105 @@ func TestQueryStringFilterAnd(t *testing.T) {
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result for Name='Alice' AND Surname='Smith', got %d", len(results))
+	}
+}
+
+func TestQueryOrderAscSingleField(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Asc1_C"},
+		{Name: "Asc1_A"},
+		{Name: "Asc1_B"},
+	}
+	insertAndQueryCheck(t, entities, []query.Order{
+		{Type: query.OrderTypeAsc, Field: SampleV1.FieldName},
+	}, []string{"Asc1_A", "Asc1_B", "Asc1_C"})
+}
+
+func TestQueryOrderDescSingleField(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Desc1_B"},
+		{Name: "Desc1_C"},
+		{Name: "Desc1_A"},
+	}
+	insertAndQueryCheck(t, entities, []query.Order{
+		{Type: query.OrderTypeDesc, Field: SampleV1.FieldName},
+	}, []string{"Desc1_C", "Desc1_B", "Desc1_A"})
+}
+
+func TestQueryOrderMultiFieldAsc(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Asc2_A", Surname: "C"},
+		{Name: "Asc2_A", Surname: "A"},
+		{Name: "Asc2_B", Surname: "B"},
+	}
+	insertAndQueryCheck(t, entities, []query.Order{
+		{Type: query.OrderTypeAsc, Field: SampleV1.FieldName},
+		{Type: query.OrderTypeAsc, Field: SampleV1.FieldSurname},
+	}, []string{"Asc2_A:A", "Asc2_A:C", "Asc2_B:B"})
+}
+
+func TestQueryOrderMultiFieldDesc(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Desc2_A", Surname: "B"},
+		{Name: "Desc2_A", Surname: "C"},
+		{Name: "Desc2_B", Surname: "A"},
+	}
+	insertAndQueryCheck(t, entities, []query.Order{
+		{Type: query.OrderTypeDesc, Field: SampleV1.FieldName},
+		{Type: query.OrderTypeDesc, Field: SampleV1.FieldSurname},
+	}, []string{"Desc2_B:A", "Desc2_A:C", "Desc2_A:B"})
+}
+
+func TestQueryOrderMultiFieldMixed(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Mix1_A", Surname: "B"},
+		{Name: "Mix1_A", Surname: "C"},
+		{Name: "Mix1_B", Surname: "A"},
+	}
+	insertAndQueryCheck(t, entities, []query.Order{
+		{Type: query.OrderTypeAsc, Field: SampleV1.FieldName},
+		{Type: query.OrderTypeDesc, Field: SampleV1.FieldSurname},
+	}, []string{"Mix1_A:C", "Mix1_A:B", "Mix1_B:A"})
+}
+
+func insertAndQueryCheck(t *testing.T, entities []*SampleV1.Sample, orders []query.Order, expectedOrdered []string) {
+	t.Helper()
+
+	// Insert each entity
+	for _, e := range entities {
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatalf("insert failed: %v", err)
+		}
+	}
+
+	// Run the ordered query
+	q := query.NewQuery().SetOrders(orders)
+	results, err := SampleV1.DbQuery(connection, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Extract actual ordered values
+	var actual []string
+	for _, r := range results {
+		n := r.GetFieldValue(SampleV1.FieldName).(string)
+		s := r.GetFieldValue(SampleV1.FieldSurname).(string)
+		if s != "" {
+			actual = append(actual, n+":"+s)
+		} else {
+			actual = append(actual, n)
+		}
+	}
+
+	// Find expected values in correct order inside actual list
+	idx := 0
+	for _, val := range actual {
+		if idx < len(expectedOrdered) && val == expectedOrdered[idx] {
+			idx++
+		}
+	}
+	if idx != len(expectedOrdered) {
+		t.Fatalf("expected sequence %v not matched in result %v", expectedOrdered, actual)
 	}
 }
 
@@ -532,76 +627,72 @@ func BenchmarkMessageInsert(b *testing.B) {
 }
 
 func BenchmarkDbGetAll(b *testing.B) {
-	counts := []int{1, 10, 100, 1000}
+	count := 100000
 
-	for _, count := range counts {
-		b.Run(fmt.Sprintf("Count%d", count), func(b *testing.B) {
-			// Insert 'count' entities before benchmarking
-			for i := 0; i < count; i++ {
-				entity := SampleV1.Sample{
-					Name:    fmt.Sprintf("Name%d", i),
-					Surname: fmt.Sprintf("Surname%d", i),
-				}
-				err := entity.DbInsert(connection)
-				if err != nil {
-					b.Fatalf("Insert failed for count %d at i=%d: %v", count, i, err)
-				}
+	b.Run(fmt.Sprintf("Count%d", count), func(b *testing.B) {
+		// Insert 'count' entities before benchmarking
+		for i := 0; i < count; i++ {
+			entity := SampleV1.Sample{
+				Name:    fmt.Sprintf("Name%d", i),
+				Surname: fmt.Sprintf("Surname%d", i),
 			}
+			err := entity.DbInsert(connection)
+			if err != nil {
+				b.Fatalf("Insert failed for count %d at i=%d: %v", count, i, err)
+			}
+		}
 
-			b.ResetTimer()
-			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
-				entities, err := SampleV1.DbGetAll(connection)
-				if err != nil {
-					b.Fatal(err)
-				}
-				if len(entities) < count {
-					b.Fatalf("Expected at least %d entities, got %d", count, len(entities))
-				}
+		b.ResetTimer()
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			entities, err := SampleV1.DbGetAll(connection)
+			if err != nil {
+				b.Fatal(err)
 			}
-		})
-	}
+			if len(entities) < count {
+				b.Fatalf("Expected at least %d entities, got %d", count, len(entities))
+			}
+		}
+	})
 }
 
 func BenchmarkQueryExecution(b *testing.B) {
-	counts := []int{10, 100, 1000, 10000, 100000, 1000000}
+	count := 1000000
 
-	for _, count := range counts {
-		b.Run(fmt.Sprintf("Count%d", count), func(b *testing.B) {
-			var inserted []*SampleV1.Sample
-			for i := 0; i < count; i++ {
-				entity := &SampleV1.Sample{
-					Name:    fmt.Sprintf("Name%d", i),
-					Surname: fmt.Sprintf("Surname%d", i),
-				}
-				if err := entity.DbInsert(connection); err != nil {
-					b.Fatalf("insert failed at i=%d: %v", i, err)
-				}
-				inserted = append(inserted, entity)
+	b.Run(fmt.Sprintf("Count%d", count), func(b *testing.B) {
+		var inserted []*SampleV1.Sample
+		for i := 0; i < count; i++ {
+			entity := &SampleV1.Sample{
+				Name:    fmt.Sprintf("Name%d", i),
+				Surname: fmt.Sprintf("Surname%d", i),
 			}
-
-			// Pick one known UUID to query for
-			target := inserted[count/2]
-
-			b.ResetTimer()
-			b.ReportAllocs()
-
-			for i := 0; i < b.N; i++ {
-				q := query.NewQuery().SetFilters(query.Filters{
-					Type: query.FilterTypeAnd,
-					Filters: []query.Filter{
-						{Field: SampleV1.FieldUuid, Op: query.OpTypeEqual, Value: target.Uuid},
-					},
-				}).SetLimit(1)
-
-				results, err := SampleV1.DbQuery(connection, q)
-				if err != nil {
-					b.Fatal(err)
-				}
-				if len(results) != 1 || results[0].GetUuid() != target.GetUuid() {
-					b.Fatalf("expected match for UUID %v not found", target.GetUuid())
-				}
+			if err := entity.DbInsert(connection); err != nil {
+				b.Fatalf("insert failed at i=%d: %v", i, err)
 			}
-		})
-	}
+			inserted = append(inserted, entity)
+		}
+
+		// Pick one known UUID to query for
+		target := inserted[count/2]
+
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			q := query.NewQuery().
+				SetFilters(query.FilterTypeAnd, []query.Filter{
+					{Field: SampleV1.FieldUuid, Op: query.OperatorTypeEqual, Value: target.Uuid},
+				}).
+				//AddOrder(query.OrderTypeAsc, SampleV1.FieldName).
+				SetLimit(1)
+
+			results, err := SampleV1.DbQuery(connection, q)
+			if err != nil {
+				b.Fatal(err)
+			}
+			if len(results) != 1 || results[0].GetUuid() != target.GetUuid() {
+				b.Fatalf("expected match for UUID %v not found", target.GetUuid())
+			}
+		}
+	})
 }

@@ -8,49 +8,49 @@ import (
 	"github.com/google/uuid"
 )
 
-type OpType int
+type OperatorType int
 
 const (
-	OpTypeUndefined OpType = iota
+	OperatorTypeUndefined OperatorType = iota
 
-	OpTypeEqual
-	OpTypeNotEqual
-	OpTypeGreaterThan
-	OpTypeGreaterThanEqual
-	OpTypeLessThan
-	OpTypeLessThanEqual
-	OpTypeContains
-	OpTypeNotContains
-	OpTypeStartsWith
-	OpTypeEndsWith
+	OperatorTypeEqual
+	OperatorTypeNotEqual
+	OperatorTypeGreaterThan
+	OperatorTypeGreaterThanEqual
+	OperatorTypeLessThan
+	OperatorTypeLessThanEqual
+	OperatorTypeContains
+	OperatorTypeNotContains
+	OperatorTypeStartsWith
+	OperatorTypeEndsWith
 )
 
-var OpsRegistry = map[string]any{
-	"string": StringOps,
+var OperatorsRegistry = map[string]any{
+	"string": StringOperations,
 
-	"bool": BoolOps,
+	"bool": BoolOperations,
 
-	"int":   IntOps,
-	"int8":  Int8Ops,
-	"int16": Int16Ops,
-	"int32": Int32Ops,
-	"int64": Int64Ops,
+	"int":   IntOperations,
+	"int8":  Int8Operations,
+	"int16": Int16Operations,
+	"int32": Int32Operations,
+	"int64": Int64Operations,
 
-	"uint":   UintOps,
-	"uint8":  Uint8Ops,
-	"uint16": Uint16Ops,
-	"uint32": Uint32Ops,
-	"uint64": Uint64Ops,
+	"uint":   UintOperations,
+	"uint8":  Uint8Operations,
+	"uint16": Uint16Operations,
+	"uint32": Uint32Operations,
+	"uint64": Uint64Operations,
 
-	"float32": Float32Ops,
-	"float64": Float64Ops,
+	"float32": Float32Operations,
+	"float64": Float64Operations,
 
-	"uuid.UUID": UuidOps,
+	"uuid.UUID": UuidOperations,
 
-	"time.Time": TimeOps,
+	"time.Time": TimeOperations,
 }
 
-func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
+func EvaluateOperation(operator OperatorType, fieldType string, a, b any) (bool, error) {
 	switch fieldType {
 	case "string":
 		av, aok := a.(string)
@@ -58,9 +58,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for string")
 		}
-		fn, ok := StringOps[op]
+		fn, ok := StringOperations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for string")
+			return false, fmt.Errorf("unsupported operator for string")
 		}
 		return fn(av, bv), nil
 
@@ -70,9 +70,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for bool")
 		}
-		fn, ok := BoolOps[op]
+		fn, ok := BoolOperations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for bool")
+			return false, fmt.Errorf("unsupported operator for bool")
 		}
 		return fn(av, bv), nil
 
@@ -82,9 +82,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for int")
 		}
-		fn, ok := IntOps[op]
+		fn, ok := IntOperations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for int")
+			return false, fmt.Errorf("unsupported operator for int")
 		}
 		return fn(av, bv), nil
 
@@ -94,9 +94,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for int8")
 		}
-		fn, ok := Int8Ops[op]
+		fn, ok := Int8Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for int8")
+			return false, fmt.Errorf("unsupported operator for int8")
 		}
 		return fn(av, bv), nil
 
@@ -106,9 +106,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for int16")
 		}
-		fn, ok := Int16Ops[op]
+		fn, ok := Int16Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for int16")
+			return false, fmt.Errorf("unsupported operator for int16")
 		}
 		return fn(av, bv), nil
 
@@ -118,9 +118,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for int32")
 		}
-		fn, ok := Int32Ops[op]
+		fn, ok := Int32Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for int32")
+			return false, fmt.Errorf("unsupported operator for int32")
 		}
 		return fn(av, bv), nil
 
@@ -130,9 +130,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for int64")
 		}
-		fn, ok := Int64Ops[op]
+		fn, ok := Int64Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for int64")
+			return false, fmt.Errorf("unsupported operator for int64")
 		}
 		return fn(av, bv), nil
 
@@ -142,9 +142,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for uint")
 		}
-		fn, ok := UintOps[op]
+		fn, ok := UintOperations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for uint")
+			return false, fmt.Errorf("unsupported operator for uint")
 		}
 		return fn(av, bv), nil
 
@@ -154,9 +154,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for uint8")
 		}
-		fn, ok := Uint8Ops[op]
+		fn, ok := Uint8Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for uint8")
+			return false, fmt.Errorf("unsupported operator for uint8")
 		}
 		return fn(av, bv), nil
 
@@ -166,9 +166,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for uint16")
 		}
-		fn, ok := Uint16Ops[op]
+		fn, ok := Uint16Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for uint16")
+			return false, fmt.Errorf("unsupported operator for uint16")
 		}
 		return fn(av, bv), nil
 
@@ -178,9 +178,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for uint32")
 		}
-		fn, ok := Uint32Ops[op]
+		fn, ok := Uint32Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for uint32")
+			return false, fmt.Errorf("unsupported operator for uint32")
 		}
 		return fn(av, bv), nil
 
@@ -190,9 +190,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for uint64")
 		}
-		fn, ok := Uint64Ops[op]
+		fn, ok := Uint64Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for uint64")
+			return false, fmt.Errorf("unsupported operator for uint64")
 		}
 		return fn(av, bv), nil
 
@@ -202,9 +202,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for float32")
 		}
-		fn, ok := Float32Ops[op]
+		fn, ok := Float32Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for float32")
+			return false, fmt.Errorf("unsupported operator for float32")
 		}
 		return fn(av, bv), nil
 
@@ -214,9 +214,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for float64")
 		}
-		fn, ok := Float64Ops[op]
+		fn, ok := Float64Operations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for float64")
+			return false, fmt.Errorf("unsupported operator for float64")
 		}
 		return fn(av, bv), nil
 
@@ -226,9 +226,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for uuid.UUID")
 		}
-		fn, ok := UuidOps[op]
+		fn, ok := UuidOperations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for uuid.UUID")
+			return false, fmt.Errorf("unsupported operator for uuid.UUID")
 		}
 		return fn(av, bv), nil
 
@@ -238,9 +238,9 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 		if !aok || !bok {
 			return false, fmt.Errorf("type mismatch for time.Time")
 		}
-		fn, ok := TimeOps[op]
+		fn, ok := TimeOperations[operator]
 		if !ok {
-			return false, fmt.Errorf("unsupported op for time.Time")
+			return false, fmt.Errorf("unsupported operator for time.Time")
 		}
 		return fn(av, bv), nil
 
@@ -249,129 +249,147 @@ func EvaluateOp(op OpType, fieldType string, a, b any) (bool, error) {
 	}
 }
 
-var StringOps = map[OpType]func(a, b string) bool{
-	OpTypeEqual:       func(a, b string) bool { return a == b },
-	OpTypeNotEqual:    func(a, b string) bool { return a != b },
-	OpTypeContains:    func(a, b string) bool { return strings.Contains(a, b) },
-	OpTypeNotContains: func(a, b string) bool { return !strings.Contains(a, b) },
-	OpTypeStartsWith:  func(a, b string) bool { return strings.HasPrefix(a, b) },
-	OpTypeEndsWith:    func(a, b string) bool { return strings.HasSuffix(a, b) },
+var StringOperations = map[OperatorType]func(a, b string) bool{
+	OperatorTypeEqual:       func(a, b string) bool { return a == b },
+	OperatorTypeNotEqual:    func(a, b string) bool { return a != b },
+	OperatorTypeContains:    func(a, b string) bool { return strings.Contains(a, b) },
+	OperatorTypeNotContains: func(a, b string) bool { return !strings.Contains(a, b) },
+	OperatorTypeStartsWith:  func(a, b string) bool { return strings.HasPrefix(a, b) },
+	OperatorTypeEndsWith:    func(a, b string) bool { return strings.HasSuffix(a, b) },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b string) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b string) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b string) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b string) bool { return a <= b },
 }
 
-var BoolOps = map[OpType]func(a, b bool) bool{
-	OpTypeEqual:    func(a, b bool) bool { return a == b },
-	OpTypeNotEqual: func(a, b bool) bool { return a != b },
+var BoolOperations = map[OperatorType]func(a, b bool) bool{
+	OperatorTypeEqual:    func(a, b bool) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b bool) bool { return a != b },
 }
 
-var IntOps = map[OpType]func(a, b int) bool{
-	OpTypeEqual:            func(a, b int) bool { return a == b },
-	OpTypeNotEqual:         func(a, b int) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b int) bool { return a > b },
-	OpTypeLessThan:         func(a, b int) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b int) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b int) bool { return a <= b },
+var IntOperations = map[OperatorType]func(a, b int) bool{
+	OperatorTypeEqual:    func(a, b int) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b int) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b int) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b int) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b int) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b int) bool { return a <= b },
 }
-var Int8Ops = map[OpType]func(a, b int8) bool{
-	OpTypeEqual:            func(a, b int8) bool { return a == b },
-	OpTypeNotEqual:         func(a, b int8) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b int8) bool { return a > b },
-	OpTypeLessThan:         func(a, b int8) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b int8) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b int8) bool { return a <= b },
+var Int8Operations = map[OperatorType]func(a, b int8) bool{
+	OperatorTypeEqual:    func(a, b int8) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b int8) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b int8) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b int8) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b int8) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b int8) bool { return a <= b },
 }
-var Int16Ops = map[OpType]func(a, b int16) bool{
-	OpTypeEqual:            func(a, b int16) bool { return a == b },
-	OpTypeNotEqual:         func(a, b int16) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b int16) bool { return a > b },
-	OpTypeLessThan:         func(a, b int16) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b int16) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b int16) bool { return a <= b },
+var Int16Operations = map[OperatorType]func(a, b int16) bool{
+	OperatorTypeEqual:    func(a, b int16) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b int16) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b int16) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b int16) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b int16) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b int16) bool { return a <= b },
 }
-var Int32Ops = map[OpType]func(a, b int32) bool{
-	OpTypeEqual:            func(a, b int32) bool { return a == b },
-	OpTypeNotEqual:         func(a, b int32) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b int32) bool { return a > b },
-	OpTypeLessThan:         func(a, b int32) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b int32) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b int32) bool { return a <= b },
+var Int32Operations = map[OperatorType]func(a, b int32) bool{
+	OperatorTypeEqual:    func(a, b int32) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b int32) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b int32) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b int32) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b int32) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b int32) bool { return a <= b },
 }
-var Int64Ops = map[OpType]func(a, b int64) bool{
-	OpTypeEqual:            func(a, b int64) bool { return a == b },
-	OpTypeNotEqual:         func(a, b int64) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b int64) bool { return a > b },
-	OpTypeLessThan:         func(a, b int64) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b int64) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b int64) bool { return a <= b },
-}
-
-var UintOps = map[OpType]func(a, b uint) bool{
-	OpTypeEqual:            func(a, b uint) bool { return a == b },
-	OpTypeNotEqual:         func(a, b uint) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b uint) bool { return a > b },
-	OpTypeLessThan:         func(a, b uint) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b uint) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b uint) bool { return a <= b },
-}
-var Uint8Ops = map[OpType]func(a, b uint8) bool{
-	OpTypeEqual:            func(a, b uint8) bool { return a == b },
-	OpTypeNotEqual:         func(a, b uint8) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b uint8) bool { return a > b },
-	OpTypeLessThan:         func(a, b uint8) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b uint8) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b uint8) bool { return a <= b },
-}
-var Uint16Ops = map[OpType]func(a, b uint16) bool{
-	OpTypeEqual:            func(a, b uint16) bool { return a == b },
-	OpTypeNotEqual:         func(a, b uint16) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b uint16) bool { return a > b },
-	OpTypeLessThan:         func(a, b uint16) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b uint16) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b uint16) bool { return a <= b },
-}
-var Uint32Ops = map[OpType]func(a, b uint32) bool{
-	OpTypeEqual:            func(a, b uint32) bool { return a == b },
-	OpTypeNotEqual:         func(a, b uint32) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b uint32) bool { return a > b },
-	OpTypeLessThan:         func(a, b uint32) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b uint32) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b uint32) bool { return a <= b },
-}
-var Uint64Ops = map[OpType]func(a, b uint64) bool{
-	OpTypeEqual:            func(a, b uint64) bool { return a == b },
-	OpTypeNotEqual:         func(a, b uint64) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b uint64) bool { return a > b },
-	OpTypeLessThan:         func(a, b uint64) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b uint64) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b uint64) bool { return a <= b },
+var Int64Operations = map[OperatorType]func(a, b int64) bool{
+	OperatorTypeEqual:    func(a, b int64) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b int64) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b int64) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b int64) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b int64) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b int64) bool { return a <= b },
 }
 
-var Float32Ops = map[OpType]func(a, b float32) bool{
-	OpTypeEqual:            func(a, b float32) bool { return a == b },
-	OpTypeNotEqual:         func(a, b float32) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b float32) bool { return a > b },
-	OpTypeLessThan:         func(a, b float32) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b float32) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b float32) bool { return a <= b },
+var UintOperations = map[OperatorType]func(a, b uint) bool{
+	OperatorTypeEqual:    func(a, b uint) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b uint) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b uint) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b uint) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b uint) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b uint) bool { return a <= b },
 }
-var Float64Ops = map[OpType]func(a, b float64) bool{
-	OpTypeEqual:            func(a, b float64) bool { return a == b },
-	OpTypeNotEqual:         func(a, b float64) bool { return a != b },
-	OpTypeGreaterThan:      func(a, b float64) bool { return a > b },
-	OpTypeLessThan:         func(a, b float64) bool { return a < b },
-	OpTypeGreaterThanEqual: func(a, b float64) bool { return a >= b },
-	OpTypeLessThanEqual:    func(a, b float64) bool { return a <= b },
+var Uint8Operations = map[OperatorType]func(a, b uint8) bool{
+	OperatorTypeEqual:    func(a, b uint8) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b uint8) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b uint8) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b uint8) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b uint8) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b uint8) bool { return a <= b },
+}
+var Uint16Operations = map[OperatorType]func(a, b uint16) bool{
+	OperatorTypeEqual:    func(a, b uint16) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b uint16) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b uint16) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b uint16) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b uint16) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b uint16) bool { return a <= b },
+}
+var Uint32Operations = map[OperatorType]func(a, b uint32) bool{
+	OperatorTypeEqual:    func(a, b uint32) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b uint32) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b uint32) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b uint32) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b uint32) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b uint32) bool { return a <= b },
+}
+var Uint64Operations = map[OperatorType]func(a, b uint64) bool{
+	OperatorTypeEqual:    func(a, b uint64) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b uint64) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b uint64) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b uint64) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b uint64) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b uint64) bool { return a <= b },
 }
 
-var UuidOps = map[OpType]func(a, b uuid.UUID) bool{
-	OpTypeEqual:    func(a, b uuid.UUID) bool { return a == b },
-	OpTypeNotEqual: func(a, b uuid.UUID) bool { return a != b },
+var Float32Operations = map[OperatorType]func(a, b float32) bool{
+	OperatorTypeEqual:    func(a, b float32) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b float32) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b float32) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b float32) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b float32) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b float32) bool { return a <= b },
+}
+var Float64Operations = map[OperatorType]func(a, b float64) bool{
+	OperatorTypeEqual:    func(a, b float64) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b float64) bool { return a != b },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b float64) bool { return a > b },
+	OperatorTypeLessThan:         func(a, b float64) bool { return a < b },
+	OperatorTypeGreaterThanEqual: func(a, b float64) bool { return a >= b },
+	OperatorTypeLessThanEqual:    func(a, b float64) bool { return a <= b },
 }
 
-var TimeOps = map[OpType]func(a, b time.Time) bool{
-	OpTypeEqual:            func(a, b time.Time) bool { return a.Equal(b) },
-	OpTypeNotEqual:         func(a, b time.Time) bool { return !a.Equal(b) },
-	OpTypeGreaterThan:      func(a, b time.Time) bool { return a.After(b) },
-	OpTypeLessThan:         func(a, b time.Time) bool { return a.Before(b) },
-	OpTypeGreaterThanEqual: func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
-	OpTypeLessThanEqual:    func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
+var UuidOperations = map[OperatorType]func(a, b uuid.UUID) bool{
+	OperatorTypeEqual:    func(a, b uuid.UUID) bool { return a == b },
+	OperatorTypeNotEqual: func(a, b uuid.UUID) bool { return a != b },
+}
+
+var TimeOperations = map[OperatorType]func(a, b time.Time) bool{
+	OperatorTypeEqual:    func(a, b time.Time) bool { return a.Equal(b) },
+	OperatorTypeNotEqual: func(a, b time.Time) bool { return !a.Equal(b) },
+	// Operators below also used for sorting
+	OperatorTypeGreaterThan:      func(a, b time.Time) bool { return a.After(b) },
+	OperatorTypeLessThan:         func(a, b time.Time) bool { return a.Before(b) },
+	OperatorTypeGreaterThanEqual: func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
+	OperatorTypeLessThanEqual:    func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
 }

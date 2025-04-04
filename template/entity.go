@@ -29,7 +29,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += `"` + filepath.Join(mn, "model") + `"` + "\n"
 	template += `"` + filepath.Join(mn, "query") + `"` + "\n"
 	template += `"` + filepath.Join(mn, "register") + `"` + "\n"
-	template += ")\n"
+	template += ")\n\n"
 
 	template += "const (\n"
 	template += `Version = "` + v + `"` + "\n"
@@ -53,6 +53,12 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	}
 	template += "}" + "\n\n"
 
+	template += "var Indexes = map[int]any{\n"
+	for _, f := range s.Fields {
+		template += "\tField" + f.Name + ": map[" + f.Type + "][]register.Model{},\n"
+	}
+	template += "}\n\n"
+
 	template += "var (" + "\n"
 	template += "_ register.Model = (*" + s.Name + ")(nil)" + "\n"
 	template += "mu sync.Mutex" + "\n"
@@ -60,12 +66,13 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "Encoder = gob.NewEncoder(Buffer)" + "\n"
 	template += "Decoder = gob.NewDecoder(Buffer)" + "\n"
 	template += "Mem []*Sample\n"
+	template += "IndexAccessors = map[int]register.IndexAccessor{}\n"
 	template += ")" + "\n\n"
 
 	template += "func init() {\n"
 	template += "// Validate all FieldTypes have an operator set\n"
 	template += "for _, typ := range FieldTypes {\n"
-	template += "if _, ok := query.OpsRegistry[typ]; !ok {\n"
+	template += "if _, ok := query.OperatorsRegistry[typ]; !ok {\n"
 	template += `panic("missing operator set for field type: " + typ)` + "\n"
 	template += "}\n"
 	template += "}\n\n"
@@ -81,6 +88,18 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += `panic("failed to decode type metadata: " + err.Error())` + "\n"
 	template += "}\n"
 	template += "x.BufferReset()\n\n"
+	template += "// IndexAccessors definitions" + "\n"
+	for _, f := range s.Fields {
+		template += "IndexAccessors[Field" + f.Name + "] = func(val any) []register.Model {\n"
+		template += "idx := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]register.Model)\n"
+		template += "v, ok := val.(" + f.Type + ")\n"
+		template += "if !ok {\n"
+		template += "return nil\n"
+		template += "}\n"
+		template += "return idx[v]\n"
+		template += "}\n"
+	}
+	template += "\n"
 	template += "// Initializations" + "\n"
 	template += "Mem = []*" + s.Name + "{}\n"
 	template += "register.RegisterEntity(&register.Entity{\n"
@@ -89,6 +108,8 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "DbFileName: DbFileName,\n"
 	template += "New: New,\n"
 	template += "FieldTypes: FieldTypes,\n"
+	template += "Indexes: Indexes,\n"
+	template += "IndexAccessors: IndexAccessors,\n"
 	template += "})\n"
 	template += "}\n\n"
 

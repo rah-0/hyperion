@@ -1,8 +1,7 @@
 package node
 
 import (
-	"runtime"
-	"sync"
+	"github.com/rah-0/parsort"
 
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/query"
@@ -11,75 +10,46 @@ import (
 
 func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 	mem := x.Memory.New().MemoryGetAll()
-	total := len(mem)
-	if total == 0 {
-		return nil, model.ErrQueryMemoryEmpty
-	}
+	fieldTypes := x.Memory.FieldTypes
 	if q == nil {
 		return nil, model.ErrQueryNil
 	}
-	if q.Filters.Type == query.FilterTypeUndefined {
-		return nil, model.ErrQueryInvalidFilterType
+
+	hasOrders := len(q.Orders) > 0
+	if hasOrders {
+		if err := checkOrders(q, fieldTypes); err != nil {
+			return nil, err
+		}
+		order(mem, q.Orders, fieldTypes)
 	}
 
-	fieldTypes := x.Memory.FieldTypes
+	hasFilters := q.Filters.Type != query.FilterTypeUndefined
 	filters := q.Filters.Filters
 	filterType := q.Filters.Type
+
+	hasLimit := q.Limit > 0
 	limit := q.Limit
 
-	numWorkers := runtime.NumCPU()
-	if total < numWorkers {
-		numWorkers = total
-	}
-
-	chunkSize := total / numWorkers
-	remainder := total % numWorkers
-
-	var wg sync.WaitGroup
-	resultsCh := make(chan register.Model)
-
-	start := 0
-	for i := 0; i < numWorkers; i++ {
-		end := start + chunkSize
-		if i < remainder {
-			end++
-		}
-		part := mem[start:end]
-		start = end
-
-		wg.Add(1)
-		go func(part []register.Model) {
-			defer wg.Done()
-			for _, m := range part {
-				if matchModel(m, filters, fieldTypes, filterType) {
-					resultsCh <- m
-				}
-			}
-		}(part)
-	}
-	go func() {
-		wg.Wait()
-		close(resultsCh)
-	}()
-
 	var results []register.Model
-	for m := range resultsCh {
-		results = append(results, m)
-		if limit > 0 && len(results) >= limit {
-			break
+	for _, m := range mem {
+		if !hasFilters || matchModel(m, filters, fieldTypes, filterType) {
+			results = append(results, m)
+			if hasLimit && len(results) >= limit {
+				break
+			}
 		}
 	}
 
 	return results, nil
 }
 
-func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]string, typ query.FilterType) bool {
-	switch typ {
+func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]string, qft query.FilterType) bool {
+	switch qft {
 	case query.FilterTypeOr:
 		for _, f := range filters {
 			a := m.GetFieldValue(f.Field)
 			b := f.Value
-			ok, _ := query.EvaluateOp(f.Op, fieldTypes[f.Field], a, b)
+			ok, _ := query.EvaluateOperation(f.Op, fieldTypes[f.Field], a, b)
 			if ok {
 				return true
 			}
@@ -90,7 +60,7 @@ func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]str
 		for _, f := range filters {
 			a := m.GetFieldValue(f.Field)
 			b := f.Value
-			ok, _ := query.EvaluateOp(f.Op, fieldTypes[f.Field], a, b)
+			ok, _ := query.EvaluateOperation(f.Op, fieldTypes[f.Field], a, b)
 			if !ok {
 				return false
 			}
@@ -100,4 +70,43 @@ func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]str
 	default:
 		return false
 	}
+}
+
+func checkOrders(q *query.Query, fieldTypes map[int]string) error {
+	for _, order := range q.Orders {
+		fieldType, ok := fieldTypes[order.Field]
+		if !ok {
+			return model.ErrQueryEntityFieldNotFound
+		}
+		if _, ok = query.OperatorsRegistry[fieldType]; !ok {
+			return model.ErrQueryEntityFieldOperatorNotFound
+		}
+	}
+	return nil
+}
+
+func order(mem []register.Model, orders []query.Order, fieldTypes map[int]string) {
+	parsort.StructAsc(mem, func(a, b register.Model) bool {
+		for _, o := range orders {
+			ft := fieldTypes[o.Field]
+			va := a.GetFieldValue(o.Field)
+			vb := b.GetFieldValue(o.Field)
+
+			switch o.Type {
+			case query.OrderTypeAsc:
+				ok, _ := query.EvaluateOperation(query.OperatorTypeLessThan, ft, va, vb)
+				eq, _ := query.EvaluateOperation(query.OperatorTypeEqual, ft, va, vb)
+				if !eq {
+					return ok
+				}
+			case query.OrderTypeDesc:
+				ok, _ := query.EvaluateOperation(query.OperatorTypeGreaterThan, ft, va, vb)
+				eq, _ := query.EvaluateOperation(query.OperatorTypeEqual, ft, va, vb)
+				if !eq {
+					return ok
+				}
+			}
+		}
+		return false
+	})
 }

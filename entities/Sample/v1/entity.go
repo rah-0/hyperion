@@ -38,19 +38,27 @@ var FieldTypes = map[int]string{
 	FieldSurname: "string",
 }
 
+var Indexes = map[int]any{
+	FieldUuid:    map[uuid.UUID][]register.Model{},
+	FieldDeleted: map[bool][]register.Model{},
+	FieldName:    map[string][]register.Model{},
+	FieldSurname: map[string][]register.Model{},
+}
+
 var (
-	_       register.Model = (*Sample)(nil)
-	mu      sync.Mutex
-	Buffer  = new(bytes.Buffer)
-	Encoder = gob.NewEncoder(Buffer)
-	Decoder = gob.NewDecoder(Buffer)
-	Mem     []*Sample
+	_              register.Model = (*Sample)(nil)
+	mu             sync.Mutex
+	Buffer         = new(bytes.Buffer)
+	Encoder        = gob.NewEncoder(Buffer)
+	Decoder        = gob.NewDecoder(Buffer)
+	Mem            []*Sample
+	IndexAccessors = map[int]register.IndexAccessor{}
 )
 
 func init() {
 	// Validate all FieldTypes have an operator set
 	for _, typ := range FieldTypes {
-		if _, ok := query.OpsRegistry[typ]; !ok {
+		if _, ok := query.OperatorsRegistry[typ]; !ok {
 			panic("missing operator set for field type: " + typ)
 		}
 	}
@@ -68,14 +76,50 @@ func init() {
 	}
 	x.BufferReset()
 
+	// IndexAccessors definitions
+	IndexAccessors[FieldUuid] = func(val any) []register.Model {
+		idx := Indexes[FieldUuid].(map[uuid.UUID][]register.Model)
+		v, ok := val.(uuid.UUID)
+		if !ok {
+			return nil
+		}
+		return idx[v]
+	}
+	IndexAccessors[FieldDeleted] = func(val any) []register.Model {
+		idx := Indexes[FieldDeleted].(map[bool][]register.Model)
+		v, ok := val.(bool)
+		if !ok {
+			return nil
+		}
+		return idx[v]
+	}
+	IndexAccessors[FieldName] = func(val any) []register.Model {
+		idx := Indexes[FieldName].(map[string][]register.Model)
+		v, ok := val.(string)
+		if !ok {
+			return nil
+		}
+		return idx[v]
+	}
+	IndexAccessors[FieldSurname] = func(val any) []register.Model {
+		idx := Indexes[FieldSurname].(map[string][]register.Model)
+		v, ok := val.(string)
+		if !ok {
+			return nil
+		}
+		return idx[v]
+	}
+
 	// Initializations
 	Mem = []*Sample{}
 	register.RegisterEntity(&register.Entity{
-		Version:    Version,
-		Name:       Name,
-		DbFileName: DbFileName,
-		New:        New,
-		FieldTypes: FieldTypes,
+		Version:        Version,
+		Name:           Name,
+		DbFileName:     DbFileName,
+		New:            New,
+		FieldTypes:     FieldTypes,
+		Indexes:        Indexes,
+		IndexAccessors: IndexAccessors,
 	})
 }
 

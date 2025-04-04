@@ -1,5 +1,6 @@
 #!/bin/bash
 cd ..
+go install github.com/rah-0/testmark@latest
 
 # Function to run benchmarks on a specific function and generate profiling outputs
 run_benchmark() {
@@ -16,7 +17,7 @@ run_benchmark() {
   mkdir -p ./pprof_svg
 
   go test -run=^$ -bench="^${bench_target}$" -benchmem "${bench_dir}" -benchtime="${bench_time}" -timeout=0 \
-    -memprofile="${mem_profile}" -cpuprofile="${cpu_profile}" \
+    -memprofile="${mem_profile}" -cpuprofile="${cpu_profile}" | testmark \
     && go tool pprof -svg -output="${mem_svg}" "${mem_profile}" \
     && go tool pprof -svg -output="${cpu_svg}" "${cpu_profile}"
 
@@ -36,6 +37,7 @@ rm -rf ./pprof_svg/*
 # Example usage:
 # run_benchmark "node" "5s" "Undefined"
 #run_benchmark "disk" "180s" "BenchmarkDataWrite"
-#run_benchmark "msg" "10s" "BenchmarkMessageInsert"
+#run_benchmark "msg" "10s" "BenchmarkMessageInsert" "./node"
 #run_benchmark "node" "10s" "BenchmarkConnectionEstablishment"
 run_benchmark "node" "60s" "BenchmarkQueryExecution" "./node"
+#run_benchmark "hconn" "5s" "BenchmarkSendReceive" "./hconn"

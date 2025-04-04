@@ -260,3 +260,36 @@ func TestReceiveTimeout(t *testing.T) {
 		t.Error("Receive did not time out as expected")
 	}
 }
+
+func BenchmarkSendReceive(b *testing.B) {
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+
+	sender := NewHConn(client)
+	receiver := NewHConn(server)
+
+	msg := model.Message{
+		Type:   model.MessageTypeTest,
+		String: "BenchmarkSendReceive",
+	}
+
+	done := make(chan error, 1)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		go func() {
+			_, err := receiver.Receive()
+			done <- err
+		}()
+
+		if err := sender.Send(msg); err != nil {
+			b.Fatalf("Send failed: %v", err)
+		}
+
+		if err := <-done; err != nil {
+			b.Fatalf("Receive failed: %v", err)
+		}
+	}
+}

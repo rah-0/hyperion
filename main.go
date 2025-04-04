@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/rah-0/nabu"
+	"github.com/rah-0/parsort"
 
 	"github.com/rah-0/hyperion/config"
 	"github.com/rah-0/hyperion/node"
@@ -24,6 +25,9 @@ func main() {
 	flag.Parse()
 
 	nabu.SetLogLevel(nabu.LevelDebug)
+	if 1 == 2 {
+		parsort.TuneSpecific(1000, 1000, 2000, -25, false)
+	}
 
 	n, err := checkConfigs()
 	if err != nil {

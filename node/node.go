@@ -282,7 +282,7 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 				entity.MemoryUpdate()
 			}
 
-			if err := e.Disk.DataWrite(msgIn.Entity.Data); err != nil {
+			if err = e.Disk.DataWrite(msgIn.Entity.Data); err != nil {
 				msgOut.Error(err.Error())
 				break
 			}
@@ -317,7 +317,7 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 			msgOut.Models = r
 		}
 
-		if err := hc.Send(msgOut); err != nil {
+		if err = hc.Send(msgOut); err != nil {
 			x.ErrCh <- nabu.FromError(err).Log()
 		}
 	}

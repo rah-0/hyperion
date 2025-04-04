@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestEvaluateOp_CoversAllOpsRegistryTypes(t *testing.T) {
+func TestEvaluateOperation_CoversAllOperationsRegistryTypes(t *testing.T) {
 	// Dummy inputs by type
 	dummies := map[string][2]any{
 		"string":    {"a", "a"},
@@ -28,75 +28,75 @@ func TestEvaluateOp_CoversAllOpsRegistryTypes(t *testing.T) {
 		"time.Time": {time.Now(), time.Now()},
 	}
 
-	for fieldType := range OpsRegistry {
+	for fieldType := range OperatorsRegistry {
 		d, ok := dummies[fieldType]
 		if !ok {
 			t.Errorf("missing test dummy values for type: %s", fieldType)
 			continue
 		}
 
-		_, err := EvaluateOp(OpTypeEqual, fieldType, d[0], d[1])
+		_, err := EvaluateOperation(OperatorTypeEqual, fieldType, d[0], d[1])
 		if err != nil {
-			t.Errorf("EvaluateOp missing case for type %q or failed: %v", fieldType, err)
+			t.Errorf("EvaluateOperation missing case for type %q or failed: %v", fieldType, err)
 		}
 	}
 }
 
-func TestStringOps_All(t *testing.T) {
+func TestStringOperations_All(t *testing.T) {
 	tests := []struct {
-		op       OpType
+		op       OperatorType
 		a, b     string
 		expected bool
 	}{
-		{OpTypeEqual, "hello", "hello", true},
-		{OpTypeEqual, "hello", "world", false},
-		{OpTypeNotEqual, "hello", "world", true},
-		{OpTypeNotEqual, "hello", "hello", false},
-		{OpTypeContains, "hello world", "world", true},
-		{OpTypeContains, "hello world", "mars", false},
-		{OpTypeNotContains, "hello world", "mars", true},
-		{OpTypeNotContains, "hello world", "world", false},
-		{OpTypeStartsWith, "golang", "go", true},
-		{OpTypeStartsWith, "golang", "lang", false},
-		{OpTypeEndsWith, "golang", "lang", true},
-		{OpTypeEndsWith, "golang", "go", false},
+		{OperatorTypeEqual, "hello", "hello", true},
+		{OperatorTypeEqual, "hello", "world", false},
+		{OperatorTypeNotEqual, "hello", "world", true},
+		{OperatorTypeNotEqual, "hello", "hello", false},
+		{OperatorTypeContains, "hello world", "world", true},
+		{OperatorTypeContains, "hello world", "mars", false},
+		{OperatorTypeNotContains, "hello world", "mars", true},
+		{OperatorTypeNotContains, "hello world", "world", false},
+		{OperatorTypeStartsWith, "golang", "go", true},
+		{OperatorTypeStartsWith, "golang", "lang", false},
+		{OperatorTypeEndsWith, "golang", "lang", true},
+		{OperatorTypeEndsWith, "golang", "go", false},
 	}
 
 	for _, tt := range tests {
-		if got := StringOps[tt.op](tt.a, tt.b); got != tt.expected {
-			t.Errorf("StringOps[%v](%q, %q) = %v; want %v", tt.op, tt.a, tt.b, got, tt.expected)
+		if got := StringOperations[tt.op](tt.a, tt.b); got != tt.expected {
+			t.Errorf("StringOperations[%v](%q, %q) = %v; want %v", tt.op, tt.a, tt.b, got, tt.expected)
 		}
 	}
 }
 
-func TestBoolOps(t *testing.T) {
-	if !BoolOps[OpTypeEqual](true, true) {
+func TestBoolOperations(t *testing.T) {
+	if !BoolOperations[OperatorTypeEqual](true, true) {
 		t.Error("true == true should be true")
 	}
-	if BoolOps[OpTypeEqual](true, false) {
+	if BoolOperations[OperatorTypeEqual](true, false) {
 		t.Error("true == false should be false")
 	}
-	if BoolOps[OpTypeNotEqual](true, false) == false {
+	if BoolOperations[OperatorTypeNotEqual](true, false) == false {
 		t.Error("true != false should be true")
 	}
-	if BoolOps[OpTypeNotEqual](true, true) {
+	if BoolOperations[OperatorTypeNotEqual](true, true) {
 		t.Error("true != true should be false")
 	}
 }
 
-func TestIntOps(t *testing.T) {
+func TestIntOperations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b int) bool
 		a, b     int
 		expected bool
 	}{
-		{"== true", IntOps[OpTypeEqual], 5, 5, true},
-		{"!= true", IntOps[OpTypeNotEqual], 5, 6, true},
-		{"> true", IntOps[OpTypeGreaterThan], 7, 6, true},
-		{"< true", IntOps[OpTypeLessThan], 4, 5, true},
-		{">= true", IntOps[OpTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", IntOps[OpTypeLessThanEqual], 5, 5, true},
+		{"== true", IntOperations[OperatorTypeEqual], 5, 5, true},
+		{"!= true", IntOperations[OperatorTypeNotEqual], 5, 6, true},
+		{"> true", IntOperations[OperatorTypeGreaterThan], 7, 6, true},
+		{"< true", IntOperations[OperatorTypeLessThan], 4, 5, true},
+		{">= true", IntOperations[OperatorTypeGreaterThanEqual], 5, 5, true},
+		{"<= true", IntOperations[OperatorTypeLessThanEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -105,19 +105,19 @@ func TestIntOps(t *testing.T) {
 	}
 }
 
-func TestInt8Ops(t *testing.T) {
+func TestInt8Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b int8) bool
 		a, b     int8
 		expected bool
 	}{
-		{"== true", Int8Ops[OpTypeEqual], 1, 1, true},
-		{"!= false", Int8Ops[OpTypeNotEqual], 1, 1, false},
-		{"> true", Int8Ops[OpTypeGreaterThan], 2, 1, true},
-		{"< true", Int8Ops[OpTypeLessThan], 1, 2, true},
-		{">= true", Int8Ops[OpTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int8Ops[OpTypeLessThanEqual], 2, 2, true},
+		{"== true", Int8Operations[OperatorTypeEqual], 1, 1, true},
+		{"!= false", Int8Operations[OperatorTypeNotEqual], 1, 1, false},
+		{"> true", Int8Operations[OperatorTypeGreaterThan], 2, 1, true},
+		{"< true", Int8Operations[OperatorTypeLessThan], 1, 2, true},
+		{">= true", Int8Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
+		{"<= true", Int8Operations[OperatorTypeLessThanEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -126,19 +126,19 @@ func TestInt8Ops(t *testing.T) {
 	}
 }
 
-func TestInt16Ops(t *testing.T) {
+func TestInt16Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b int16) bool
 		a, b     int16
 		expected bool
 	}{
-		{"== true", Int16Ops[OpTypeEqual], 1, 1, true},
-		{"!= false", Int16Ops[OpTypeNotEqual], 1, 1, false},
-		{"> true", Int16Ops[OpTypeGreaterThan], 2, 1, true},
-		{"< true", Int16Ops[OpTypeLessThan], 1, 2, true},
-		{">= true", Int16Ops[OpTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int16Ops[OpTypeLessThanEqual], 2, 2, true},
+		{"== true", Int16Operations[OperatorTypeEqual], 1, 1, true},
+		{"!= false", Int16Operations[OperatorTypeNotEqual], 1, 1, false},
+		{"> true", Int16Operations[OperatorTypeGreaterThan], 2, 1, true},
+		{"< true", Int16Operations[OperatorTypeLessThan], 1, 2, true},
+		{">= true", Int16Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
+		{"<= true", Int16Operations[OperatorTypeLessThanEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -147,19 +147,19 @@ func TestInt16Ops(t *testing.T) {
 	}
 }
 
-func TestInt32Ops(t *testing.T) {
+func TestInt32Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b int32) bool
 		a, b     int32
 		expected bool
 	}{
-		{"== true", Int32Ops[OpTypeEqual], 1, 1, true},
-		{"!= false", Int32Ops[OpTypeNotEqual], 1, 1, false},
-		{"> true", Int32Ops[OpTypeGreaterThan], 2, 1, true},
-		{"< true", Int32Ops[OpTypeLessThan], 1, 2, true},
-		{">= true", Int32Ops[OpTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int32Ops[OpTypeLessThanEqual], 2, 2, true},
+		{"== true", Int32Operations[OperatorTypeEqual], 1, 1, true},
+		{"!= false", Int32Operations[OperatorTypeNotEqual], 1, 1, false},
+		{"> true", Int32Operations[OperatorTypeGreaterThan], 2, 1, true},
+		{"< true", Int32Operations[OperatorTypeLessThan], 1, 2, true},
+		{">= true", Int32Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
+		{"<= true", Int32Operations[OperatorTypeLessThanEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -168,19 +168,19 @@ func TestInt32Ops(t *testing.T) {
 	}
 }
 
-func TestInt64Ops(t *testing.T) {
+func TestInt64Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b int64) bool
 		a, b     int64
 		expected bool
 	}{
-		{"== true", Int64Ops[OpTypeEqual], 1, 1, true},
-		{"!= false", Int64Ops[OpTypeNotEqual], 1, 1, false},
-		{"> true", Int64Ops[OpTypeGreaterThan], 2, 1, true},
-		{"< true", Int64Ops[OpTypeLessThan], 1, 2, true},
-		{">= true", Int64Ops[OpTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int64Ops[OpTypeLessThanEqual], 2, 2, true},
+		{"== true", Int64Operations[OperatorTypeEqual], 1, 1, true},
+		{"!= false", Int64Operations[OperatorTypeNotEqual], 1, 1, false},
+		{"> true", Int64Operations[OperatorTypeGreaterThan], 2, 1, true},
+		{"< true", Int64Operations[OperatorTypeLessThan], 1, 2, true},
+		{">= true", Int64Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
+		{"<= true", Int64Operations[OperatorTypeLessThanEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -189,19 +189,19 @@ func TestInt64Ops(t *testing.T) {
 	}
 }
 
-func TestUintOps(t *testing.T) {
+func TestUintOperations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b uint) bool
 		a, b     uint
 		expected bool
 	}{
-		{"== true", UintOps[OpTypeEqual], 5, 5, true},
-		{"!= true", UintOps[OpTypeNotEqual], 5, 6, true},
-		{"> true", UintOps[OpTypeGreaterThan], 7, 6, true},
-		{"< true", UintOps[OpTypeLessThan], 4, 5, true},
-		{">= true", UintOps[OpTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", UintOps[OpTypeLessThanEqual], 5, 5, true},
+		{"== true", UintOperations[OperatorTypeEqual], 5, 5, true},
+		{"!= true", UintOperations[OperatorTypeNotEqual], 5, 6, true},
+		{"> true", UintOperations[OperatorTypeGreaterThan], 7, 6, true},
+		{"< true", UintOperations[OperatorTypeLessThan], 4, 5, true},
+		{">= true", UintOperations[OperatorTypeGreaterThanEqual], 5, 5, true},
+		{"<= true", UintOperations[OperatorTypeLessThanEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -210,19 +210,19 @@ func TestUintOps(t *testing.T) {
 	}
 }
 
-func TestUint8Ops(t *testing.T) {
+func TestUint8Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b uint8) bool
 		a, b     uint8
 		expected bool
 	}{
-		{"== true", Uint8Ops[OpTypeEqual], 5, 5, true},
-		{"!= true", Uint8Ops[OpTypeNotEqual], 5, 6, true},
-		{"> true", Uint8Ops[OpTypeGreaterThan], 7, 6, true},
-		{"< true", Uint8Ops[OpTypeLessThan], 4, 5, true},
-		{">= true", Uint8Ops[OpTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint8Ops[OpTypeLessThanEqual], 5, 5, true},
+		{"== true", Uint8Operations[OperatorTypeEqual], 5, 5, true},
+		{"!= true", Uint8Operations[OperatorTypeNotEqual], 5, 6, true},
+		{"> true", Uint8Operations[OperatorTypeGreaterThan], 7, 6, true},
+		{"< true", Uint8Operations[OperatorTypeLessThan], 4, 5, true},
+		{">= true", Uint8Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
+		{"<= true", Uint8Operations[OperatorTypeLessThanEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -231,19 +231,19 @@ func TestUint8Ops(t *testing.T) {
 	}
 }
 
-func TestUint16Ops(t *testing.T) {
+func TestUint16Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b uint16) bool
 		a, b     uint16
 		expected bool
 	}{
-		{"== true", Uint16Ops[OpTypeEqual], 5, 5, true},
-		{"!= true", Uint16Ops[OpTypeNotEqual], 5, 6, true},
-		{"> true", Uint16Ops[OpTypeGreaterThan], 7, 6, true},
-		{"< true", Uint16Ops[OpTypeLessThan], 4, 5, true},
-		{">= true", Uint16Ops[OpTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint16Ops[OpTypeLessThanEqual], 5, 5, true},
+		{"== true", Uint16Operations[OperatorTypeEqual], 5, 5, true},
+		{"!= true", Uint16Operations[OperatorTypeNotEqual], 5, 6, true},
+		{"> true", Uint16Operations[OperatorTypeGreaterThan], 7, 6, true},
+		{"< true", Uint16Operations[OperatorTypeLessThan], 4, 5, true},
+		{">= true", Uint16Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
+		{"<= true", Uint16Operations[OperatorTypeLessThanEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -252,19 +252,19 @@ func TestUint16Ops(t *testing.T) {
 	}
 }
 
-func TestUint32Ops(t *testing.T) {
+func TestUint32Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b uint32) bool
 		a, b     uint32
 		expected bool
 	}{
-		{"== true", Uint32Ops[OpTypeEqual], 5, 5, true},
-		{"!= true", Uint32Ops[OpTypeNotEqual], 5, 6, true},
-		{"> true", Uint32Ops[OpTypeGreaterThan], 7, 6, true},
-		{"< true", Uint32Ops[OpTypeLessThan], 4, 5, true},
-		{">= true", Uint32Ops[OpTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint32Ops[OpTypeLessThanEqual], 5, 5, true},
+		{"== true", Uint32Operations[OperatorTypeEqual], 5, 5, true},
+		{"!= true", Uint32Operations[OperatorTypeNotEqual], 5, 6, true},
+		{"> true", Uint32Operations[OperatorTypeGreaterThan], 7, 6, true},
+		{"< true", Uint32Operations[OperatorTypeLessThan], 4, 5, true},
+		{">= true", Uint32Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
+		{"<= true", Uint32Operations[OperatorTypeLessThanEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -273,19 +273,19 @@ func TestUint32Ops(t *testing.T) {
 	}
 }
 
-func TestUint64Ops(t *testing.T) {
+func TestUint64Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b uint64) bool
 		a, b     uint64
 		expected bool
 	}{
-		{"== true", Uint64Ops[OpTypeEqual], 5, 5, true},
-		{"!= true", Uint64Ops[OpTypeNotEqual], 5, 6, true},
-		{"> true", Uint64Ops[OpTypeGreaterThan], 7, 6, true},
-		{"< true", Uint64Ops[OpTypeLessThan], 4, 5, true},
-		{">= true", Uint64Ops[OpTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint64Ops[OpTypeLessThanEqual], 5, 5, true},
+		{"== true", Uint64Operations[OperatorTypeEqual], 5, 5, true},
+		{"!= true", Uint64Operations[OperatorTypeNotEqual], 5, 6, true},
+		{"> true", Uint64Operations[OperatorTypeGreaterThan], 7, 6, true},
+		{"< true", Uint64Operations[OperatorTypeLessThan], 4, 5, true},
+		{">= true", Uint64Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
+		{"<= true", Uint64Operations[OperatorTypeLessThanEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -294,19 +294,19 @@ func TestUint64Ops(t *testing.T) {
 	}
 }
 
-func TestFloat32Ops(t *testing.T) {
+func TestFloat32Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b float32) bool
 		a, b     float32
 		expected bool
 	}{
-		{"== true", Float32Ops[OpTypeEqual], 1.1, 1.1, true},
-		{"!= true", Float32Ops[OpTypeNotEqual], 1.1, 2.2, true},
-		{"> true", Float32Ops[OpTypeGreaterThan], 3.5, 2.5, true},
-		{"< true", Float32Ops[OpTypeLessThan], 1.0, 2.0, true},
-		{">= true", Float32Ops[OpTypeGreaterThanEqual], 4.0, 4.0, true},
-		{"<= true", Float32Ops[OpTypeLessThanEqual], 2.2, 2.2, true},
+		{"== true", Float32Operations[OperatorTypeEqual], 1.1, 1.1, true},
+		{"!= true", Float32Operations[OperatorTypeNotEqual], 1.1, 2.2, true},
+		{"> true", Float32Operations[OperatorTypeGreaterThan], 3.5, 2.5, true},
+		{"< true", Float32Operations[OperatorTypeLessThan], 1.0, 2.0, true},
+		{">= true", Float32Operations[OperatorTypeGreaterThanEqual], 4.0, 4.0, true},
+		{"<= true", Float32Operations[OperatorTypeLessThanEqual], 2.2, 2.2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -315,19 +315,19 @@ func TestFloat32Ops(t *testing.T) {
 	}
 }
 
-func TestFloat64Ops(t *testing.T) {
+func TestFloat64Operations(t *testing.T) {
 	cases := []struct {
 		name     string
 		op       func(a, b float64) bool
 		a, b     float64
 		expected bool
 	}{
-		{"== true", Float64Ops[OpTypeEqual], 1.1, 1.1, true},
-		{"!= true", Float64Ops[OpTypeNotEqual], 1.1, 2.2, true},
-		{"> true", Float64Ops[OpTypeGreaterThan], 3.5, 2.5, true},
-		{"< true", Float64Ops[OpTypeLessThan], 1.0, 2.0, true},
-		{">= true", Float64Ops[OpTypeGreaterThanEqual], 4.0, 4.0, true},
-		{"<= true", Float64Ops[OpTypeLessThanEqual], 2.2, 2.2, true},
+		{"== true", Float64Operations[OperatorTypeEqual], 1.1, 1.1, true},
+		{"!= true", Float64Operations[OperatorTypeNotEqual], 1.1, 2.2, true},
+		{"> true", Float64Operations[OperatorTypeGreaterThan], 3.5, 2.5, true},
+		{"< true", Float64Operations[OperatorTypeLessThan], 1.0, 2.0, true},
+		{">= true", Float64Operations[OperatorTypeGreaterThanEqual], 4.0, 4.0, true},
+		{"<= true", Float64Operations[OperatorTypeLessThanEqual], 2.2, 2.2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -336,7 +336,7 @@ func TestFloat64Ops(t *testing.T) {
 	}
 }
 
-func TestUuidOps(t *testing.T) {
+func TestUuidOperations(t *testing.T) {
 	a := uuid.New()
 	b := uuid.New()
 	cases := []struct {
@@ -345,8 +345,8 @@ func TestUuidOps(t *testing.T) {
 		a, b     uuid.UUID
 		expected bool
 	}{
-		{"== true", UuidOps[OpTypeEqual], a, a, true},
-		{"!= true", UuidOps[OpTypeNotEqual], a, b, true},
+		{"== true", UuidOperations[OperatorTypeEqual], a, a, true},
+		{"!= true", UuidOperations[OperatorTypeNotEqual], a, b, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -355,7 +355,7 @@ func TestUuidOps(t *testing.T) {
 	}
 }
 
-func TestTimeOps(t *testing.T) {
+func TestTimeOperations(t *testing.T) {
 	now := time.Now()
 	later := now.Add(time.Minute)
 	cases := []struct {
@@ -364,12 +364,12 @@ func TestTimeOps(t *testing.T) {
 		a, b     time.Time
 		expected bool
 	}{
-		{"== true", TimeOps[OpTypeEqual], now, now, true},
-		{"!= true", TimeOps[OpTypeNotEqual], now, later, true},
-		{"> true", TimeOps[OpTypeGreaterThan], later, now, true},
-		{"< true", TimeOps[OpTypeLessThan], now, later, true},
-		{">= true", TimeOps[OpTypeGreaterThanEqual], now, now, true},
-		{"<= true", TimeOps[OpTypeLessThanEqual], now, now, true},
+		{"== true", TimeOperations[OperatorTypeEqual], now, now, true},
+		{"!= true", TimeOperations[OperatorTypeNotEqual], now, later, true},
+		{"> true", TimeOperations[OperatorTypeGreaterThan], later, now, true},
+		{"< true", TimeOperations[OperatorTypeLessThan], now, later, true},
+		{">= true", TimeOperations[OperatorTypeGreaterThanEqual], now, now, true},
+		{"<= true", TimeOperations[OperatorTypeLessThanEqual], now, now, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
