@@ -685,6 +685,70 @@ func TestQueryFilterOrderLimitCombo(t *testing.T) {
 	}
 }
 
+func TestQueryBirthLastYear(t *testing.T) {
+	now := time.Now()
+	lastYear := now.AddDate(-1, 0, 0)
+
+	// Create 10 recent entries within the last year
+	var recent []*SampleV1.Sample
+	for i := 0; i < 10; i++ {
+		e := &SampleV1.Sample{
+			Name:    fmt.Sprintf("Recent%d", i),
+			Surname: "User",
+			Birth:   now.AddDate(0, 0, -i*10), // Spread out over the last ~100 days
+		}
+		recent = append(recent, e)
+	}
+
+	// Create 10 old entries more than a year old
+	var old []*SampleV1.Sample
+	for i := 0; i < 10; i++ {
+		e := &SampleV1.Sample{
+			Name:    fmt.Sprintf("Old%d", i),
+			Surname: "User",
+			Birth:   now.AddDate(-2, 0, -i*30), // ~2 years ago
+		}
+		old = append(old, e)
+	}
+
+	// Insert all records
+	for _, e := range append(recent, old...) {
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatalf("failed to insert entity: %v", err)
+		}
+	}
+
+	// Query only those born in the last year, sorted ascending
+	q := query.NewQuery().
+		SetFilters(query.FilterTypeAnd, []query.Filter{
+			{Field: SampleV1.FieldBirth, Op: query.OperatorTypeGreaterThanEqual, Value: lastYear},
+		}).
+		SetOrders([]query.Order{
+			{Type: query.OrderTypeAsc, Field: SampleV1.FieldBirth},
+		})
+
+	results, err := SampleV1.DbQuery(connection, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check all returned records are from 'recent' and in ascending order
+	if len(results) != len(recent) {
+		t.Fatalf("expected %d recent records, got %d", len(recent), len(results))
+	}
+
+	prev := time.Time{}
+	for i, r := range results {
+		if r.Birth.Before(lastYear) {
+			t.Fatalf("record %d has birth before last year: %+v", i, r)
+		}
+		if !prev.IsZero() && r.Birth.Before(prev) {
+			t.Fatalf("records not in ascending birth order at index %d", i)
+		}
+		prev = r.Birth
+	}
+}
+
 var messageSizes = map[string]int{
 	"2KB":   util.Size2KB,
 	"4KB":   util.Size4KB,

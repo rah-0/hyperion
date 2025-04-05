@@ -23,7 +23,13 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += `"bytes"` + "\n"
 	template += `"encoding/gob"` + "\n"
 	template += `"errors"` + "\n"
-	template += `"sync"` + "\n\n"
+	template += `"sync"` + "\n"
+	for _, f := range s.Fields {
+		if f.Type == "time.Time" {
+			template += `"time"` + "\n"
+		}
+	}
+	template += "\n"
 	template += `"github.com/google/uuid"` + "\n\n"
 	template += `"` + filepath.Join(mn, "hconn") + `"` + "\n"
 	template += `"` + filepath.Join(mn, "model") + `"` + "\n"

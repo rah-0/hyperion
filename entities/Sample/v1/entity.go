@@ -9,6 +9,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -29,6 +30,7 @@ const (
 	FieldDeleted = 2
 	FieldName    = 3
 	FieldSurname = 4
+	FieldBirth   = 5
 )
 
 var FieldTypes = map[int]string{
@@ -36,6 +38,7 @@ var FieldTypes = map[int]string{
 	FieldDeleted: "bool",
 	FieldName:    "string",
 	FieldSurname: "string",
+	FieldBirth:   "time.Time",
 }
 
 var Indexes = map[int]any{
@@ -43,6 +46,7 @@ var Indexes = map[int]any{
 	FieldDeleted: map[bool][]*Sample{},
 	FieldName:    map[string][]*Sample{},
 	FieldSurname: map[string][]*Sample{},
+	FieldBirth:   map[time.Time][]*Sample{},
 }
 
 var (
@@ -109,6 +113,14 @@ func init() {
 		}
 		return CastToModel(idx[v])
 	}
+	IndexAccessors[FieldBirth] = func(val any) []register.Model {
+		idx := Indexes[FieldBirth].(map[time.Time][]*Sample)
+		v, ok := val.(time.Time)
+		if !ok {
+			return nil
+		}
+		return CastToModel(idx[v])
+	}
 
 	// Initializations
 	Mem = []*Sample{}
@@ -131,6 +143,7 @@ type Sample struct {
 	Deleted bool      `json:",omitzero"`
 	Name    string    `json:"-"`
 	Surname string    `json:"-"`
+	Birth   time.Time `json:"-"`
 }
 
 func New() register.Model {
@@ -171,6 +184,10 @@ func (s *Sample) SetFieldValue(field int, value any) {
 		if v, ok := value.(string); ok {
 			s.Surname = v
 		}
+	case FieldBirth:
+		if v, ok := value.(time.Time); ok {
+			s.Birth = v
+		}
 	}
 }
 
@@ -184,6 +201,8 @@ func (s *Sample) GetFieldValue(field int) any {
 		return s.Name
 	case FieldSurname:
 		return s.Surname
+	case FieldBirth:
+		return s.Birth
 	}
 	return nil
 }
@@ -238,6 +257,8 @@ func (s *Sample) MemoryAdd() {
 	indexName[s.Name] = append(indexName[s.Name], s)
 	indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
 	indexSurname[s.Surname] = append(indexSurname[s.Surname], s)
+	indexBirth := Indexes[FieldBirth].(map[time.Time][]*Sample)
+	indexBirth[s.Birth] = append(indexBirth[s.Birth], s)
 }
 
 func (s *Sample) MemoryRemove() {
@@ -261,6 +282,8 @@ func (s *Sample) MemoryRemove() {
 	indexName[s.Name] = removeFromIndex(indexName[s.Name], s)
 	indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
 	indexSurname[s.Surname] = removeFromIndex(indexSurname[s.Surname], s)
+	indexBirth := Indexes[FieldBirth].(map[time.Time][]*Sample)
+	indexBirth[s.Birth] = removeFromIndex(indexBirth[s.Birth], s)
 }
 
 func (s *Sample) MemoryUpdate() {
@@ -293,6 +316,11 @@ func (s *Sample) MemoryUpdate() {
 			indexSurname[old.Surname] = removeFromIndex(indexSurname[old.Surname], old)
 			indexSurname[s.Surname] = append(indexSurname[s.Surname], s)
 		}
+		if old.Birth != s.Birth {
+			indexBirth := Indexes[FieldBirth].(map[time.Time][]*Sample)
+			indexBirth[old.Birth] = removeFromIndex(indexBirth[old.Birth], old)
+			indexBirth[s.Birth] = append(indexBirth[s.Birth], s)
+		}
 
 		Mem[i] = s
 		break
@@ -309,6 +337,7 @@ func (s *Sample) MemoryClear() {
 	Indexes[FieldDeleted] = map[bool][]*Sample{}
 	Indexes[FieldName] = map[string][]*Sample{}
 	Indexes[FieldSurname] = map[string][]*Sample{}
+	Indexes[FieldBirth] = map[time.Time][]*Sample{}
 }
 
 func (s *Sample) MemoryGetAll() []register.Model {
