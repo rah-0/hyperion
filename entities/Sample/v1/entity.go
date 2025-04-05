@@ -39,10 +39,10 @@ var FieldTypes = map[int]string{
 }
 
 var Indexes = map[int]any{
-	FieldUuid:    map[uuid.UUID][]register.Model{},
-	FieldDeleted: map[bool][]register.Model{},
-	FieldName:    map[string][]register.Model{},
-	FieldSurname: map[string][]register.Model{},
+	FieldUuid:    map[uuid.UUID][]*Sample{},
+	FieldDeleted: map[bool][]*Sample{},
+	FieldName:    map[string][]*Sample{},
+	FieldSurname: map[string][]*Sample{},
 }
 
 var (
@@ -78,49 +78,52 @@ func init() {
 
 	// IndexAccessors definitions
 	IndexAccessors[FieldUuid] = func(val any) []register.Model {
-		idx := Indexes[FieldUuid].(map[uuid.UUID][]register.Model)
+		idx := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
 		v, ok := val.(uuid.UUID)
 		if !ok {
 			return nil
 		}
-		return idx[v]
+		return CastToModel(idx[v])
 	}
 	IndexAccessors[FieldDeleted] = func(val any) []register.Model {
-		idx := Indexes[FieldDeleted].(map[bool][]register.Model)
+		idx := Indexes[FieldDeleted].(map[bool][]*Sample)
 		v, ok := val.(bool)
 		if !ok {
 			return nil
 		}
-		return idx[v]
+		return CastToModel(idx[v])
 	}
 	IndexAccessors[FieldName] = func(val any) []register.Model {
-		idx := Indexes[FieldName].(map[string][]register.Model)
+		idx := Indexes[FieldName].(map[string][]*Sample)
 		v, ok := val.(string)
 		if !ok {
 			return nil
 		}
-		return idx[v]
+		return CastToModel(idx[v])
 	}
 	IndexAccessors[FieldSurname] = func(val any) []register.Model {
-		idx := Indexes[FieldSurname].(map[string][]register.Model)
+		idx := Indexes[FieldSurname].(map[string][]*Sample)
 		v, ok := val.(string)
 		if !ok {
 			return nil
 		}
-		return idx[v]
+		return CastToModel(idx[v])
 	}
 
 	// Initializations
 	Mem = []*Sample{}
-	register.RegisterEntity(&register.Entity{
-		Version:        Version,
-		Name:           Name,
-		DbFileName:     DbFileName,
-		New:            New,
-		FieldTypes:     FieldTypes,
-		Indexes:        Indexes,
-		IndexAccessors: IndexAccessors,
-	})
+	register.RegisterEntity(
+		&register.EntityBase{
+			Version:    Version,
+			Name:       Name,
+			DbFileName: DbFileName,
+		}, &register.EntityExtension{
+			New:            New,
+			FieldTypes:     FieldTypes,
+			Indexes:        Indexes,
+			IndexAccessors: IndexAccessors,
+		},
+	)
 }
 
 type Sample struct {
@@ -225,6 +228,16 @@ func (s *Sample) MemoryAdd() {
 	mu.Lock()
 	defer mu.Unlock()
 	Mem = append(Mem, s)
+
+	// Update indexes
+	indexUuid := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
+	indexUuid[s.Uuid] = append(indexUuid[s.Uuid], s)
+	indexDeleted := Indexes[FieldDeleted].(map[bool][]*Sample)
+	indexDeleted[s.Deleted] = append(indexDeleted[s.Deleted], s)
+	indexName := Indexes[FieldName].(map[string][]*Sample)
+	indexName[s.Name] = append(indexName[s.Name], s)
+	indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
+	indexSurname[s.Surname] = append(indexSurname[s.Surname], s)
 }
 
 func (s *Sample) MemoryRemove() {
@@ -238,24 +251,64 @@ func (s *Sample) MemoryRemove() {
 			break
 		}
 	}
+
+	// Remove from indexes
+	indexUuid := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
+	indexUuid[s.Uuid] = removeFromIndex(indexUuid[s.Uuid], s)
+	indexDeleted := Indexes[FieldDeleted].(map[bool][]*Sample)
+	indexDeleted[s.Deleted] = removeFromIndex(indexDeleted[s.Deleted], s)
+	indexName := Indexes[FieldName].(map[string][]*Sample)
+	indexName[s.Name] = removeFromIndex(indexName[s.Name], s)
+	indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
+	indexSurname[s.Surname] = removeFromIndex(indexSurname[s.Surname], s)
 }
 
 func (s *Sample) MemoryUpdate() {
 	mu.Lock()
 	defer mu.Unlock()
 
-	for i, instance := range Mem {
-		if instance.Uuid == s.Uuid {
-			Mem[i] = s
-			break
+	for i, old := range Mem {
+		if old.Uuid != s.Uuid {
+			continue
 		}
+
+		// Update indexes only if values changed
+		if old.Uuid != s.Uuid {
+			indexUuid := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
+			indexUuid[old.Uuid] = removeFromIndex(indexUuid[old.Uuid], old)
+			indexUuid[s.Uuid] = append(indexUuid[s.Uuid], s)
+		}
+		if old.Deleted != s.Deleted {
+			indexDeleted := Indexes[FieldDeleted].(map[bool][]*Sample)
+			indexDeleted[old.Deleted] = removeFromIndex(indexDeleted[old.Deleted], old)
+			indexDeleted[s.Deleted] = append(indexDeleted[s.Deleted], s)
+		}
+		if old.Name != s.Name {
+			indexName := Indexes[FieldName].(map[string][]*Sample)
+			indexName[old.Name] = removeFromIndex(indexName[old.Name], old)
+			indexName[s.Name] = append(indexName[s.Name], s)
+		}
+		if old.Surname != s.Surname {
+			indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
+			indexSurname[old.Surname] = removeFromIndex(indexSurname[old.Surname], old)
+			indexSurname[s.Surname] = append(indexSurname[s.Surname], s)
+		}
+
+		Mem[i] = s
+		break
 	}
 }
 
 func (s *Sample) MemoryClear() {
 	mu.Lock()
 	defer mu.Unlock()
+
 	Mem = []*Sample{}
+
+	Indexes[FieldUuid] = map[uuid.UUID][]*Sample{}
+	Indexes[FieldDeleted] = map[bool][]*Sample{}
+	Indexes[FieldName] = map[string][]*Sample{}
+	Indexes[FieldSurname] = map[string][]*Sample{}
 }
 
 func (s *Sample) MemoryGetAll() []register.Model {
@@ -280,18 +333,6 @@ func (s *Sample) MemoryContains(target register.Model) bool {
 	return false
 }
 
-func (s *Sample) MemorySet(models []register.Model) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	Mem = make([]*Sample, 0, len(models))
-	for _, m := range models {
-		if instance, ok := m.(*Sample); ok {
-			Mem = append(Mem, instance)
-		}
-	}
-}
-
 func (s *Sample) DbInsert(c *hconn.HConn) error {
 	if s.Uuid == uuid.Nil {
 		s.WithNewUuid()
@@ -302,7 +343,7 @@ func (s *Sample) DbInsert(c *hconn.HConn) error {
 
 	msg := model.Message{
 		Type: model.MessageTypeInsert,
-		Entity: register.Entity{
+		Entity: register.EntityBase{
 			Version: Version,
 			Name:    Name,
 			Data:    s.GetBufferData(),
@@ -333,7 +374,7 @@ func (s *Sample) DbDelete(c *hconn.HConn) error {
 
 	msg := model.Message{
 		Type: model.MessageTypeDelete,
-		Entity: register.Entity{
+		Entity: register.EntityBase{
 			Version: Version,
 			Name:    Name,
 			Data:    s.GetBufferData(),
@@ -366,7 +407,7 @@ func (s *Sample) DbUpdate(c *hconn.HConn) error {
 
 	msg := model.Message{
 		Type: model.MessageTypeUpdate,
-		Entity: register.Entity{
+		Entity: register.EntityBase{
 			Version: Version,
 			Name:    Name,
 			Data:    s.GetBufferData(),
@@ -392,7 +433,7 @@ func (s *Sample) DbUpdate(c *hconn.HConn) error {
 func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
 	msg := model.Message{
 		Type: model.MessageTypeGetAll,
-		Entity: register.Entity{
+		Entity: register.EntityBase{
 			Version: Version,
 			Name:    Name,
 		},
@@ -411,13 +452,13 @@ func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
 		return nil, errors.New(resp.String)
 	}
 
-	return Cast(resp.Models), nil
+	return CastToSample(resp.Models), nil
 }
 
 func DbQuery(c *hconn.HConn, q *query.Query) ([]*Sample, error) {
 	msg := model.Message{
 		Type: model.MessageTypeQuery,
-		Entity: register.Entity{
+		Entity: register.EntityBase{
 			Version: Version,
 			Name:    Name,
 		},
@@ -437,13 +478,32 @@ func DbQuery(c *hconn.HConn, q *query.Query) ([]*Sample, error) {
 		return nil, errors.New(resp.String)
 	}
 
-	return Cast(resp.Models), nil
+	return CastToSample(resp.Models), nil
 }
 
-func Cast(models []register.Model) []*Sample {
+func CastToSample(models []register.Model) []*Sample {
 	out := make([]*Sample, len(models))
 	for i, m := range models {
 		out[i] = m.(*Sample)
 	}
 	return out
+}
+
+func CastToModel(items []*Sample) []register.Model {
+	out := make([]register.Model, len(items))
+	for i, s := range items {
+		out[i] = s
+	}
+	return out
+}
+
+func removeFromIndex(list []*Sample, target *Sample) []*Sample {
+	for i, item := range list {
+		if item == target {
+			last := len(list) - 1
+			list[i] = list[last]
+			return list[:last]
+		}
+	}
+	return list
 }

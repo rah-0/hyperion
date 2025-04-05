@@ -31,28 +31,28 @@ func TestGeneratedSampleSerializer(t *testing.T) {
 		t.Fatal("no entities generated")
 	}
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instanceOld := e.New()
+		instanceOld := e.EntityExtension.New()
 		instanceOld.SetFieldValue(FieldName, "John")
 		instanceOld.SetFieldValue(FieldSurname, "Doe")
 		err := instanceOld.Encode()
 		if err != nil {
-			t.Fatalf("Encoding failed for %s: %v", e.Name, err)
+			t.Fatalf("Encoding failed for %s: %v", e.EntityBase.Name, err)
 		}
 
-		instanceNew := e.New()
+		instanceNew := e.EntityExtension.New()
 		err = instanceNew.Decode()
 		if err != nil {
-			t.Fatalf("Decoding failed for %s: %v", e.Name, err)
+			t.Fatalf("Decoding failed for %s: %v", e.EntityBase.Name, err)
 		}
 		instanceNew.BufferReset()
 
 		if instanceNew.GetFieldValue(FieldName) != "John" || instanceNew.GetFieldValue(FieldSurname) != "Doe" {
 			t.Fatalf("Decoded values mismatch for %s: got Name=%s, Surname=%s",
-				e.Name, instanceNew.GetFieldValue(FieldName), instanceNew.GetFieldValue(FieldSurname))
+				e.EntityBase.Name, instanceNew.GetFieldValue(FieldName), instanceNew.GetFieldValue(FieldSurname))
 		}
 	}
 }

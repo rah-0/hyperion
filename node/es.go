@@ -9,19 +9,13 @@ import (
 )
 
 func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
-	mem := x.Memory.New().MemoryGetAll()
-	fieldTypes := x.Memory.FieldTypes
 	if q == nil {
 		return nil, model.ErrQueryNil
 	}
 
-	hasOrders := len(q.Orders) > 0
-	if hasOrders {
-		if err := checkOrders(q, fieldTypes); err != nil {
-			return nil, err
-		}
-		order(mem, q.Orders, fieldTypes)
-	}
+	mem := x.Memory.EntityExtension.New().MemoryGetAll()
+	fieldTypes := x.Memory.EntityExtension.FieldTypes
+	indexAccessors := x.Memory.EntityExtension.IndexAccessors
 
 	hasFilters := q.Filters.Type != query.FilterTypeUndefined
 	filters := q.Filters.Filters
@@ -31,16 +25,68 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 	limit := q.Limit
 
 	var results []register.Model
-	for _, m := range mem {
-		if !hasFilters || matchModel(m, filters, fieldTypes, filterType) {
-			results = append(results, m)
-			if hasLimit && len(results) >= limit {
-				break
+	if hasFilters && filterType == query.FilterTypeAnd {
+		bestIndex := getBestIndex(filters, indexAccessors)
+		if bestIndex != nil {
+			for _, m := range bestIndex {
+				if matchModel(m, filters, fieldTypes, filterType) {
+					results = append(results, m)
+				}
 			}
+			if len(q.Orders) > 0 {
+				err := checkOrders(q, fieldTypes)
+				if err != nil {
+					return nil, err
+				}
+				order(results, q.Orders, fieldTypes)
+			}
+			if hasLimit && len(results) > limit {
+				results = results[:limit]
+			}
+			return results, nil
 		}
 	}
 
+	for _, m := range mem {
+		if !hasFilters || matchModel(m, filters, fieldTypes, filterType) {
+			results = append(results, m)
+		}
+	}
+
+	if len(q.Orders) > 0 {
+		err := checkOrders(q, fieldTypes)
+		if err != nil {
+			return nil, err
+		}
+		order(results, q.Orders, fieldTypes)
+	}
+
+	if hasLimit && len(results) > limit {
+		results = results[:limit]
+	}
+
 	return results, nil
+}
+
+func getBestIndex(filters []query.Filter, indexAccessors map[int]register.IndexAccessor) []register.Model {
+	var best []register.Model
+	for _, f := range filters {
+		if f.Op != query.OperatorTypeEqual {
+			continue
+		}
+		get := indexAccessors[f.Field]
+		if get == nil {
+			continue
+		}
+		candidates := get(f.Value)
+		if candidates == nil {
+			continue
+		}
+		if best == nil || len(candidates) < len(best) {
+			best = candidates
+		}
+	}
+	return best
 }
 
 func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]string, qft query.FilterType) bool {
@@ -72,9 +118,20 @@ func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]str
 	}
 }
 
+func applyOrdering(results []register.Model, q *query.Query, fieldTypes map[int]string) ([]register.Model, error) {
+	if len(q.Orders) == 0 {
+		return results, nil
+	}
+	if err := checkOrders(q, fieldTypes); err != nil {
+		return results, err
+	}
+	order(results, q.Orders, fieldTypes)
+	return results, nil
+}
+
 func checkOrders(q *query.Query, fieldTypes map[int]string) error {
-	for _, order := range q.Orders {
-		fieldType, ok := fieldTypes[order.Field]
+	for _, o := range q.Orders {
+		fieldType, ok := fieldTypes[o.Field]
 		if !ok {
 			return model.ErrQueryEntityFieldNotFound
 		}

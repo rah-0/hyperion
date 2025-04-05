@@ -32,17 +32,18 @@ func TestDataWrite(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instance := e.New()
+		instance := e.EntityExtension.New()
 		instance.SetFieldValue(FieldUuid, uuid.New())
 		instance.SetFieldValue(FieldName, "John")
 		instance.SetFieldValue(FieldSurname, "Doe")
 		if err := instance.Encode(); err != nil {
 			t.Fatal(err)
 		}
+
 		err := d.DataWrite(instance.GetBufferData())
 		if err != nil {
 			t.Fatalf("DataWrite failed: %v", err)
@@ -73,7 +74,7 @@ func TestDataWrite(t *testing.T) {
 		}
 
 		// Decode entity
-		readInstance := e.New()
+		readInstance := e.EntityExtension.New()
 		readInstance.SetBufferData(data)
 		if err = readInstance.Decode(); err != nil {
 			t.Fatalf("Failed to decode entity: %v", err)
@@ -106,7 +107,7 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
@@ -114,7 +115,7 @@ func TestDataReadAll_InitialWrite(t *testing.T) {
 		// Write multiple unique entities
 		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 50; i++ {
-			instance := e.New()
+			instance := e.EntityExtension.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
 			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
 			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
@@ -171,13 +172,13 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
 
-		// Write Initial Entity
-		instance := e.New()
+		// Write Initial EntityBase
+		instance := e.EntityExtension.New()
 		instance.SetFieldValue(FieldName, "OriginalUser")
 		instance.SetFieldValue(FieldSurname, "OriginalSurname")
 		if err := instance.Encode(); err != nil {
@@ -196,7 +197,7 @@ func TestDataReadAll_SingleEntity_WithUpdates(t *testing.T) {
 		updateSurnames := []string{"Surname1", "Surname2", "Surname3", "FinalSurname"}
 
 		for i := range updateNames {
-			updatedInstance := e.New()
+			updatedInstance := e.EntityExtension.New()
 			updatedInstance.SetFieldValue(FieldUuid, entityUUID) // Keep same UUID
 			updatedInstance.SetFieldValue(FieldName, updateNames[i])
 			updatedInstance.SetFieldValue(FieldSurname, updateSurnames[i])
@@ -250,7 +251,7 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
@@ -258,7 +259,7 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 		// Write initial entities
 		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 10; i++ {
-			instance := e.New()
+			instance := e.EntityExtension.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
 			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
 			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
@@ -286,7 +287,7 @@ func TestDataReadAll_MultipleEntities_WithUpdates(t *testing.T) {
 			entityUUID := original.GetUuid()
 
 			// Create an updated version
-			updatedInstance := e.New()
+			updatedInstance := e.EntityExtension.New()
 			updatedInstance.SetFieldValue(FieldUuid, entityUUID) // Keep same UUID
 			updatedInstance.SetFieldValue(FieldName, "UpdatedUser")
 			updatedInstance.SetFieldValue(FieldSurname, "UpdatedSurname")
@@ -340,7 +341,7 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
@@ -348,7 +349,7 @@ func TestDataCleanup_NoDuplicates(t *testing.T) {
 		// Write multiple unique entities
 		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 1000; i++ {
-			instance := e.New()
+			instance := e.EntityExtension.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
 			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
 			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
@@ -394,7 +395,7 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
@@ -402,7 +403,7 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 		// Write initial entities
 		expectedEntities := make(map[uuid.UUID]register.Model)
 		for i := 0; i < 1000; i++ {
-			instance := e.New()
+			instance := e.EntityExtension.New()
 			instance.SetFieldValue(FieldUuid, uuid.New())
 			instance.SetFieldValue(FieldName, "User"+uuid.NewString())
 			instance.SetFieldValue(FieldSurname, "Surname"+uuid.NewString())
@@ -426,7 +427,7 @@ func TestDataCleanup_WithDuplicates(t *testing.T) {
 			}
 
 			// Create a newer version
-			updatedInstance := e.New()
+			updatedInstance := e.EntityExtension.New()
 			updatedInstance.SetFieldValue(FieldUuid, entityUUID) // Same UUID
 			updatedInstance.SetFieldValue(FieldName, "UpdatedUser")
 			updatedInstance.SetFieldValue(FieldSurname, "UpdatedSurname")
@@ -488,10 +489,10 @@ func BenchmarkDataWrite(b *testing.B) {
 				b.Fatal("No entities generated")
 			}
 
-			var testEntity *register.Entity
+			var testEntity *register.EntityExtension
 			for _, e := range register.Entities {
-				if e.Name == "Sample" {
-					testEntity = e
+				if e.EntityBase.Name == "Sample" {
+					testEntity = e.EntityExtension
 					break
 				}
 			}
@@ -536,10 +537,10 @@ func BenchmarkDataReadAll(b *testing.B) {
 				b.Fatal("No entities generated")
 			}
 
-			var testEntity *register.Entity
+			var testEntity *register.EntityExtension
 			for _, e := range register.Entities {
-				if e.Name == "Sample" {
-					testEntity = e
+				if e.EntityBase.Name == "Sample" {
+					testEntity = e.EntityExtension
 					break
 				}
 			}
@@ -584,10 +585,10 @@ func TestGenerateLargeDataset(t *testing.T) {
 		t.Fatal("No entities generated")
 	}
 
-	var testEntity *register.Entity
+	var testEntity *register.EntityExtension
 	for _, e := range register.Entities {
-		if e.Name == "Sample" {
-			testEntity = e
+		if e.EntityBase.Name == "Sample" {
+			testEntity = e.EntityExtension
 			break
 		}
 	}
@@ -639,13 +640,13 @@ func TestDataReadAll_WithDeletedEntity(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
 
 		// Create and write entity
-		instance := e.New()
+		instance := e.EntityExtension.New()
 		instance.SetFieldValue(FieldUuid, uuid.New())
 		instance.SetFieldValue(FieldName, "ToBeDeleted")
 		instance.SetFieldValue(FieldSurname, "ShouldNotAppear")
@@ -659,7 +660,7 @@ func TestDataReadAll_WithDeletedEntity(t *testing.T) {
 		instance.BufferReset()
 
 		// Mark entity as deleted
-		tombstone := e.New()
+		tombstone := e.EntityExtension.New()
 		tombstone.SetFieldValue(FieldUuid, entityUUID)
 		tombstone.SetFieldValue(FieldDeleted, true)
 		if err := tombstone.Encode(); err != nil {
@@ -692,7 +693,7 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
@@ -700,7 +701,7 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 		u := uuid.New()
 
 		// Write deleted tombstone first
-		del := e.New()
+		del := e.EntityExtension.New()
 		del.SetFieldValue(FieldUuid, u)
 		del.SetFieldValue(FieldDeleted, true)
 		if err := del.Encode(); err != nil {
@@ -712,7 +713,7 @@ func TestDataReadAll_DeletedThenInserted_Survives(t *testing.T) {
 		del.BufferReset()
 
 		// Write a new version after deletion
-		ins := e.New()
+		ins := e.EntityExtension.New()
 		ins.SetFieldValue(FieldUuid, u)
 		ins.SetFieldValue(FieldName, "Alive")
 		ins.SetFieldValue(FieldSurname, "User")
@@ -748,7 +749,7 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 		d.WithEntity(e)
@@ -756,10 +757,10 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 		u := uuid.New()
 
 		// Insert then delete
-		ins := e.New()
+		ins := e.EntityExtension.New()
 		ins.SetFieldValue(FieldUuid, u)
 		ins.SetFieldValue(FieldName, FieldDeleted)
-		ins.SetFieldValue(FieldSurname, "Entity")
+		ins.SetFieldValue(FieldSurname, "EntityBase")
 		if err := ins.Encode(); err != nil {
 			t.Fatal(err)
 		}
@@ -768,7 +769,7 @@ func TestDataCleanup_DeletesArePurged(t *testing.T) {
 		}
 		ins.BufferReset()
 
-		del := e.New()
+		del := e.EntityExtension.New()
 		del.SetFieldValue(FieldUuid, u)
 		del.SetFieldValue(FieldDeleted, true)
 		if err := del.Encode(); err != nil {

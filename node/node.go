@@ -124,8 +124,8 @@ func (x *Node) Start() error {
 	// Config per node targets an entity by name but here we find all versions for that entity
 	for _, e := range x.Entities {
 		for _, re := range register.Entities {
-			if e.Name == re.Name {
-				d := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.DbFileName)).WithEntity(re)
+			if e.Name == re.EntityBase.Name {
+				d := disk.NewDisk().WithPath(filepath.Join(x.Path.Data, re.EntityBase.DbFileName)).WithEntity(re)
 				if err := d.OpenFile(); err != nil {
 					return err
 				}
@@ -193,7 +193,9 @@ func (x *Node) loadEntitiesFromDisk() error {
 			return err
 		}
 
-		s.Memory.New().MemorySet(entities)
+		for _, e := range entities {
+			e.MemoryAdd()
+		}
 	}
 
 	return nil
@@ -266,7 +268,7 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 				break
 			}
 
-			entity := e.Memory.New()
+			entity := e.Memory.EntityExtension.New()
 			entity.SetBufferData(msgIn.Entity.Data)
 			if err := entity.Decode(); err != nil {
 				msgOut.Error(err.Error())
@@ -295,7 +297,7 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 				break
 			}
 			msgOut.Status = model.StatusSuccess
-			msgOut.Models = e.Memory.New().MemoryGetAll()
+			msgOut.Models = e.Memory.EntityExtension.New().MemoryGetAll()
 
 		case model.MessageTypeTest:
 			msgOut.String = msgIn.String + "Received"
@@ -325,7 +327,7 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 
 func (x *Node) findEntityStorage(version, name string) *EntityStorage {
 	for _, e := range x.EntitiesStorage {
-		if e.Memory.Version == version && e.Memory.Name == name {
+		if e.Memory.EntityBase.Version == version && e.Memory.EntityBase.Name == name {
 			return e
 		}
 	}

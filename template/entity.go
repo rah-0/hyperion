@@ -55,7 +55,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 
 	template += "var Indexes = map[int]any{\n"
 	for _, f := range s.Fields {
-		template += "\tField" + f.Name + ": map[" + f.Type + "][]register.Model{},\n"
+		template += "\tField" + f.Name + ": map[" + f.Type + "][]*" + s.Name + "{},\n"
 	}
 	template += "}\n\n"
 
@@ -65,7 +65,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "Buffer = new(bytes.Buffer)" + "\n"
 	template += "Encoder = gob.NewEncoder(Buffer)" + "\n"
 	template += "Decoder = gob.NewDecoder(Buffer)" + "\n"
-	template += "Mem []*Sample\n"
+	template += "Mem []*" + s.Name + "\n"
 	template += "IndexAccessors = map[int]register.IndexAccessor{}\n"
 	template += ")" + "\n\n"
 
@@ -91,27 +91,31 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "// IndexAccessors definitions" + "\n"
 	for _, f := range s.Fields {
 		template += "IndexAccessors[Field" + f.Name + "] = func(val any) []register.Model {\n"
-		template += "idx := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]register.Model)\n"
+		template += "idx := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]*" + s.Name + ")\n"
 		template += "v, ok := val.(" + f.Type + ")\n"
 		template += "if !ok {\n"
 		template += "return nil\n"
 		template += "}\n"
-		template += "return idx[v]\n"
+		template += "return CastToModel(idx[v])\n"
 		template += "}\n"
 	}
 	template += "\n"
+
 	template += "// Initializations" + "\n"
 	template += "Mem = []*" + s.Name + "{}\n"
-	template += "register.RegisterEntity(&register.Entity{\n"
+	template += "register.RegisterEntity(\n"
+	template += "&register.EntityBase{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "DbFileName: DbFileName,\n"
+	template += "}, &register.EntityExtension{\n"
 	template += "New: New,\n"
 	template += "FieldTypes: FieldTypes,\n"
 	template += "Indexes: Indexes,\n"
 	template += "IndexAccessors: IndexAccessors,\n"
-	template += "})\n"
-	template += "}\n\n"
+	template += "},\n"
+	template += ")\n"
+	template += "}\n"
 
 	template += "type " + s.Name + " struct {\n"
 	for _, f := range s.Fields {
@@ -120,8 +124,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "}\n"
 
 	template += "func New() register.Model {\n"
-	template += "return &" + s.Name + "{\n"
-	template += "}\n"
+	template += "return &" + s.Name + "{}\n"
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") WithNewUuid() {\n"
@@ -203,7 +206,13 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "func (s *" + s.Name + ") MemoryAdd() {\n"
 	template += "mu.Lock()\n"
 	template += "defer mu.Unlock()\n"
-	template += "Mem = append(Mem, s)\n"
+	template += "Mem = append(Mem, s)\n\n"
+	template += "// Update indexes\n"
+	for _, f := range s.Fields {
+		varName := "index" + f.Name
+		template += varName + " := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]*" + s.Name + ")\n"
+		template += varName + "[s." + f.Name + "] = append(" + varName + "[s." + f.Name + "], s)\n"
+	}
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") MemoryRemove() {\n"
@@ -216,24 +225,43 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "Mem = Mem[:lastIndex]\n"
 	template += "break\n"
 	template += "}\n"
-	template += "}\n"
+	template += "}\n\n"
+	template += "// Remove from indexes\n"
+	for _, f := range s.Fields {
+		varName := "index" + f.Name
+		template += varName + " := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]*" + s.Name + ")\n"
+		template += varName + "[s." + f.Name + "] = removeFromIndex(" + varName + "[s." + f.Name + "], s)\n"
+	}
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") MemoryUpdate() {\n"
 	template += "mu.Lock()\n"
 	template += "defer mu.Unlock()\n\n"
-	template += "for i, instance := range Mem {\n"
-	template += "if instance.Uuid == s.Uuid {\n"
-	template += "Mem[i] = s\n"
+	template += "for i, old := range Mem {\n"
+	template += "if old.Uuid != s.Uuid {\n"
+	template += "continue\n"
+	template += "}\n\n"
+	template += "// Update indexes only if values changed\n"
+	for _, f := range s.Fields {
+		template += "if old." + f.Name + " != s." + f.Name + " {\n"
+		varName := "index" + f.Name
+		template += varName + " := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]*" + s.Name + ")\n"
+		template += varName + "[old." + f.Name + "] = removeFromIndex(" + varName + "[old." + f.Name + "], old)\n"
+		template += varName + "[s." + f.Name + "] = append(" + varName + "[s." + f.Name + "], s)\n"
+		template += "}\n"
+	}
+	template += "\nMem[i] = s\n"
 	template += "break\n"
-	template += "}\n"
 	template += "}\n"
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") MemoryClear() {\n"
 	template += "mu.Lock()\n"
-	template += "defer mu.Unlock()\n"
-	template += "Mem = []*" + s.Name + "{}\n"
+	template += "defer mu.Unlock()\n\n"
+	template += "Mem = []*" + s.Name + "{}\n\n"
+	for _, f := range s.Fields {
+		template += "Indexes[Field" + f.Name + "] = map[" + f.Type + "][]*" + s.Name + "{}\n"
+	}
 	template += "}\n\n"
 
 	template += "func (s *" + s.Name + ") MemoryGetAll() []register.Model {\n"
@@ -257,17 +285,6 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "return false\n"
 	template += "}\n\n"
 
-	template += "func (s *" + s.Name + ") MemorySet(models []register.Model) {\n"
-	template += "mu.Lock()\n"
-	template += "defer mu.Unlock()\n\n"
-	template += "Mem = make([]*" + s.Name + ", 0, len(models))\n"
-	template += "for _, m := range models {\n"
-	template += "if instance, ok := m.(*" + s.Name + "); ok {\n"
-	template += "Mem = append(Mem, instance)\n"
-	template += "}\n"
-	template += "}\n"
-	template += "}\n\n"
-
 	template += "func (s *" + s.Name + ") DbInsert(c *hconn.HConn) error {\n"
 	template += "if s.Uuid == uuid.Nil {\n"
 	template += "s.WithNewUuid()\n"
@@ -277,7 +294,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "}\n\n"
 	template += "msg := model.Message{\n"
 	template += "Type: model.MessageTypeInsert,\n"
-	template += "Entity: register.Entity{\n"
+	template += "Entity: register.EntityBase{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "Data: s.GetBufferData(),\n"
@@ -304,7 +321,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "}\n\n"
 	template += "msg := model.Message{\n"
 	template += "Type: model.MessageTypeDelete,\n"
-	template += "Entity: register.Entity{\n"
+	template += "Entity: register.EntityBase{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "Data: s.GetBufferData(),\n"
@@ -333,7 +350,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "}\n\n"
 	template += "msg := model.Message{\n"
 	template += "Type: model.MessageTypeUpdate,\n"
-	template += "Entity: register.Entity{\n"
+	template += "Entity: register.EntityBase{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "Data: s.GetBufferData(),\n"
@@ -356,7 +373,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "func DbGetAll(c *hconn.HConn) ([]*" + s.Name + ", error) {\n"
 	template += "msg := model.Message{\n"
 	template += "Type: model.MessageTypeGetAll,\n"
-	template += "Entity: register.Entity{\n"
+	template += "Entity: register.EntityBase{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "},\n"
@@ -371,13 +388,13 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "if resp.Status == model.StatusError {\n"
 	template += "return nil, errors.New(resp.String)\n"
 	template += "}\n\n"
-	template += "return Cast(resp.Models), nil\n"
+	template += "return CastTo" + s.Name + "(resp.Models), nil\n"
 	template += "}\n\n"
 
 	template += "func DbQuery(c *hconn.HConn, q *query.Query) ([]*" + s.Name + ", error) {\n"
 	template += "msg := model.Message{\n"
 	template += "Type: model.MessageTypeQuery,\n"
-	template += "Entity: register.Entity{\n"
+	template += "Entity: register.EntityBase{\n"
 	template += "Version: Version,\n"
 	template += "Name: Name,\n"
 	template += "},\n"
@@ -393,15 +410,34 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "if resp.Status == model.StatusError {\n"
 	template += "return nil, errors.New(resp.String)\n"
 	template += "}\n\n"
-	template += "return Cast(resp.Models), nil\n"
+	template += "return CastTo" + s.Name + "(resp.Models), nil\n"
 	template += "}\n\n"
 
-	template += "func Cast(models []register.Model) []*" + s.Name + " {\n"
+	template += "func CastTo" + s.Name + "(models []register.Model) []*" + s.Name + " {\n"
 	template += "out := make([]*" + s.Name + ", len(models))\n"
 	template += "for i, m := range models {\n"
 	template += "out[i] = m.(*" + s.Name + ")\n"
 	template += "}\n"
 	template += "return out\n"
+	template += "}\n\n"
+
+	template += "func CastToModel(items []*" + s.Name + ") []register.Model {\n"
+	template += "out := make([]register.Model, len(items))\n"
+	template += "for i, s := range items {\n"
+	template += "out[i] = s\n"
+	template += "}\n"
+	template += "return out\n"
+	template += "}\n\n"
+
+	template += "func removeFromIndex(list []*" + s.Name + ", target *" + s.Name + ") []*" + s.Name + " {\n"
+	template += "for i, item := range list {\n"
+	template += "if item == target {\n"
+	template += "last := len(list) - 1\n"
+	template += "list[i] = list[last]\n"
+	template += "return list[:last]\n"
+	template += "}\n"
+	template += "}\n"
+	template += "return list\n"
 	template += "}\n\n"
 
 	return template, nil

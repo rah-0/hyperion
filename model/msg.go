@@ -29,7 +29,7 @@ type Message struct {
 	Status Status
 	String string
 	Bytes  []byte
-	Entity register.Entity
+	Entity register.EntityBase
 	Models []register.Model
 	Query  *query.Query
 }

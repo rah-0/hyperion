@@ -14,11 +14,11 @@ func TestMemoryAdd(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instance := e.New()
+		instance := e.EntityExtension.New()
 		instance.SetFieldValue(FieldName, "Alice")
 		instance.SetFieldValue(FieldSurname, "Smith")
 		instance.MemoryAdd()
@@ -36,15 +36,15 @@ func TestMemoryClear(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instance1 := e.New()
+		instance1 := e.EntityExtension.New()
 		instance1.SetFieldValue(FieldName, "Charlie")
 		instance1.SetFieldValue(FieldSurname, "Brown")
 
-		instance2 := e.New()
+		instance2 := e.EntityExtension.New()
 		instance2.SetFieldValue(FieldName, "Daisy")
 		instance2.SetFieldValue(FieldSurname, "Williams")
 
@@ -66,15 +66,15 @@ func TestMemoryGetAll(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instance1 := e.New()
+		instance1 := e.EntityExtension.New()
 		instance1.SetFieldValue(FieldName, "Eve")
 		instance1.SetFieldValue(FieldSurname, "Clark")
 
-		instance2 := e.New()
+		instance2 := e.EntityExtension.New()
 		instance2.SetFieldValue(FieldName, "Frank")
 		instance2.SetFieldValue(FieldSurname, "Harris")
 
@@ -94,15 +94,15 @@ func TestMemoryContains(t *testing.T) {
 	}
 
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instance1 := e.New()
+		instance1 := e.EntityExtension.New()
 		instance1.SetFieldValue(FieldName, "Grace")
 		instance1.SetFieldValue(FieldSurname, "Lee")
 
-		instance2 := e.New()
+		instance2 := e.EntityExtension.New()
 		instance2.SetFieldValue(FieldName, "Hank")
 		instance2.SetFieldValue(FieldSurname, "Martinez")
 
@@ -122,11 +122,11 @@ func TestMemoryContains(t *testing.T) {
 
 func TestMemoryRemove(t *testing.T) {
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
-		instance := e.New()
+		instance := e.EntityExtension.New()
 		u := uuid.New()
 		instance.SetFieldValue(FieldUuid, u)
 		instance.SetFieldValue(FieldName, "Ian")
@@ -146,12 +146,12 @@ func TestMemoryRemove(t *testing.T) {
 
 func TestMemoryUpdate(t *testing.T) {
 	for _, e := range register.Entities {
-		if e.Name != "Sample" {
+		if e.EntityBase.Name != "Sample" {
 			continue
 		}
 
 		u := uuid.New()
-		instance := e.New()
+		instance := e.EntityExtension.New()
 		instance.SetFieldValue(FieldUuid, u)
 		instance.SetFieldValue(FieldName, "Jane")
 		instance.SetFieldValue(FieldSurname, "Doe")
@@ -172,42 +172,6 @@ func TestMemoryUpdate(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("Instance with UUID %v not found in memory", u)
-		}
-	}
-}
-
-func TestMemorySet(t *testing.T) {
-	for _, e := range register.Entities {
-		if e.Name != "Sample" {
-			continue
-		}
-
-		instance1 := e.New()
-		u1 := uuid.New()
-		instance1.SetFieldValue(FieldUuid, u1)
-		instance1.SetFieldValue(FieldName, "Kyle")
-
-		instance2 := e.New()
-		u2 := uuid.New()
-		instance2.SetFieldValue(FieldUuid, u2)
-		instance2.SetFieldValue(FieldName, "Laura")
-
-		models := []register.Model{instance1, instance2}
-		instance1.MemorySet(models)
-
-		all := instance1.MemoryGetAll()
-		found1 := false
-		found2 := false
-		for _, m := range all {
-			if m.GetUuid() == u1 {
-				found1 = true
-			}
-			if m.GetUuid() == u2 {
-				found2 = true
-			}
-		}
-		if !found1 || !found2 {
-			t.Fatalf("Expected both UUIDs in memory. Found1: %v, Found2: %v", found1, found2)
 		}
 	}
 }

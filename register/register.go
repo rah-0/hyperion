@@ -11,19 +11,30 @@ type IndexAccessor func(value any) []Model
 var Entities []*Entity
 
 type Entity struct {
+	EntityBase      *EntityBase
+	EntityExtension *EntityExtension
+}
+
+type EntityBase struct {
 	// These fields are used for dynamic loading
-	Version        string
-	Name           string
-	DbFileName     string
+	Version    string
+	Name       string
+	DbFileName string
+	Data       []byte
+}
+
+type EntityExtension struct {
 	New            func() Model
-	Data           []byte
 	FieldTypes     map[int]string
 	Indexes        map[int]any
 	IndexAccessors map[int]IndexAccessor
 }
 
-func RegisterEntity(entity *Entity) {
-	Entities = append(Entities, entity)
+func RegisterEntity(entity *EntityBase, entityExtension *EntityExtension) {
+	Entities = append(Entities, &Entity{
+		EntityBase:      entity,
+		EntityExtension: entityExtension,
+	})
 }
 
 type Model interface {
@@ -48,5 +59,4 @@ type Model interface {
 	MemoryClear()
 	MemoryGetAll() []Model
 	MemoryContains(Model) bool
-	MemorySet([]Model)
 }

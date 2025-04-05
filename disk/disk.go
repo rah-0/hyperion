@@ -136,7 +136,7 @@ func (x *Disk) DataReadAll() ([]register.Model, error) {
 		bytesRead += int64(len(data))
 
 		// Decode entity
-		instance := x.Entity.New()
+		instance := x.Entity.EntityExtension.New()
 		instance.SetBufferData(data)
 		if err = instance.Decode(); err != nil {
 			return nil, err
@@ -213,7 +213,7 @@ func (x *Disk) DataCleanup() error {
 		}
 		bytesRead += int64(len(data))
 
-		instance := x.Entity.New()
+		instance := x.Entity.EntityExtension.New()
 		instance.SetBufferData(data)
 		if err = instance.Decode(); err != nil {
 			return err
@@ -268,7 +268,7 @@ func (x *Disk) DataCleanup() error {
 		}
 		bytesRead += int64(len(data))
 
-		instance := x.Entity.New()
+		instance := x.Entity.EntityExtension.New()
 		instance.SetBufferData(data)
 		if err = instance.Decode(); err != nil {
 			return err

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rah-0/testmark/testutil"
 
 	"github.com/rah-0/hyperion/config"
@@ -528,6 +529,159 @@ func insertAndQueryCheck(t *testing.T, entities []*SampleV1.Sample, orders []que
 	}
 	if idx != len(expectedOrdered) {
 		t.Fatalf("expected sequence %v not matched in result %v", expectedOrdered, actual)
+	}
+}
+
+func TestQueryFilterMultipleValuesOr(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "FilterOr_Unique_X1", Surname: "A"},
+		{Name: "FilterOr_Unique_X2", Surname: "B"},
+		{Name: "FilterOr_Unique_X3", Surname: "C"},
+	}
+	var target []*SampleV1.Sample
+	for _, e := range entities {
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatal(err)
+		}
+		if e.Surname == "A" || e.Surname == "C" {
+			target = append(target, e)
+		}
+	}
+
+	q := query.NewQuery().SetFilters(query.FilterTypeOr, []query.Filter{
+		{Field: SampleV1.FieldSurname, Op: query.OperatorTypeEqual, Value: "A"},
+		{Field: SampleV1.FieldSurname, Op: query.OperatorTypeEqual, Value: "C"},
+	})
+
+	results, err := SampleV1.DbQuery(connection, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, expected := range target {
+		found := false
+		for _, r := range results {
+			if r.GetUuid() == expected.GetUuid() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("UUID %v with surname %s not found", expected.GetUuid(), expected.Surname)
+		}
+	}
+}
+
+func TestQueryFilterContains(t *testing.T) {
+	e := &SampleV1.Sample{Name: "FilterContains_Unique", Surname: "XYZ_ABC_123"}
+	if err := e.DbInsert(connection); err != nil {
+		t.Fatal(err)
+	}
+
+	q := query.NewQuery().SetFilters(query.FilterTypeAnd, []query.Filter{
+		{Field: SampleV1.FieldSurname, Op: query.OperatorTypeContains, Value: "ABC"},
+	})
+
+	results, err := SampleV1.DbQuery(connection, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found := false
+	for _, r := range results {
+		if r.GetUuid() == e.GetUuid() {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Expected UUID %v not found in results", e.GetUuid())
+	}
+}
+
+func TestQueryLimitResults(t *testing.T) {
+	var inserted []*SampleV1.Sample
+	for i := 0; i < 5; i++ {
+		e := &SampleV1.Sample{Name: fmt.Sprintf("LimitTest_Unique_%d", i)}
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatal(err)
+		}
+		inserted = append(inserted, e)
+	}
+
+	q := query.NewQuery().
+		SetFilters(query.FilterTypeOr, []query.Filter{
+			{Field: SampleV1.FieldName, Op: query.OperatorTypeContains, Value: "LimitTest_Unique_"},
+		}).
+		SetLimit(2)
+
+	results, err := SampleV1.DbQuery(connection, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found := 0
+	for _, expected := range inserted {
+		for _, r := range results {
+			if r.GetUuid() == expected.GetUuid() {
+				found++
+			}
+		}
+	}
+	if found == 0 {
+		t.Fatalf("None of the inserted UUIDs found in limited query result")
+	}
+}
+
+func TestQueryOrderBySurnameDesc(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "OrderDesc_Unique", Surname: "C"},
+		{Name: "OrderDesc_Unique", Surname: "A"},
+		{Name: "OrderDesc_Unique", Surname: "B"},
+	}
+	insertAndQueryCheck(t, entities, []query.Order{
+		{Type: query.OrderTypeDesc, Field: SampleV1.FieldSurname},
+	}, []string{"OrderDesc_Unique:C", "OrderDesc_Unique:B", "OrderDesc_Unique:A"})
+}
+
+func TestQueryFilterOrderLimitCombo(t *testing.T) {
+	entities := []*SampleV1.Sample{
+		{Name: "Combo_Unique", Surname: "Z"},
+		{Name: "Combo_Unique", Surname: "X"},
+		{Name: "Combo_Unique", Surname: "Y"},
+	}
+	var uuids []uuid.UUID
+	for _, e := range entities {
+		if err := e.DbInsert(connection); err != nil {
+			t.Fatal(err)
+		}
+		uuids = append(uuids, e.GetUuid())
+	}
+
+	q := query.NewQuery().
+		SetFilters(query.FilterTypeAnd, []query.Filter{
+			{Field: SampleV1.FieldName, Op: query.OperatorTypeEqual, Value: "Combo_Unique"},
+		}).
+		SetOrders([]query.Order{
+			{Type: query.OrderTypeAsc, Field: SampleV1.FieldSurname},
+		}).
+		SetLimit(2)
+
+	results, err := SampleV1.DbQuery(connection, q)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found := 0
+	for _, r := range results {
+		for _, u := range uuids {
+			if r.GetUuid() == u {
+				found++
+			}
+		}
+	}
+	if found == 0 {
+		t.Fatalf("Expected at least 1 match from filtered + ordered + limited results")
 	}
 }
 
