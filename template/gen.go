@@ -16,18 +16,6 @@ import (
 )
 
 var (
-	GlobalStructFields = []util.StructField{
-		{
-			Name: "Uuid",
-			Type: "uuid.UUID",
-			Tag:  "`json:\",omitzero\"`",
-		}, {
-			Name: "Deleted",
-			Type: "bool",
-			Tag:  "`json:\",omitzero\"`",
-		},
-	}
-
 	pathEntities = filepath.Join("..", "entities")
 	pathGoMod    = filepath.Join("..", "go.mod")
 )
@@ -101,7 +89,7 @@ func updateDynamicImports(pathEntities string) error {
 
 func createEntityAtPath(s util.StructDef, v string, p string) error {
 	var newFields []util.StructField
-	newFields = append(newFields, GlobalStructFields...)
+	newFields = append(newFields, model.GlobalStructFields...)
 	newFields = append(newFields, s.Fields...)
 	s.Fields = newFields
 
@@ -165,7 +153,7 @@ func isMigrationRequired(s util.StructDef, p string) (bool, string, error) {
 // compareStructFields compares two StructDefs while ignoring GlobalStructFields.
 func compareStructFields(a, b util.StructDef) bool {
 	ignoredFields := make(map[string]bool)
-	for _, f := range GlobalStructFields {
+	for _, f := range model.GlobalStructFields {
 		ignoredFields[f.Name] = true
 	}
 
