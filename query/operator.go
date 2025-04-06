@@ -15,10 +15,10 @@ const (
 
 	OperatorTypeEqual
 	OperatorTypeNotEqual
-	OperatorTypeGreaterThan
-	OperatorTypeGreaterThanEqual
-	OperatorTypeLessThan
-	OperatorTypeLessThanEqual
+	OperatorTypeGreater
+	OperatorTypeGreaterOrEqual
+	OperatorTypeLesser
+	OperatorTypeLesserOrEqual
 	OperatorTypeContains
 	OperatorTypeNotContains
 	OperatorTypeStartsWith
@@ -257,10 +257,10 @@ var StringOperations = map[OperatorType]func(a, b string) bool{
 	OperatorTypeStartsWith:  func(a, b string) bool { return strings.HasPrefix(a, b) },
 	OperatorTypeEndsWith:    func(a, b string) bool { return strings.HasSuffix(a, b) },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b string) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b string) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b string) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b string) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b string) bool { return a > b },
+	OperatorTypeLesser:         func(a, b string) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b string) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b string) bool { return a <= b },
 }
 
 var BoolOperations = map[OperatorType]func(a, b bool) bool{
@@ -272,111 +272,111 @@ var IntOperations = map[OperatorType]func(a, b int) bool{
 	OperatorTypeEqual:    func(a, b int) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b int) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b int) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b int) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b int) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b int) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b int) bool { return a > b },
+	OperatorTypeLesser:         func(a, b int) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b int) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b int) bool { return a <= b },
 }
 var Int8Operations = map[OperatorType]func(a, b int8) bool{
 	OperatorTypeEqual:    func(a, b int8) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b int8) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b int8) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b int8) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b int8) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b int8) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b int8) bool { return a > b },
+	OperatorTypeLesser:         func(a, b int8) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b int8) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b int8) bool { return a <= b },
 }
 var Int16Operations = map[OperatorType]func(a, b int16) bool{
 	OperatorTypeEqual:    func(a, b int16) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b int16) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b int16) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b int16) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b int16) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b int16) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b int16) bool { return a > b },
+	OperatorTypeLesser:         func(a, b int16) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b int16) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b int16) bool { return a <= b },
 }
 var Int32Operations = map[OperatorType]func(a, b int32) bool{
 	OperatorTypeEqual:    func(a, b int32) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b int32) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b int32) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b int32) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b int32) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b int32) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b int32) bool { return a > b },
+	OperatorTypeLesser:         func(a, b int32) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b int32) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b int32) bool { return a <= b },
 }
 var Int64Operations = map[OperatorType]func(a, b int64) bool{
 	OperatorTypeEqual:    func(a, b int64) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b int64) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b int64) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b int64) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b int64) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b int64) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b int64) bool { return a > b },
+	OperatorTypeLesser:         func(a, b int64) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b int64) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b int64) bool { return a <= b },
 }
 
 var UintOperations = map[OperatorType]func(a, b uint) bool{
 	OperatorTypeEqual:    func(a, b uint) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b uint) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b uint) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b uint) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b uint) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b uint) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b uint) bool { return a > b },
+	OperatorTypeLesser:         func(a, b uint) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b uint) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b uint) bool { return a <= b },
 }
 var Uint8Operations = map[OperatorType]func(a, b uint8) bool{
 	OperatorTypeEqual:    func(a, b uint8) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b uint8) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b uint8) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b uint8) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b uint8) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b uint8) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b uint8) bool { return a > b },
+	OperatorTypeLesser:         func(a, b uint8) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b uint8) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b uint8) bool { return a <= b },
 }
 var Uint16Operations = map[OperatorType]func(a, b uint16) bool{
 	OperatorTypeEqual:    func(a, b uint16) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b uint16) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b uint16) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b uint16) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b uint16) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b uint16) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b uint16) bool { return a > b },
+	OperatorTypeLesser:         func(a, b uint16) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b uint16) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b uint16) bool { return a <= b },
 }
 var Uint32Operations = map[OperatorType]func(a, b uint32) bool{
 	OperatorTypeEqual:    func(a, b uint32) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b uint32) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b uint32) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b uint32) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b uint32) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b uint32) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b uint32) bool { return a > b },
+	OperatorTypeLesser:         func(a, b uint32) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b uint32) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b uint32) bool { return a <= b },
 }
 var Uint64Operations = map[OperatorType]func(a, b uint64) bool{
 	OperatorTypeEqual:    func(a, b uint64) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b uint64) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b uint64) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b uint64) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b uint64) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b uint64) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b uint64) bool { return a > b },
+	OperatorTypeLesser:         func(a, b uint64) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b uint64) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b uint64) bool { return a <= b },
 }
 
 var Float32Operations = map[OperatorType]func(a, b float32) bool{
 	OperatorTypeEqual:    func(a, b float32) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b float32) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b float32) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b float32) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b float32) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b float32) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b float32) bool { return a > b },
+	OperatorTypeLesser:         func(a, b float32) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b float32) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b float32) bool { return a <= b },
 }
 var Float64Operations = map[OperatorType]func(a, b float64) bool{
 	OperatorTypeEqual:    func(a, b float64) bool { return a == b },
 	OperatorTypeNotEqual: func(a, b float64) bool { return a != b },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b float64) bool { return a > b },
-	OperatorTypeLessThan:         func(a, b float64) bool { return a < b },
-	OperatorTypeGreaterThanEqual: func(a, b float64) bool { return a >= b },
-	OperatorTypeLessThanEqual:    func(a, b float64) bool { return a <= b },
+	OperatorTypeGreater:        func(a, b float64) bool { return a > b },
+	OperatorTypeLesser:         func(a, b float64) bool { return a < b },
+	OperatorTypeGreaterOrEqual: func(a, b float64) bool { return a >= b },
+	OperatorTypeLesserOrEqual:  func(a, b float64) bool { return a <= b },
 }
 
 var UuidOperations = map[OperatorType]func(a, b uuid.UUID) bool{
@@ -388,8 +388,8 @@ var TimeOperations = map[OperatorType]func(a, b time.Time) bool{
 	OperatorTypeEqual:    func(a, b time.Time) bool { return a.Equal(b) },
 	OperatorTypeNotEqual: func(a, b time.Time) bool { return !a.Equal(b) },
 	// Operators below also used for sorting
-	OperatorTypeGreaterThan:      func(a, b time.Time) bool { return a.After(b) },
-	OperatorTypeLessThan:         func(a, b time.Time) bool { return a.Before(b) },
-	OperatorTypeGreaterThanEqual: func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
-	OperatorTypeLessThanEqual:    func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
+	OperatorTypeGreater:        func(a, b time.Time) bool { return a.After(b) },
+	OperatorTypeLesser:         func(a, b time.Time) bool { return a.Before(b) },
+	OperatorTypeGreaterOrEqual: func(a, b time.Time) bool { return a.After(b) || a.Equal(b) },
+	OperatorTypeLesserOrEqual:  func(a, b time.Time) bool { return a.Before(b) || a.Equal(b) },
 }

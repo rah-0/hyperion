@@ -18,9 +18,10 @@ const (
 
 // StructField represents a field in a struct
 type StructField struct {
-	Name string
-	Type string
-	Tag  string
+	Name          string
+	Type          string
+	Tag           string
+	IndexSortable bool
 }
 
 // StructDef represents the whole struct definition

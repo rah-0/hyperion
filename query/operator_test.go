@@ -93,10 +93,10 @@ func TestIntOperations(t *testing.T) {
 	}{
 		{"== true", IntOperations[OperatorTypeEqual], 5, 5, true},
 		{"!= true", IntOperations[OperatorTypeNotEqual], 5, 6, true},
-		{"> true", IntOperations[OperatorTypeGreaterThan], 7, 6, true},
-		{"< true", IntOperations[OperatorTypeLessThan], 4, 5, true},
-		{">= true", IntOperations[OperatorTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", IntOperations[OperatorTypeLessThanEqual], 5, 5, true},
+		{"> true", IntOperations[OperatorTypeGreater], 7, 6, true},
+		{"< true", IntOperations[OperatorTypeLesser], 4, 5, true},
+		{">= true", IntOperations[OperatorTypeGreaterOrEqual], 5, 5, true},
+		{"<= true", IntOperations[OperatorTypeLesserOrEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -114,10 +114,10 @@ func TestInt8Operations(t *testing.T) {
 	}{
 		{"== true", Int8Operations[OperatorTypeEqual], 1, 1, true},
 		{"!= false", Int8Operations[OperatorTypeNotEqual], 1, 1, false},
-		{"> true", Int8Operations[OperatorTypeGreaterThan], 2, 1, true},
-		{"< true", Int8Operations[OperatorTypeLessThan], 1, 2, true},
-		{">= true", Int8Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int8Operations[OperatorTypeLessThanEqual], 2, 2, true},
+		{"> true", Int8Operations[OperatorTypeGreater], 2, 1, true},
+		{"< true", Int8Operations[OperatorTypeLesser], 1, 2, true},
+		{">= true", Int8Operations[OperatorTypeGreaterOrEqual], 2, 2, true},
+		{"<= true", Int8Operations[OperatorTypeLesserOrEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -135,10 +135,10 @@ func TestInt16Operations(t *testing.T) {
 	}{
 		{"== true", Int16Operations[OperatorTypeEqual], 1, 1, true},
 		{"!= false", Int16Operations[OperatorTypeNotEqual], 1, 1, false},
-		{"> true", Int16Operations[OperatorTypeGreaterThan], 2, 1, true},
-		{"< true", Int16Operations[OperatorTypeLessThan], 1, 2, true},
-		{">= true", Int16Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int16Operations[OperatorTypeLessThanEqual], 2, 2, true},
+		{"> true", Int16Operations[OperatorTypeGreater], 2, 1, true},
+		{"< true", Int16Operations[OperatorTypeLesser], 1, 2, true},
+		{">= true", Int16Operations[OperatorTypeGreaterOrEqual], 2, 2, true},
+		{"<= true", Int16Operations[OperatorTypeLesserOrEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -156,10 +156,10 @@ func TestInt32Operations(t *testing.T) {
 	}{
 		{"== true", Int32Operations[OperatorTypeEqual], 1, 1, true},
 		{"!= false", Int32Operations[OperatorTypeNotEqual], 1, 1, false},
-		{"> true", Int32Operations[OperatorTypeGreaterThan], 2, 1, true},
-		{"< true", Int32Operations[OperatorTypeLessThan], 1, 2, true},
-		{">= true", Int32Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int32Operations[OperatorTypeLessThanEqual], 2, 2, true},
+		{"> true", Int32Operations[OperatorTypeGreater], 2, 1, true},
+		{"< true", Int32Operations[OperatorTypeLesser], 1, 2, true},
+		{">= true", Int32Operations[OperatorTypeGreaterOrEqual], 2, 2, true},
+		{"<= true", Int32Operations[OperatorTypeLesserOrEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -177,10 +177,10 @@ func TestInt64Operations(t *testing.T) {
 	}{
 		{"== true", Int64Operations[OperatorTypeEqual], 1, 1, true},
 		{"!= false", Int64Operations[OperatorTypeNotEqual], 1, 1, false},
-		{"> true", Int64Operations[OperatorTypeGreaterThan], 2, 1, true},
-		{"< true", Int64Operations[OperatorTypeLessThan], 1, 2, true},
-		{">= true", Int64Operations[OperatorTypeGreaterThanEqual], 2, 2, true},
-		{"<= true", Int64Operations[OperatorTypeLessThanEqual], 2, 2, true},
+		{"> true", Int64Operations[OperatorTypeGreater], 2, 1, true},
+		{"< true", Int64Operations[OperatorTypeLesser], 1, 2, true},
+		{">= true", Int64Operations[OperatorTypeGreaterOrEqual], 2, 2, true},
+		{"<= true", Int64Operations[OperatorTypeLesserOrEqual], 2, 2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -198,10 +198,10 @@ func TestUintOperations(t *testing.T) {
 	}{
 		{"== true", UintOperations[OperatorTypeEqual], 5, 5, true},
 		{"!= true", UintOperations[OperatorTypeNotEqual], 5, 6, true},
-		{"> true", UintOperations[OperatorTypeGreaterThan], 7, 6, true},
-		{"< true", UintOperations[OperatorTypeLessThan], 4, 5, true},
-		{">= true", UintOperations[OperatorTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", UintOperations[OperatorTypeLessThanEqual], 5, 5, true},
+		{"> true", UintOperations[OperatorTypeGreater], 7, 6, true},
+		{"< true", UintOperations[OperatorTypeLesser], 4, 5, true},
+		{">= true", UintOperations[OperatorTypeGreaterOrEqual], 5, 5, true},
+		{"<= true", UintOperations[OperatorTypeLesserOrEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -219,10 +219,10 @@ func TestUint8Operations(t *testing.T) {
 	}{
 		{"== true", Uint8Operations[OperatorTypeEqual], 5, 5, true},
 		{"!= true", Uint8Operations[OperatorTypeNotEqual], 5, 6, true},
-		{"> true", Uint8Operations[OperatorTypeGreaterThan], 7, 6, true},
-		{"< true", Uint8Operations[OperatorTypeLessThan], 4, 5, true},
-		{">= true", Uint8Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint8Operations[OperatorTypeLessThanEqual], 5, 5, true},
+		{"> true", Uint8Operations[OperatorTypeGreater], 7, 6, true},
+		{"< true", Uint8Operations[OperatorTypeLesser], 4, 5, true},
+		{">= true", Uint8Operations[OperatorTypeGreaterOrEqual], 5, 5, true},
+		{"<= true", Uint8Operations[OperatorTypeLesserOrEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -240,10 +240,10 @@ func TestUint16Operations(t *testing.T) {
 	}{
 		{"== true", Uint16Operations[OperatorTypeEqual], 5, 5, true},
 		{"!= true", Uint16Operations[OperatorTypeNotEqual], 5, 6, true},
-		{"> true", Uint16Operations[OperatorTypeGreaterThan], 7, 6, true},
-		{"< true", Uint16Operations[OperatorTypeLessThan], 4, 5, true},
-		{">= true", Uint16Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint16Operations[OperatorTypeLessThanEqual], 5, 5, true},
+		{"> true", Uint16Operations[OperatorTypeGreater], 7, 6, true},
+		{"< true", Uint16Operations[OperatorTypeLesser], 4, 5, true},
+		{">= true", Uint16Operations[OperatorTypeGreaterOrEqual], 5, 5, true},
+		{"<= true", Uint16Operations[OperatorTypeLesserOrEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -261,10 +261,10 @@ func TestUint32Operations(t *testing.T) {
 	}{
 		{"== true", Uint32Operations[OperatorTypeEqual], 5, 5, true},
 		{"!= true", Uint32Operations[OperatorTypeNotEqual], 5, 6, true},
-		{"> true", Uint32Operations[OperatorTypeGreaterThan], 7, 6, true},
-		{"< true", Uint32Operations[OperatorTypeLessThan], 4, 5, true},
-		{">= true", Uint32Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint32Operations[OperatorTypeLessThanEqual], 5, 5, true},
+		{"> true", Uint32Operations[OperatorTypeGreater], 7, 6, true},
+		{"< true", Uint32Operations[OperatorTypeLesser], 4, 5, true},
+		{">= true", Uint32Operations[OperatorTypeGreaterOrEqual], 5, 5, true},
+		{"<= true", Uint32Operations[OperatorTypeLesserOrEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -282,10 +282,10 @@ func TestUint64Operations(t *testing.T) {
 	}{
 		{"== true", Uint64Operations[OperatorTypeEqual], 5, 5, true},
 		{"!= true", Uint64Operations[OperatorTypeNotEqual], 5, 6, true},
-		{"> true", Uint64Operations[OperatorTypeGreaterThan], 7, 6, true},
-		{"< true", Uint64Operations[OperatorTypeLessThan], 4, 5, true},
-		{">= true", Uint64Operations[OperatorTypeGreaterThanEqual], 5, 5, true},
-		{"<= true", Uint64Operations[OperatorTypeLessThanEqual], 5, 5, true},
+		{"> true", Uint64Operations[OperatorTypeGreater], 7, 6, true},
+		{"< true", Uint64Operations[OperatorTypeLesser], 4, 5, true},
+		{">= true", Uint64Operations[OperatorTypeGreaterOrEqual], 5, 5, true},
+		{"<= true", Uint64Operations[OperatorTypeLesserOrEqual], 5, 5, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -303,10 +303,10 @@ func TestFloat32Operations(t *testing.T) {
 	}{
 		{"== true", Float32Operations[OperatorTypeEqual], 1.1, 1.1, true},
 		{"!= true", Float32Operations[OperatorTypeNotEqual], 1.1, 2.2, true},
-		{"> true", Float32Operations[OperatorTypeGreaterThan], 3.5, 2.5, true},
-		{"< true", Float32Operations[OperatorTypeLessThan], 1.0, 2.0, true},
-		{">= true", Float32Operations[OperatorTypeGreaterThanEqual], 4.0, 4.0, true},
-		{"<= true", Float32Operations[OperatorTypeLessThanEqual], 2.2, 2.2, true},
+		{"> true", Float32Operations[OperatorTypeGreater], 3.5, 2.5, true},
+		{"< true", Float32Operations[OperatorTypeLesser], 1.0, 2.0, true},
+		{">= true", Float32Operations[OperatorTypeGreaterOrEqual], 4.0, 4.0, true},
+		{"<= true", Float32Operations[OperatorTypeLesserOrEqual], 2.2, 2.2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -324,10 +324,10 @@ func TestFloat64Operations(t *testing.T) {
 	}{
 		{"== true", Float64Operations[OperatorTypeEqual], 1.1, 1.1, true},
 		{"!= true", Float64Operations[OperatorTypeNotEqual], 1.1, 2.2, true},
-		{"> true", Float64Operations[OperatorTypeGreaterThan], 3.5, 2.5, true},
-		{"< true", Float64Operations[OperatorTypeLessThan], 1.0, 2.0, true},
-		{">= true", Float64Operations[OperatorTypeGreaterThanEqual], 4.0, 4.0, true},
-		{"<= true", Float64Operations[OperatorTypeLessThanEqual], 2.2, 2.2, true},
+		{"> true", Float64Operations[OperatorTypeGreater], 3.5, 2.5, true},
+		{"< true", Float64Operations[OperatorTypeLesser], 1.0, 2.0, true},
+		{">= true", Float64Operations[OperatorTypeGreaterOrEqual], 4.0, 4.0, true},
+		{"<= true", Float64Operations[OperatorTypeLesserOrEqual], 2.2, 2.2, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {
@@ -366,10 +366,10 @@ func TestTimeOperations(t *testing.T) {
 	}{
 		{"== true", TimeOperations[OperatorTypeEqual], now, now, true},
 		{"!= true", TimeOperations[OperatorTypeNotEqual], now, later, true},
-		{"> true", TimeOperations[OperatorTypeGreaterThan], later, now, true},
-		{"< true", TimeOperations[OperatorTypeLessThan], now, later, true},
-		{">= true", TimeOperations[OperatorTypeGreaterThanEqual], now, now, true},
-		{"<= true", TimeOperations[OperatorTypeLessThanEqual], now, now, true},
+		{"> true", TimeOperations[OperatorTypeGreater], later, now, true},
+		{"< true", TimeOperations[OperatorTypeLesser], now, later, true},
+		{">= true", TimeOperations[OperatorTypeGreaterOrEqual], now, now, true},
+		{"<= true", TimeOperations[OperatorTypeLesserOrEqual], now, now, true},
 	}
 	for _, c := range cases {
 		if got := c.op(c.a, c.b); got != c.expected {

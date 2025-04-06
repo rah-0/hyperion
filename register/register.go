@@ -28,6 +28,7 @@ type EntityExtension struct {
 	FieldTypes     map[int]string
 	Indexes        map[int]any
 	IndexAccessors map[int]IndexAccessor
+	IndexesSorted  []int
 }
 
 func RegisterEntity(entity *EntityBase, entityExtension *EntityExtension) {

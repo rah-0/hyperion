@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/util"
 )
 
@@ -13,6 +14,8 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	updateIndexesSortability(&s)
 
 	template := "package " + s.Name + strings.ToUpper(v) + "\n"
 	template += "// ---------------------------------------------------------------" + "\n"
@@ -23,12 +26,14 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += `"bytes"` + "\n"
 	template += `"encoding/gob"` + "\n"
 	template += `"errors"` + "\n"
-	template += `"sync"` + "\n"
 	for _, f := range s.Fields {
-		if f.Type == "time.Time" {
-			template += `"time"` + "\n"
+		if f.IndexSortable {
+			template += `"sort"` + "\n"
+			break
 		}
 	}
+	template += `"sync"` + "\n"
+	template += `"time"` + "\n"
 	template += "\n"
 	template += `"github.com/google/uuid"` + "\n\n"
 	template += `"` + filepath.Join(mn, "hconn") + `"` + "\n"
@@ -62,6 +67,14 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "var Indexes = map[int]any{\n"
 	for _, f := range s.Fields {
 		template += "\tField" + f.Name + ": map[" + f.Type + "][]*" + s.Name + "{},\n"
+	}
+	template += "}\n"
+
+	template += "var IndexesSorted = []int{\n"
+	for _, f := range s.Fields {
+		if f.IndexSortable {
+			template += "\tField" + f.Name + ",\n"
+		}
 	}
 	template += "}\n\n"
 
@@ -119,6 +132,7 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "FieldTypes: FieldTypes,\n"
 	template += "Indexes: Indexes,\n"
 	template += "IndexAccessors: IndexAccessors,\n"
+	template += "IndexesSorted: IndexesSorted,\n"
 	template += "},\n"
 	template += ")\n"
 	template += "}\n"
@@ -217,7 +231,11 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	for _, f := range s.Fields {
 		varName := "index" + f.Name
 		template += varName + " := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]*" + s.Name + ")\n"
-		template += varName + "[s." + f.Name + "] = append(" + varName + "[s." + f.Name + "], s)\n"
+		if f.IndexSortable {
+			template += varName + "[s." + f.Name + "] = insertSorted(" + varName + "[s." + f.Name + "], s, Field" + f.Name + ", FieldTypes[Field" + f.Name + "])\n"
+		} else {
+			template += varName + "[s." + f.Name + "] = append(" + varName + "[s." + f.Name + "], s)\n"
+		}
 	}
 	template += "}\n\n"
 
@@ -246,17 +264,20 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "for i, old := range Mem {\n"
 	template += "if old.Uuid != s.Uuid {\n"
 	template += "continue\n"
-	template += "}\n\n"
-	template += "// Update indexes only if values changed\n"
+	template += "}\n"
 	for _, f := range s.Fields {
 		template += "if old." + f.Name + " != s." + f.Name + " {\n"
 		varName := "index" + f.Name
 		template += varName + " := Indexes[Field" + f.Name + "].(map[" + f.Type + "][]*" + s.Name + ")\n"
 		template += varName + "[old." + f.Name + "] = removeFromIndex(" + varName + "[old." + f.Name + "], old)\n"
-		template += varName + "[s." + f.Name + "] = append(" + varName + "[s." + f.Name + "], s)\n"
+		if f.IndexSortable {
+			template += varName + "[s." + f.Name + "] = insertSorted(" + varName + "[s." + f.Name + "], s, Field" + f.Name + ", FieldTypes[Field" + f.Name + "])\n"
+		} else {
+			template += varName + "[s." + f.Name + "] = append(" + varName + "[s." + f.Name + "], s)\n"
+		}
 		template += "}\n"
 	}
-	template += "\nMem[i] = s\n"
+	template += "Mem[i] = s\n"
 	template += "break\n"
 	template += "}\n"
 	template += "}\n\n"
@@ -439,10 +460,23 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "for i, item := range list {\n"
 	template += "if item == target {\n"
 	template += "last := len(list) - 1\n"
-	template += "list[i] = list[last]\n"
+	template += "copy(list[i:], list[i+1:])\n"
 	template += "return list[:last]\n"
 	template += "}\n"
 	template += "}\n"
+	template += "return list\n"
+	template += "}\n\n"
+
+	template += "func insertSorted(list []*" + s.Name + ", val *" + s.Name + ", field int, fieldType string) []*" + s.Name + " {\n"
+	template += "opSet := query.OperatorsRegistry[fieldType].(map[query.OperatorType]func(a, b any) bool)\n"
+	template += "less := opSet[query.OperatorTypeLesser]\n\n"
+	template += "v := val.GetFieldValue(field)\n"
+	template += "i := sort.Search(len(list), func(j int) bool {\n"
+	template += "return !less(list[j].GetFieldValue(field), v)\n"
+	template += "})\n\n"
+	template += "list = append(list, nil)\n"
+	template += "copy(list[i+1:], list[i:])\n"
+	template += "list[i] = val\n"
 	template += "return list\n"
 	template += "}\n\n"
 
@@ -490,4 +524,15 @@ func TemplateMigrationsTests(sCurrent util.StructDef, vCurrent string) (string, 
 	template += "}\n\n"
 
 	return template, nil
+}
+
+func updateIndexesSortability(s *util.StructDef) {
+	for i := range s.Fields {
+		for _, is := range model.GlobalIndexesTypesSortable {
+			if s.Fields[i].Type == is {
+				s.Fields[i].IndexSortable = true
+				break
+			}
+		}
+	}
 }

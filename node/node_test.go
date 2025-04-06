@@ -721,7 +721,7 @@ func TestQueryBirthLastYear(t *testing.T) {
 	// Query only those born in the last year, sorted ascending
 	q := query.NewQuery().
 		SetFilters(query.FilterTypeAnd, []query.Filter{
-			{Field: SampleV1.FieldBirth, Op: query.OperatorTypeGreaterThanEqual, Value: lastYear},
+			{Field: SampleV1.FieldBirth, Op: query.OperatorTypeGreaterOrEqual, Value: lastYear},
 		}).
 		SetOrders([]query.Order{
 			{Type: query.OrderTypeAsc, Field: SampleV1.FieldBirth},

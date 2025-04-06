@@ -13,9 +13,12 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 		return nil, model.ErrQueryNil
 	}
 
-	mem := x.Memory.EntityExtension.New().MemoryGetAll()
 	fieldTypes := x.Memory.EntityExtension.FieldTypes
 	indexAccessors := x.Memory.EntityExtension.IndexAccessors
+	indexesSorted := map[int]bool{}
+	for _, f := range x.Memory.EntityExtension.IndexesSorted {
+		indexesSorted[f] = true
+	}
 
 	hasFilters := q.Filters.Type != query.FilterTypeUndefined
 	filters := q.Filters.Filters
@@ -23,6 +26,27 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 
 	hasLimit := q.Limit > 0
 	limit := q.Limit
+
+	hasOrders := len(q.Orders) > 0
+
+	// Optimization: use sorted index when all ORDER BY fields are sorted
+	if !hasFilters && hasOrders {
+		allSorted := true
+		for _, o := range q.Orders {
+			if !indexesSorted[o.Field] {
+				allSorted = false
+				break
+			}
+		}
+		if allSorted {
+			mem := x.Memory.EntityExtension.New().MemoryGetAll()
+			order(mem, q.Orders, fieldTypes)
+			if hasLimit && len(mem) > limit {
+				mem = mem[:limit]
+			}
+			return mem, nil
+		}
+	}
 
 	var results []register.Model
 	if hasFilters && filterType == query.FilterTypeAnd {
@@ -33,7 +57,7 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 					results = append(results, m)
 				}
 			}
-			if len(q.Orders) > 0 {
+			if hasOrders {
 				err := checkOrders(q, fieldTypes)
 				if err != nil {
 					return nil, err
@@ -47,13 +71,14 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 		}
 	}
 
+	mem := x.Memory.EntityExtension.New().MemoryGetAll()
 	for _, m := range mem {
 		if !hasFilters || matchModel(m, filters, fieldTypes, filterType) {
 			results = append(results, m)
 		}
 	}
 
-	if len(q.Orders) > 0 {
+	if hasOrders {
 		err := checkOrders(q, fieldTypes)
 		if err != nil {
 			return nil, err
@@ -151,13 +176,13 @@ func order(mem []register.Model, orders []query.Order, fieldTypes map[int]string
 
 			switch o.Type {
 			case query.OrderTypeAsc:
-				ok, _ := query.EvaluateOperation(query.OperatorTypeLessThan, ft, va, vb)
+				ok, _ := query.EvaluateOperation(query.OperatorTypeLesser, ft, va, vb)
 				eq, _ := query.EvaluateOperation(query.OperatorTypeEqual, ft, va, vb)
 				if !eq {
 					return ok
 				}
 			case query.OrderTypeDesc:
-				ok, _ := query.EvaluateOperation(query.OperatorTypeGreaterThan, ft, va, vb)
+				ok, _ := query.EvaluateOperation(query.OperatorTypeGreater, ft, va, vb)
 				eq, _ := query.EvaluateOperation(query.OperatorTypeEqual, ft, va, vb)
 				if !eq {
 					return ok

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"sort"
 	"sync"
 	"time"
 
@@ -47,6 +48,11 @@ var Indexes = map[int]any{
 	FieldName:    map[string][]*Sample{},
 	FieldSurname: map[string][]*Sample{},
 	FieldBirth:   map[time.Time][]*Sample{},
+}
+var IndexesSorted = []int{
+	FieldName,
+	FieldSurname,
+	FieldBirth,
 }
 
 var (
@@ -134,6 +140,7 @@ func init() {
 			FieldTypes:     FieldTypes,
 			Indexes:        Indexes,
 			IndexAccessors: IndexAccessors,
+			IndexesSorted:  IndexesSorted,
 		},
 	)
 }
@@ -254,11 +261,11 @@ func (s *Sample) MemoryAdd() {
 	indexDeleted := Indexes[FieldDeleted].(map[bool][]*Sample)
 	indexDeleted[s.Deleted] = append(indexDeleted[s.Deleted], s)
 	indexName := Indexes[FieldName].(map[string][]*Sample)
-	indexName[s.Name] = append(indexName[s.Name], s)
+	indexName[s.Name] = insertSorted(indexName[s.Name], s, FieldName, FieldTypes[FieldName])
 	indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
-	indexSurname[s.Surname] = append(indexSurname[s.Surname], s)
+	indexSurname[s.Surname] = insertSorted(indexSurname[s.Surname], s, FieldSurname, FieldTypes[FieldSurname])
 	indexBirth := Indexes[FieldBirth].(map[time.Time][]*Sample)
-	indexBirth[s.Birth] = append(indexBirth[s.Birth], s)
+	indexBirth[s.Birth] = insertSorted(indexBirth[s.Birth], s, FieldBirth, FieldTypes[FieldBirth])
 }
 
 func (s *Sample) MemoryRemove() {
@@ -294,8 +301,6 @@ func (s *Sample) MemoryUpdate() {
 		if old.Uuid != s.Uuid {
 			continue
 		}
-
-		// Update indexes only if values changed
 		if old.Uuid != s.Uuid {
 			indexUuid := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
 			indexUuid[old.Uuid] = removeFromIndex(indexUuid[old.Uuid], old)
@@ -309,19 +314,18 @@ func (s *Sample) MemoryUpdate() {
 		if old.Name != s.Name {
 			indexName := Indexes[FieldName].(map[string][]*Sample)
 			indexName[old.Name] = removeFromIndex(indexName[old.Name], old)
-			indexName[s.Name] = append(indexName[s.Name], s)
+			indexName[s.Name] = insertSorted(indexName[s.Name], s, FieldName, FieldTypes[FieldName])
 		}
 		if old.Surname != s.Surname {
 			indexSurname := Indexes[FieldSurname].(map[string][]*Sample)
 			indexSurname[old.Surname] = removeFromIndex(indexSurname[old.Surname], old)
-			indexSurname[s.Surname] = append(indexSurname[s.Surname], s)
+			indexSurname[s.Surname] = insertSorted(indexSurname[s.Surname], s, FieldSurname, FieldTypes[FieldSurname])
 		}
 		if old.Birth != s.Birth {
 			indexBirth := Indexes[FieldBirth].(map[time.Time][]*Sample)
 			indexBirth[old.Birth] = removeFromIndex(indexBirth[old.Birth], old)
-			indexBirth[s.Birth] = append(indexBirth[s.Birth], s)
+			indexBirth[s.Birth] = insertSorted(indexBirth[s.Birth], s, FieldBirth, FieldTypes[FieldBirth])
 		}
-
 		Mem[i] = s
 		break
 	}
@@ -530,9 +534,24 @@ func removeFromIndex(list []*Sample, target *Sample) []*Sample {
 	for i, item := range list {
 		if item == target {
 			last := len(list) - 1
-			list[i] = list[last]
+			copy(list[i:], list[i+1:])
 			return list[:last]
 		}
 	}
+	return list
+}
+
+func insertSorted(list []*Sample, val *Sample, field int, fieldType string) []*Sample {
+	opSet := query.OperatorsRegistry[fieldType].(map[query.OperatorType]func(a, b any) bool)
+	less := opSet[query.OperatorTypeLesser]
+
+	v := val.GetFieldValue(field)
+	i := sort.Search(len(list), func(j int) bool {
+		return !less(list[j].GetFieldValue(field), v)
+	})
+
+	list = append(list, nil)
+	copy(list[i+1:], list[i:])
+	list[i] = val
 	return list
 }
