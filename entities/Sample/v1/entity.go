@@ -542,12 +542,10 @@ func removeFromIndex(list []*Sample, target *Sample) []*Sample {
 }
 
 func insertSorted(list []*Sample, val *Sample, field int, fieldType string) []*Sample {
-	opSet := query.OperatorsRegistry[fieldType].(map[query.OperatorType]func(a, b any) bool)
-	less := opSet[query.OperatorTypeLesser]
-
 	v := val.GetFieldValue(field)
 	i := sort.Search(len(list), func(j int) bool {
-		return !less(list[j].GetFieldValue(field), v)
+		ok, _ := query.EvaluateOperation(query.OperatorTypeLesser, fieldType, list[j].GetFieldValue(field), v)
+		return !ok
 	})
 
 	list = append(list, nil)

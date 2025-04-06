@@ -468,11 +468,10 @@ func TemplateEntity(s util.StructDef, v string) (string, error) {
 	template += "}\n\n"
 
 	template += "func insertSorted(list []*" + s.Name + ", val *" + s.Name + ", field int, fieldType string) []*" + s.Name + " {\n"
-	template += "opSet := query.OperatorsRegistry[fieldType].(map[query.OperatorType]func(a, b any) bool)\n"
-	template += "less := opSet[query.OperatorTypeLesser]\n\n"
 	template += "v := val.GetFieldValue(field)\n"
 	template += "i := sort.Search(len(list), func(j int) bool {\n"
-	template += "return !less(list[j].GetFieldValue(field), v)\n"
+	template += "ok, _ := query.EvaluateOperation(query.OperatorTypeLesser, fieldType, list[j].GetFieldValue(field), v)\n"
+	template += "return !ok\n"
 	template += "})\n\n"
 	template += "list = append(list, nil)\n"
 	template += "copy(list[i+1:], list[i:])\n"
