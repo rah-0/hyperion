@@ -81,45 +81,165 @@ func init() {
 	x.BufferReset()
 
 	// IndexAccessors definitions
-	IndexAccessors[FieldUuid] = func(val any) []register.Model {
-		idx := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
-		v, ok := val.(uuid.UUID)
-		if !ok {
-			return nil
-		}
-		return CastToModel(idx[v])
+	IndexAccessors[FieldUuid] = register.IndexAccessor{
+		GetByValue: func(val any) []register.Model {
+			idx := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
+			v, ok := val.(uuid.UUID)
+			if !ok {
+				return nil
+			}
+			return CastToModel(idx[v])
+		},
+		GetAll: func() []register.Model {
+			idx := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
+			var all []*Sample
+			for _, list := range idx {
+				all = append(all, list...)
+			}
+			return CastToModel(all)
+		},
+		Evaluate: func(op query.OperatorType, val any) ([]register.Model, error) {
+			idx := Indexes[FieldUuid].(map[uuid.UUID][]*Sample)
+			var out []*Sample
+			for k, list := range idx {
+				ok, err := query.EvaluateOperation(op, "uuid.UUID", k, val)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					out = append(out, list...)
+				}
+			}
+			return CastToModel(out), nil
+		},
 	}
-	IndexAccessors[FieldDeleted] = func(val any) []register.Model {
-		idx := Indexes[FieldDeleted].(map[bool][]*Sample)
-		v, ok := val.(bool)
-		if !ok {
-			return nil
-		}
-		return CastToModel(idx[v])
+	IndexAccessors[FieldDeleted] = register.IndexAccessor{
+		GetByValue: func(val any) []register.Model {
+			idx := Indexes[FieldDeleted].(map[bool][]*Sample)
+			v, ok := val.(bool)
+			if !ok {
+				return nil
+			}
+			return CastToModel(idx[v])
+		},
+		GetAll: func() []register.Model {
+			idx := Indexes[FieldDeleted].(map[bool][]*Sample)
+			var all []*Sample
+			for _, list := range idx {
+				all = append(all, list...)
+			}
+			return CastToModel(all)
+		},
+		Evaluate: func(op query.OperatorType, val any) ([]register.Model, error) {
+			idx := Indexes[FieldDeleted].(map[bool][]*Sample)
+			var out []*Sample
+			for k, list := range idx {
+				ok, err := query.EvaluateOperation(op, "bool", k, val)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					out = append(out, list...)
+				}
+			}
+			return CastToModel(out), nil
+		},
 	}
-	IndexAccessors[FieldName] = func(val any) []register.Model {
-		idx := Indexes[FieldName].(map[string][]*Sample)
-		v, ok := val.(string)
-		if !ok {
-			return nil
-		}
-		return CastToModel(idx[v])
+	IndexAccessors[FieldName] = register.IndexAccessor{
+		GetByValue: func(val any) []register.Model {
+			idx := Indexes[FieldName].(map[string][]*Sample)
+			v, ok := val.(string)
+			if !ok {
+				return nil
+			}
+			return CastToModel(idx[v])
+		},
+		GetAll: func() []register.Model {
+			idx := Indexes[FieldName].(map[string][]*Sample)
+			var all []*Sample
+			for _, list := range idx {
+				all = append(all, list...)
+			}
+			return CastToModel(all)
+		},
+		Evaluate: func(op query.OperatorType, val any) ([]register.Model, error) {
+			idx := Indexes[FieldName].(map[string][]*Sample)
+			var out []*Sample
+			for k, list := range idx {
+				ok, err := query.EvaluateOperation(op, "string", k, val)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					out = append(out, list...)
+				}
+			}
+			return CastToModel(out), nil
+		},
 	}
-	IndexAccessors[FieldSurname] = func(val any) []register.Model {
-		idx := Indexes[FieldSurname].(map[string][]*Sample)
-		v, ok := val.(string)
-		if !ok {
-			return nil
-		}
-		return CastToModel(idx[v])
+	IndexAccessors[FieldSurname] = register.IndexAccessor{
+		GetByValue: func(val any) []register.Model {
+			idx := Indexes[FieldSurname].(map[string][]*Sample)
+			v, ok := val.(string)
+			if !ok {
+				return nil
+			}
+			return CastToModel(idx[v])
+		},
+		GetAll: func() []register.Model {
+			idx := Indexes[FieldSurname].(map[string][]*Sample)
+			var all []*Sample
+			for _, list := range idx {
+				all = append(all, list...)
+			}
+			return CastToModel(all)
+		},
+		Evaluate: func(op query.OperatorType, val any) ([]register.Model, error) {
+			idx := Indexes[FieldSurname].(map[string][]*Sample)
+			var out []*Sample
+			for k, list := range idx {
+				ok, err := query.EvaluateOperation(op, "string", k, val)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					out = append(out, list...)
+				}
+			}
+			return CastToModel(out), nil
+		},
 	}
-	IndexAccessors[FieldBirth] = func(val any) []register.Model {
-		idx := Indexes[FieldBirth].(map[time.Time][]*Sample)
-		v, ok := val.(time.Time)
-		if !ok {
-			return nil
-		}
-		return CastToModel(idx[v])
+	IndexAccessors[FieldBirth] = register.IndexAccessor{
+		GetByValue: func(val any) []register.Model {
+			idx := Indexes[FieldBirth].(map[time.Time][]*Sample)
+			v, ok := val.(time.Time)
+			if !ok {
+				return nil
+			}
+			return CastToModel(idx[v])
+		},
+		GetAll: func() []register.Model {
+			idx := Indexes[FieldBirth].(map[time.Time][]*Sample)
+			var all []*Sample
+			for _, list := range idx {
+				all = append(all, list...)
+			}
+			return CastToModel(all)
+		},
+		Evaluate: func(op query.OperatorType, val any) ([]register.Model, error) {
+			idx := Indexes[FieldBirth].(map[time.Time][]*Sample)
+			var out []*Sample
+			for k, list := range idx {
+				ok, err := query.EvaluateOperation(op, "time.Time", k, val)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					out = append(out, list...)
+				}
+			}
+			return CastToModel(out), nil
+		},
 	}
 
 	// Initializations
@@ -535,4 +655,44 @@ func removeFromIndex(list []*Sample, target *Sample) []*Sample {
 		}
 	}
 	return list
+}
+
+func GetFullIndex(field int) []register.Model {
+	idx := Indexes[field]
+	if typed, ok := idx.(map[uuid.UUID][]*Sample); ok {
+		var all []*Sample
+		for _, list := range typed {
+			all = append(all, list...)
+		}
+		return CastToModel(all)
+	}
+	if typed, ok := idx.(map[bool][]*Sample); ok {
+		var all []*Sample
+		for _, list := range typed {
+			all = append(all, list...)
+		}
+		return CastToModel(all)
+	}
+	if typed, ok := idx.(map[string][]*Sample); ok {
+		var all []*Sample
+		for _, list := range typed {
+			all = append(all, list...)
+		}
+		return CastToModel(all)
+	}
+	if typed, ok := idx.(map[string][]*Sample); ok {
+		var all []*Sample
+		for _, list := range typed {
+			all = append(all, list...)
+		}
+		return CastToModel(all)
+	}
+	if typed, ok := idx.(map[time.Time][]*Sample); ok {
+		var all []*Sample
+		for _, list := range typed {
+			all = append(all, list...)
+		}
+		return CastToModel(all)
+	}
+	return nil
 }
