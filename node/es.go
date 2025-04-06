@@ -34,8 +34,7 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 
 	hasOrders := len(q.Orders) > 0
 	if hasOrders {
-		err := checkOrders(q, fieldTypes)
-		if err != nil {
+		if err := checkOrders(q, fieldTypes); err != nil {
 			return nil, err
 		}
 	}
@@ -65,6 +64,7 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 		results = unionSets(sets)
 	} else if rt == ResultTypeAll {
 		results = x.Memory.EntityExtension.New().MemoryGetAll()
+		results = filterModels(results, filters, fieldTypes, filterType)
 	}
 
 	if hasOrders {
@@ -121,13 +121,11 @@ func intersectSets(sets [][]register.Model) []register.Model {
 		return sets[0]
 	}
 
-	// Build map from first set
 	ref := make(map[register.Model]int)
 	for _, m := range sets[0] {
 		ref[m] = 1
 	}
 
-	// Count occurrences in other sets
 	for i := 1; i < len(sets); i++ {
 		for _, m := range sets[i] {
 			if ref[m] == i {
@@ -136,7 +134,6 @@ func intersectSets(sets [][]register.Model) []register.Model {
 		}
 	}
 
-	// Collect models that appeared in all sets
 	var out []register.Model
 	for m, count := range ref {
 		if count == len(sets) {
@@ -158,4 +155,43 @@ func unionSets(sets [][]register.Model) []register.Model {
 		}
 	}
 	return out
+}
+
+func filterModels(models []register.Model, filters []query.Filter, fieldTypes map[int]string, ft query.FilterType) []register.Model {
+	var out []register.Model
+	for _, m := range models {
+		if matchModel(m, filters, fieldTypes, ft) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func matchModel(m register.Model, filters []query.Filter, fieldTypes map[int]string, qft query.FilterType) bool {
+	switch qft {
+	case query.FilterTypeOr:
+		for _, f := range filters {
+			a := m.GetFieldValue(f.Field)
+			b := f.Value
+			ok, _ := query.EvaluateOperation(f.Op, fieldTypes[f.Field], a, b)
+			if ok {
+				return true
+			}
+		}
+		return false
+
+	case query.FilterTypeAnd:
+		for _, f := range filters {
+			a := m.GetFieldValue(f.Field)
+			b := f.Value
+			ok, _ := query.EvaluateOperation(f.Op, fieldTypes[f.Field], a, b)
+			if !ok {
+				return false
+			}
+		}
+		return true
+
+	default:
+		return false
+	}
 }
