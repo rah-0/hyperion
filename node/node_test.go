@@ -914,3 +914,57 @@ func BenchmarkQueryExecution(b *testing.B) {
 		}
 	})
 }
+
+func dbSampleInsert(fieldValue string) error {
+	s := SampleV1.Sample{
+		Name: fieldValue,
+	}
+	return s.DbInsert(connection)
+}
+
+func dbSampleInsertWithDate(fieldValue string, t time.Time) error {
+	s := SampleV1.Sample{
+		Name:  fieldValue,
+		Birth: t,
+	}
+	return s.DbInsert(connection)
+}
+
+var inserted = false
+
+func BenchmarkHyperionInsert100kAndSort(b *testing.B) {
+	totalRows := 100
+	if !inserted {
+		uuids := make([]string, totalRows)
+		for i := range uuids {
+			uuids[i] = uuid.NewString()
+			if err := dbSampleInsert(uuids[i]); err != nil {
+				b.Fatalf("Insert failed: %v", err)
+			}
+		}
+		inserted = true
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		q := query.NewQuery().
+			AddOrder(query.OrderTypeAsc, SampleV1.FieldName)
+
+		results, err := SampleV1.DbQuery(connection, q)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		if len(results) != totalRows {
+			b.Fatalf("Expected %d results, got %d", totalRows, len(results))
+		}
+
+		for j := 1; j < len(results); j++ {
+			if results[j].Name < results[j-1].Name {
+				b.Fatalf("Sort order incorrect at index %d: %s < %s", j, results[j].Name, results[j-1].Name)
+			}
+		}
+	}
+}

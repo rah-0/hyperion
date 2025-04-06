@@ -1,6 +1,9 @@
 package node
 
 import (
+	"sort"
+	"time"
+
 	"github.com/rah-0/parsort"
 
 	"github.com/rah-0/hyperion/model"
@@ -29,22 +32,25 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 
 	hasOrders := len(q.Orders) > 0
 
-	// Optimization: use sorted index when all ORDER BY fields are sorted
-	if !hasFilters && hasOrders {
-		allSorted := true
-		for _, o := range q.Orders {
-			if !indexesSorted[o.Field] {
-				allSorted = false
-				break
+	// Optimization: use sorted index directly if fully ordered by a single sorted field with no filters
+	if !hasFilters && hasOrders && len(q.Orders) == 1 {
+		os := q.Orders[0]
+		if indexesSorted[os.Field] {
+			baseIndex := x.Memory.EntityExtension.Indexes[os.Field]
+			sortedValues := extractSortedKeys(baseIndex)
+			var results []register.Model
+			for _, val := range sortedValues {
+				accessor := indexAccessors[os.Field]
+				res := accessor(val)
+				results = append(results, res...)
 			}
-		}
-		if allSorted {
-			mem := x.Memory.EntityExtension.New().MemoryGetAll()
-			order(mem, q.Orders, fieldTypes)
-			if hasLimit && len(mem) > limit {
-				mem = mem[:limit]
+			if os.Type == query.OrderTypeDesc {
+				reverse(results)
 			}
-			return mem, nil
+			if hasLimit && len(results) > limit {
+				results = results[:limit]
+			}
+			return results, nil
 		}
 	}
 
@@ -71,8 +77,8 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 		}
 	}
 
-	mem := x.Memory.EntityExtension.New().MemoryGetAll()
-	for _, m := range mem {
+	all := x.Memory.EntityExtension.New().MemoryGetAll()
+	for _, m := range all {
 		if !hasFilters || matchModel(m, filters, fieldTypes, filterType) {
 			results = append(results, m)
 		}
@@ -91,6 +97,35 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 	}
 
 	return results, nil
+}
+
+func extractSortedKeys(index any) []any {
+	switch m := index.(type) {
+	case map[string][]*register.Model:
+		keys := make([]string, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		res := make([]any, len(keys))
+		for i, k := range keys {
+			res[i] = k
+		}
+		return res
+	case map[time.Time][]*register.Model:
+		keys := make([]time.Time, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+		sort.Slice(keys, func(i, j int) bool { return keys[i].Before(keys[j]) })
+		res := make([]any, len(keys))
+		for i, k := range keys {
+			res[i] = k
+		}
+		return res
+	default:
+		return nil
+	}
 }
 
 func getBestIndex(filters []query.Filter, indexAccessors map[int]register.IndexAccessor) []register.Model {
@@ -191,4 +226,10 @@ func order(mem []register.Model, orders []query.Order, fieldTypes map[int]string
 		}
 		return false
 	})
+}
+
+func reverse(models []register.Model) {
+	for i, j := 0, len(models)-1; i < j; i, j = i+1, j-1 {
+		models[i], models[j] = models[j], models[i]
+	}
 }
