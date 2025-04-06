@@ -65,7 +65,9 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 		results = unionSets(sets)
 	} else if rt == ResultTypeAll {
 		results = x.Memory.EntityExtension.New().MemoryGetAll()
-		results = filterModels(results, filters, fieldTypes, filterType)
+		if hasFilters {
+			results = filterModels(results, filters, fieldTypes, filterType)
+		}
 	}
 
 	if hasOrders {
