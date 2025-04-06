@@ -8,6 +8,14 @@ import (
 	"github.com/rah-0/hyperion/register"
 )
 
+type ResultType int
+
+const (
+	ResultTypeAll ResultType = iota
+	ResultTypeIntersect
+	ResultTypeUnion
+)
+
 func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 	if q == nil {
 		return nil, model.ErrQueryNil
@@ -32,38 +40,30 @@ func (x *EntityStorage) HandleQuery(q *query.Query) ([]register.Model, error) {
 		}
 	}
 
+	var sets [][]register.Model
+	rt := ResultTypeAll
 	if hasFilters {
-		var sets [][]register.Model
 		if filterType == query.FilterTypeAnd {
 			for _, f := range filters {
 				if f.Op == query.OperatorTypeEqual {
 					sets = append(sets, indexAccessors[f.Field].GetByValue(f.Value))
-				} else {
-					set, err := indexAccessors[f.Field].Evaluate(f.Op, f.Value)
-					if err != nil {
-						return nil, err
-					}
-					sets = append(sets, set)
+					rt = ResultTypeIntersect
 				}
 			}
-			results = intersectSets(sets)
 		} else if filterType == query.FilterTypeOr {
 			for _, f := range filters {
-				var set []register.Model
 				if f.Op == query.OperatorTypeEqual {
-					set = indexAccessors[f.Field].GetByValue(f.Value)
-				} else {
-					var err error
-					set, err = indexAccessors[f.Field].Evaluate(f.Op, f.Value)
-					if err != nil {
-						return nil, err
-					}
+					sets = append(sets, indexAccessors[f.Field].GetByValue(f.Value))
+					rt = ResultTypeUnion
 				}
-				sets = append(sets, set)
 			}
-			results = unionSets(sets)
 		}
-	} else {
+	}
+	if rt == ResultTypeIntersect {
+		results = intersectSets(sets)
+	} else if rt == ResultTypeUnion {
+		results = unionSets(sets)
+	} else if rt == ResultTypeAll {
 		results = x.Memory.EntityExtension.New().MemoryGetAll()
 	}
 

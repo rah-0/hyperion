@@ -4,14 +4,10 @@ import (
 	"bytes"
 
 	"github.com/google/uuid"
-
-	"github.com/rah-0/hyperion/query"
 )
 
 type IndexAccessor struct {
 	GetByValue func(value any) []Model
-	GetAll     func() []Model
-	Evaluate   func(op query.OperatorType, value any) ([]Model, error)
 }
 
 var Entities []*Entity
