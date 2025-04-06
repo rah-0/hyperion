@@ -6,6 +6,7 @@ import (
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/query"
 	"github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/util"
 )
 
 type ResultType int
@@ -159,11 +160,19 @@ func unionSets(sets [][]register.Model) []register.Model {
 
 func filterModels(models []register.Model, filters []query.Filter, fieldTypes map[int]string, ft query.FilterType) []register.Model {
 	var out []register.Model
-	for _, m := range models {
-		if matchModel(m, filters, fieldTypes, ft) {
-			out = append(out, m)
+
+	if len(models) < 10000 {
+		for _, m := range models {
+			if matchModel(m, filters, fieldTypes, ft) {
+				out = append(out, m)
+			}
 		}
+	} else {
+		out = util.ParallelFilter(models, func(m register.Model) bool {
+			return matchModel(m, filters, fieldTypes, ft)
+		})
 	}
+
 	return out
 }
 

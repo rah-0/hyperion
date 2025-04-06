@@ -39,5 +39,6 @@ rm -rf ./pprof_svg/*
 #run_benchmark "disk" "180s" "BenchmarkDataWrite"
 #run_benchmark "msg" "10s" "BenchmarkMessageInsert" "./node"
 #run_benchmark "node" "10s" "BenchmarkConnectionEstablishment"
-run_benchmark "node" "60s" "BenchmarkQueryExecution" "./node"
+#run_benchmark "node" "60s" "BenchmarkQueryExecution" "./node"
+run_benchmark "node" "60s" "BenchmarkHyperionFilterModelsParallel" "./node"
 #run_benchmark "hconn" "5s" "BenchmarkSendReceive" "./hconn"

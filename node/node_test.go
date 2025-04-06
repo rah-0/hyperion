@@ -914,3 +914,57 @@ func BenchmarkQueryExecution(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkHyperionInsert100kAndSort(b *testing.B) {
+	defer testutil.RecoverBenchHandler(b)
+
+	const totalRows = 1000000
+	var inserted []*SampleV1.Sample
+
+	// Insert fresh unique records every run
+	for i := 0; i < totalRows; i++ {
+		entity := &SampleV1.Sample{
+			Name: fmt.Sprintf("SortBench_Unique_%03d", totalRows-i), // reverse order for obvious sorting
+		}
+		if err := entity.DbInsert(connection); err != nil {
+			b.Fatalf("Insert failed: %v", err)
+		}
+		inserted = append(inserted, entity)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		q := query.NewQuery().
+			SetFilters(query.FilterTypeOr, func() []query.Filter {
+				var filters []query.Filter
+				for _, e := range inserted {
+					filters = append(filters, query.Filter{
+						Field: SampleV1.FieldUuid,
+						Op:    query.OperatorTypeEqual,
+						Value: e.Uuid,
+					})
+				}
+				return filters
+			}()).
+			SetOrders([]query.Order{
+				{Type: query.OrderTypeAsc, Field: SampleV1.FieldName},
+			})
+
+		results, err := SampleV1.DbQuery(connection, q)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		if len(results) != totalRows {
+			b.Fatalf("Expected %d results, got %d", totalRows, len(results))
+		}
+
+		for j := 1; j < len(results); j++ {
+			if results[j].Name < results[j-1].Name {
+				b.Fatalf("Sort order incorrect at index %d: %s < %s", j, results[j].Name, results[j-1].Name)
+			}
+		}
+	}
+}
