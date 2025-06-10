@@ -1,3 +1,4 @@
 .idea/
 pprof_svg/
 *.test
+data/

@@ -88,11 +88,11 @@ func (x *Node) AddPeer(p *Node) *Node {
 
 func ConnectToNodeWithHostAndPort(ip string, port string) (*hconn.HConn, error) {
 	for {
-		conn, err := net.Dial("tcp", ip+":"+port)
+		conn, err := net.DialTimeout("tcp", ip+":"+port, 5*time.Second)
 		if err == nil {
 			return hconn.NewHConn(conn), nil
 		}
-		if strings.Contains(err.Error(), "connection refused") {
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") {
 			nabu.FromMessage("trying to connect to: [" + ip + ":" + port + "]").Log()
 		} else {
 			return nil, err
@@ -103,11 +103,11 @@ func ConnectToNodeWithHostAndPort(ip string, port string) (*hconn.HConn, error) 
 
 func ConnectToNode(x *Node) (*hconn.HConn, error) {
 	for {
-		conn, err := net.Dial("tcp", x.getListenAddress())
+		conn, err := net.DialTimeout("tcp", x.getListenAddress(), 5*time.Second)
 		if err == nil {
 			return hconn.NewHConn(conn), nil
 		}
-		if strings.Contains(err.Error(), "connection refused") {
+		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") {
 			nabu.FromMessage("trying to connect to: [" + x.getListenAddress() + "]").Log()
 		} else {
 			return nil, err
