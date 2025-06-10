@@ -13,7 +13,7 @@ import (
 
 	"github.com/rah-0/hyperion/config"
 	"github.com/rah-0/hyperion/node"
-	_ "github.com/rah-0/hyperion/template"
+	"github.com/rah-0/hyperion/template"
 
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/util"
@@ -31,6 +31,11 @@ func main() {
 
 	n, err := checkConfigs()
 	if err != nil {
+		nabu.FromError(err).WithLevelFatal().Log()
+		os.Exit(1)
+	}
+
+	if err = template.RegisterEntities(); err != nil {
 		nabu.FromError(err).WithLevelFatal().Log()
 		os.Exit(1)
 	}
@@ -138,7 +143,7 @@ func checkCurrentNode() (*node.Node, error) {
 	for _, nodeConfig := range config.Loaded.Nodes {
 		if nodeConfig.Host.Name == hostName {
 			n := node.NewNode().
-				WithHost(nodeConfig.Host.Name, nodeConfig.Host.Port).
+				WithHost(nodeConfig.Host.Name, nodeConfig.Host.IP, nodeConfig.Host.Port).
 				WithPath(nodeConfig.Path.Data)
 
 			for _, e := range nodeConfig.Entities {
@@ -163,7 +168,7 @@ func addNodePeers(n *node.Node, c config.Config) {
 		}
 
 		peer := node.NewNode().
-			WithHost(nc.Host.Name, nc.Host.Port).
+			WithHost(nc.Host.Name, nc.Host.IP, nc.Host.Port).
 			WithPath(nc.Path.Data)
 
 		for _, e := range nc.Entities {

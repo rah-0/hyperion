@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/rah-0/testmark/testutil"
 
+	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
 	_ "github.com/rah-0/hyperion/template"
 
 	"github.com/rah-0/hyperion/register"
@@ -20,6 +22,18 @@ const (
 	FieldName    = 3
 	FieldSurname = 4
 )
+
+func TestMain(m *testing.M) {
+	testutil.TestMainWrapper(testutil.TestConfig{
+		M: m,
+		LoadResources: func() error {
+			return SampleV1.Register()
+		},
+		UnloadResources: func() error {
+			return nil
+		},
+	})
+}
 
 func TestDataWrite(t *testing.T) {
 	d := NewDisk()

@@ -59,11 +59,11 @@ var (
 	IndexAccessors = map[int]register.IndexAccessor{}
 )
 
-func init() {
+func Register() error {
 	// Validate all FieldTypes have an operator set
 	for _, typ := range FieldTypes {
 		if _, ok := query.OperatorsRegistry[typ]; !ok {
-			panic("missing operator set for field type: " + typ)
+			return errors.New("missing operator set for field type: " + typ)
 		}
 	}
 
@@ -73,10 +73,10 @@ func init() {
 	gob.Register(&Sample{})
 	x := New()
 	if err := x.Encode(); err != nil {
-		panic("failed to encode type metadata: " + err.Error())
+		return errors.New("failed to encode type metadata: " + err.Error())
 	}
 	if err := x.Decode(); err != nil {
-		panic("failed to decode type metadata: " + err.Error())
+		return errors.New("failed to decode type metadata: " + err.Error())
 	}
 	x.BufferReset()
 
@@ -146,6 +146,8 @@ func init() {
 			IndexAccessors: IndexAccessors,
 		},
 	)
+
+	return nil
 }
 
 type Sample struct {

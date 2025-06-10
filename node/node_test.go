@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 				wg.Add(1)
 
 				x := NewNode().
-					WithHost(n.Host.Name, n.Host.Port).
+					WithHost(n.Host.Name, n.Host.IP, n.Host.Port).
 					WithPath(n.Path.Data)
 
 				for _, e := range n.Entities {
@@ -129,7 +129,7 @@ func TestNodesDirectConnection(t *testing.T) {
 
 	for _, nodeConfig := range config.Loaded.Nodes {
 		n := NewNode().
-			WithHost(nodeConfig.Host.Name, nodeConfig.Host.Port).
+			WithHost(nodeConfig.Host.Name, nodeConfig.Host.IP, nodeConfig.Host.Port).
 			WithPath(nodeConfig.Path.Data)
 		for _, e := range nodeConfig.Entities {
 			n.AddEntity(e.Name)

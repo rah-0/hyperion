@@ -5,20 +5,38 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/util"
 
 	//
 	// Dynamic Imports Start
-	_ "github.com/rah-0/hyperion/entities/Sample/v1"
+	"github.com/rah-0/hyperion/entities/Sample/v1"
 	// Dynamic Imports End
+	//
 )
 
 var (
-	pathEntities = filepath.Join("..", "entities")
-	pathGoMod    = filepath.Join("..", "go.mod")
+	pathEntities       = filepath.Join("..", "entities")
+	pathGoMod          = filepath.Join("..", "go.mod")
+	entitiesRegistered = false
 )
+
+func RegisterEntities() error {
+	if entitiesRegistered {
+		return nil
+	}
+
+	//
+	// Dynamic Register Start
+	if err := SampleV1.Register(); err != nil { return err }
+	// Dynamic Register End
+	//
+
+	entitiesRegistered = true
+	return nil
+}
 
 func Generate() error {
 	pe, err := filepath.Abs(pathEntities)
@@ -41,7 +59,7 @@ func Generate() error {
 		return err
 	}
 
-	err = updateDynamicImports(pe)
+	err = updateDynamicCode(pe)
 	if err != nil {
 		return err
 	}
@@ -49,7 +67,7 @@ func Generate() error {
 	return nil
 }
 
-func updateDynamicImports(pathEntities string) error {
+func updateDynamicCode(pathEntities string) error {
 	mn, err := util.GetModuleName(pathGoMod)
 	if err != nil {
 		return err
@@ -61,15 +79,18 @@ func updateDynamicImports(pathEntities string) error {
 	}
 
 	var imports = ""
-	for _, entityName := range ds {
+	var registers = ""
+	for i, entityName := range ds {
 		versions, err := util.DirectoriesInPath(filepath.Join(pathEntities, entityName))
 		if err != nil {
 			return err
 		}
-		for i, v := range versions {
-			imports += "\t" + `_ "` + filepath.Join(mn, "entities", entityName, v) + `"`
-			if i < len(versions)-1 {
+		for _, v := range versions {
+			imports += "\t" + `"` + filepath.Join(mn, "entities", entityName, v) + `"`
+			registers += "\t" + "if err := " + entityName + strings.ToUpper(v) + `.Register(); err != nil { return err }`
+			if i != len(ds)-1 {
 				imports += "\n"
+				registers += "\n"
 			}
 		}
 	}
@@ -78,6 +99,16 @@ func updateDynamicImports(pathEntities string) error {
 		StartTag:   []byte("// Dynamic Imports Start"),
 		EndTag:     []byte("// Dynamic Imports End"),
 		ExpandWith: []byte(imports),
+		Count:      1,
+	}})
+	if err != nil {
+		return err
+	}
+
+	err = util.FileExpand("gen.go", []util.FileExpanderTags{{
+		StartTag:   []byte("// Dynamic Register Start"),
+		EndTag:     []byte("// Dynamic Register End"),
+		ExpandWith: []byte(registers),
 		Count:      1,
 	}})
 	if err != nil {

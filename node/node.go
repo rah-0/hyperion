@@ -14,6 +14,7 @@ import (
 	"github.com/rah-0/hyperion/hconn"
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/register"
+	"github.com/rah-0/hyperion/template"
 	"github.com/rah-0/hyperion/util"
 )
 
@@ -66,8 +67,9 @@ func NewNode() *Node {
 	}
 }
 
-func (x *Node) WithHost(name string, port int) *Node {
+func (x *Node) WithHost(name string, ip string, port int) *Node {
 	x.Host.Name = name
+	x.Host.IP = ip
 	x.Host.Port = port
 	return x
 }
@@ -88,6 +90,10 @@ func (x *Node) AddPeer(p *Node) *Node {
 }
 
 func ConnectToNodeWithHostAndPort(ip string, port string) (*hconn.HConn, error) {
+	if err := template.RegisterEntities(); err != nil {
+		return nil, err
+	}
+
 	for {
 		conn, err := net.DialTimeout("tcp", ip+":"+port, 5*time.Second)
 		if err == nil {
@@ -103,6 +109,10 @@ func ConnectToNodeWithHostAndPort(ip string, port string) (*hconn.HConn, error) 
 }
 
 func ConnectToNode(x *Node) (*hconn.HConn, error) {
+	if err := template.RegisterEntities(); err != nil {
+		return nil, err
+	}
+
 	for {
 		conn, err := net.DialTimeout("tcp", x.getListenAddress(), 5*time.Second)
 		if err == nil {

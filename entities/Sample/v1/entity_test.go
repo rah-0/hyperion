@@ -3,8 +3,22 @@ package SampleV1
 import (
 	"testing"
 
+	"github.com/rah-0/testmark/testutil"
+
 	"github.com/rah-0/hyperion/register"
 )
+
+func TestMain(m *testing.M) {
+	testutil.TestMainWrapper(testutil.TestConfig{
+		M: m,
+		LoadResources: func() error {
+			return Register()
+		},
+		UnloadResources: func() error {
+			return nil
+		},
+	})
+}
 
 func TestSample_EncodeDecode(t *testing.T) {
 	Buffer.Reset()
