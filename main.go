@@ -156,7 +156,9 @@ func checkCurrentNode() (*node.Node, error) {
 func addNodePeers(n *node.Node, c config.Config) {
 	for _, nc := range c.Nodes {
 		// Skip self
-		if n.Host.Name == nc.Host.Name && n.Host.Port == nc.Host.Port {
+		if n.Host.Name == nc.Host.Name &&
+			n.Host.IP == nc.Host.IP &&
+			n.Host.Port == nc.Host.Port {
 			continue
 		}
 

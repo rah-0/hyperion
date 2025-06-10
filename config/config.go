@@ -11,6 +11,7 @@ type Config struct {
 	Nodes       []struct {
 		Host struct {
 			Name string
+			IP   string
 			Port int
 		}
 		Path struct {

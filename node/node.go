@@ -40,6 +40,7 @@ type Path struct {
 
 type Host struct {
 	Name string
+	IP   string
 	Port int
 }
 
@@ -223,7 +224,7 @@ func (x *Node) connectToPeers() {
 }
 
 func (x *Node) getListenAddress() string {
-	return fmt.Sprintf("%s:%d", x.Host.Name, x.Host.Port)
+	return fmt.Sprintf("%s:%d", x.Host.IP, x.Host.Port)
 }
 
 func (x *Node) acceptConnections(listener net.Listener) {
