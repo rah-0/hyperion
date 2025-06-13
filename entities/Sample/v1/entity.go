@@ -277,7 +277,7 @@ func (s *Sample) MemoryRemove() {
 	mu.Lock()
 	defer mu.Unlock()
 	for i, instance := range Mem {
-		if instance == s {
+		if instance.Uuid == s.Uuid {
 			lastIndex := len(Mem) - 1
 			Mem[i] = Mem[lastIndex]
 			Mem = Mem[:lastIndex]
@@ -366,8 +366,19 @@ func (s *Sample) MemoryContains(target register.Model) bool {
 	mu.Lock()
 	defer mu.Unlock()
 
+	targetEntity, ok := target.(*Sample)
+	if !ok {
+		return false
+	}
+
 	for _, instance := range Mem {
-		if instance == target {
+		// If both UUIDs are nil/zero, fall back to pointer comparison
+		if instance.Uuid == uuid.Nil && targetEntity.Uuid == uuid.Nil {
+			if instance == targetEntity {
+				return true
+			}
+		} else if instance.Uuid == targetEntity.Uuid && instance.Uuid != uuid.Nil {
+			// For entities with actual UUIDs, compare by UUID
 			return true
 		}
 	}
@@ -540,7 +551,7 @@ func CastToModel(items []*Sample) []register.Model {
 
 func removeFromIndex(list []*Sample, target *Sample) []*Sample {
 	for i, item := range list {
-		if item == target {
+		if item.Uuid == target.Uuid {
 			last := len(list) - 1
 			list[i] = list[last]
 			return list[:last]
