@@ -1,11 +1,6 @@
 package model
 
 import (
-	"encoding/gob"
-	"time"
-
-	"github.com/google/uuid"
-
 	"github.com/rah-0/hyperion/util"
 )
 
@@ -24,9 +19,3 @@ var (
 		},
 	}
 )
-
-// Custom types should be registered for GOB here:
-func init() {
-	gob.Register(time.Time{})
-	gob.Register(uuid.UUID{})
-}

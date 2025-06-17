@@ -1,13 +1,18 @@
 package template
 
 import (
+	"encoding/gob"
 	"go/format"
 	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/rah-0/hyperion/model"
+	"github.com/rah-0/hyperion/register"
 	"github.com/rah-0/hyperion/util"
 
 	//
@@ -28,9 +33,16 @@ func RegisterEntities() error {
 		return nil
 	}
 
+	// Types should be registered here
+	gob.Register(time.Time{})
+	gob.Register(uuid.UUID{})
+	gob.Register(register.IndexAccessor{})
+
 	//
 	// Dynamic Register Start
-	if err := SampleV1.Register(); err != nil { return err }
+	if err := SampleV1.Register(); err != nil {
+		return err
+	}
 	// Dynamic Register End
 	//
 
