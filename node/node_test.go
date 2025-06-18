@@ -202,6 +202,50 @@ func TestMessageInsertAndDelete(t *testing.T) {
 	}
 }
 
+func TestMessageInsertAndDeleteAll(t *testing.T) {
+	// Insert multiple entities
+	entityCount := 5
+	for i := 0; i < entityCount; i++ {
+		entity := SampleV1.Sample{
+			Name:    fmt.Sprintf("Test%d", i),
+			Surname: fmt.Sprintf("User%d", i),
+		}
+
+		err := entity.DbInsert(connection)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Verify entities were inserted
+	entities, err := SampleV1.DbGetAll(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// We might have existing entities from other tests, so just check we have at least our new ones
+	if len(entities) < entityCount {
+		t.Fatalf("Expected at least %d entities, but got %d", entityCount, len(entities))
+	}
+
+	// Delete all entities
+	err = SampleV1.DbDeleteAll(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify all entities are deleted
+	entities, err = SampleV1.DbGetAll(connection)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Check
+	if len(entities) != 0 {
+		t.Errorf("Entities were not deleted")
+	}
+}
+
 func TestMessageInsert1000(t *testing.T) {
 	var expected []SampleV1.Sample
 	for i := 0; i < 1000; i++ {

@@ -40,9 +40,7 @@ func RegisterEntities() error {
 
 	//
 	// Dynamic Register Start
-	if err := SampleV1.Register(); err != nil {
-		return err
-	}
+	if err := SampleV1.Register(); err != nil { return err }
 	// Dynamic Register End
 	//
 

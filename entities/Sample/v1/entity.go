@@ -449,6 +449,21 @@ func (s *Sample) DbDelete(c *hconn.HConn) error {
 	return nil
 }
 
+func DbDeleteAll(c *hconn.HConn) error {
+	entities, err := DbGetAll(c)
+	if err != nil {
+		return err
+	}
+
+	for _, entity := range entities {
+		if err := entity.DbDelete(c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Sample) DbUpdate(c *hconn.HConn) error {
 	if s.Uuid == uuid.Nil {
 		return model.ErrQueryEntityNoUuid
