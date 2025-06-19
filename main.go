@@ -13,6 +13,7 @@ import (
 
 	"github.com/rah-0/hyperion/config"
 	"github.com/rah-0/hyperion/node"
+	"github.com/rah-0/hyperion/profiler"
 	"github.com/rah-0/hyperion/template"
 
 	"github.com/rah-0/hyperion/model"
@@ -20,8 +21,13 @@ import (
 )
 
 func main() {
-	flag.StringVar(&config.Path, "pathConfig", "", "")
-	flag.StringVar(&config.ForceHost, "forceHost", "", "")
+	// Basic configuration flags
+	flag.StringVar(&config.Path, "pathConfig", "", "Path to configuration file")
+	flag.StringVar(&config.ForceHost, "forceHost", "", "Force specific hostname")
+	// Profiler flags
+	flag.BoolVar(&config.ProfilerEnabled, "profiler", false, "Enable profiler")
+	flag.StringVar(&config.ProfilerIP, "profiler-ip", "0.0.0.0", "IP to bind profiler (default: 0.0.0.0 if profiler enabled)")
+	flag.IntVar(&config.ProfilerPort, "profiler-port", 6060, "Port for profiler (default: 6060 if profiler enabled)")
 	flag.Parse()
 
 	nabu.SetLogLevel(nabu.LevelDebug)
@@ -40,6 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	startProfilerIfEnabled()
 	run(n)
 }
 
@@ -176,5 +183,11 @@ func addNodePeers(n *node.Node, c config.Config) {
 		}
 
 		n.AddPeer(peer)
+	}
+}
+
+func startProfilerIfEnabled() {
+	if config.ProfilerEnabled {
+		profiler.Start(config.ProfilerIP, config.ProfilerPort)
 	}
 }

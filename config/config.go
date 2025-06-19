@@ -1,9 +1,12 @@
 package config
 
 var (
-	Loaded    Config
-	Path      string
-	ForceHost string
+	Loaded          Config
+	Path            string
+	ForceHost       string
+	ProfilerEnabled bool
+	ProfilerIP      string
+	ProfilerPort    int
 )
 
 type Config struct {
