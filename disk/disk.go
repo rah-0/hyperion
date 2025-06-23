@@ -23,11 +23,13 @@ Disk will structure the bytes of an entity (row) in the following way:
 */
 type Disk struct {
 	Mu         sync.Mutex
+	File       *os.File
 	Path       string
 	Entity     *register.Entity
-	File       *os.File
 	SyncTicker *time.Ticker
 	StopChan   chan struct{}
+	IsClosed   bool
+	Wg         sync.WaitGroup
 }
 
 func NewDisk() *Disk {
@@ -49,35 +51,105 @@ func (x *Disk) WithPath(path string) *Disk {
 	return x
 }
 
+// OpenFile sets up the backing file for disk operations and starts a background sync routine.
 func (x *Disk) OpenFile() error {
 	x.Mu.Lock()
-	defer x.Mu.Unlock()
+
+	if x.File != nil {
+		x.Mu.Unlock()
+		return nil
+	}
 
 	file, err := os.OpenFile(x.Path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
+		x.Mu.Unlock()
 		return err
 	}
 	x.File = file
-
-	// Start background sync loop
-	x.SyncTicker = time.NewTicker(1 * time.Second)
+	x.IsClosed = false
 	x.StopChan = make(chan struct{})
-	go x.backgroundSync()
+	x.SyncTicker = time.NewTicker(1 * time.Second)
+
+	// Create local copies of resources needed by background goroutine
+	// to avoid potential race conditions during shutdown
+	syncTicker := x.SyncTicker
+	stopChan := x.StopChan
+
+	x.Wg.Add(1)
+
+	// Release lock before starting goroutine to avoid deadlock
+	x.Mu.Unlock()
+
+	// Start background sync with copies of needed resources
+	go func() {
+		defer x.Wg.Done()
+		x.runBackgroundSync(syncTicker, stopChan)
+	}()
 
 	return nil
 }
 
-func (x *Disk) backgroundSync() {
+// runBackgroundSync safely performs periodic sync operations on the file
+func (x *Disk) runBackgroundSync(ticker *time.Ticker, stopCh chan struct{}) {
 	for {
 		select {
-		case <-x.SyncTicker.C:
-			x.Mu.Lock()
-			x.File.Sync()
-			x.Mu.Unlock()
-		case <-x.StopChan:
+		case <-stopCh:
 			return
+		case <-ticker.C:
+			x.Mu.Lock()
+			file := x.File
+			isClosed := x.IsClosed
+			x.Mu.Unlock()
+
+			if isClosed || file == nil {
+				return
+			}
+			err := file.Sync()
+			if err != nil {
+				nabu.FromError(err).WithMessage("failed to sync file").Log()
+			}
 		}
 	}
+}
+
+// Close safely closes the Disk, ensuring all data is synced to disk and resources are released.
+// Close stops the background sync goroutine, performs a final sync operation, and closes the file handle.
+// This method is safe to call multiple times and will only perform cleanup actions once.
+func (x *Disk) Close() error {
+	x.Mu.Lock()
+	if x.IsClosed {
+		x.Mu.Unlock()
+		return nil
+	}
+	x.IsClosed = true
+
+	if x.SyncTicker != nil {
+		x.SyncTicker.Stop()
+		x.SyncTicker = nil
+	}
+	if x.StopChan != nil {
+		close(x.StopChan)
+		x.StopChan = nil
+	}
+
+	// Store reference to file before unlocking and nullify
+	file := x.File
+	x.File = nil
+	x.Mu.Unlock()
+
+	// Wait for background goroutines to complete
+	x.Wg.Wait()
+
+	// Close the file if it was open
+	if file != nil {
+		if err := file.Sync(); err != nil {
+			return err
+		}
+		if err := file.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (x *Disk) DataWrite(data []byte) error {
@@ -97,6 +169,7 @@ func (x *Disk) DataWrite(data []byte) error {
 	return nil
 }
 
+// DataReadAll reads all entities from disk, returning only the latest version of each entity.
 func (x *Disk) DataReadAll() ([]register.Model, error) {
 	x.Mu.Lock()
 	defer x.Mu.Unlock()

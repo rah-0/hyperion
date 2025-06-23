@@ -14,10 +14,12 @@ import (
 	"github.com/rah-0/testmark/testutil"
 
 	"github.com/rah-0/hyperion/config"
+	"github.com/rah-0/hyperion/disk"
 	SampleV1 "github.com/rah-0/hyperion/entities/Sample/v1"
 	"github.com/rah-0/hyperion/hconn"
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/query"
+	"github.com/rah-0/hyperion/register"
 	"github.com/rah-0/hyperion/util"
 )
 
@@ -101,6 +103,206 @@ func TestMain(m *testing.M) {
 			return err
 		},
 	})
+}
+
+// TestNodeShutdown verifies that the Shutdown method properly cleans up resources
+func TestNodeShutdown(t *testing.T) {
+	// Create a new node
+	n := NewNode()
+	n.WithHost("test-shutdown", "127.0.0.1", util.GetAvailablePort())
+	tempDir := t.TempDir()
+	n.WithPath(tempDir)
+
+	// Add entity storage with disk
+	e := &register.Entity{
+		EntityBase: &register.EntityBase{
+			Name:    "Sample",
+			Version: "v1",
+		},
+	}
+
+	// Use the entity setup pattern
+	d := disk.NewDisk()
+	d.WithNewRandomPath()
+	d.WithEntity(e)
+	if err := d.OpenFile(); err != nil {
+		t.Fatalf("Failed to open disk: %v", err)
+	}
+
+	es := &EntityStorage{
+		Disk:   d,
+		Memory: e,
+	}
+	n.EntitiesStorage = append(n.EntitiesStorage, es)
+
+	// Start the node and create a connection
+	errChan := make(chan error, 1)
+	n.ErrCh = errChan
+
+	// Node must be started for connection to work
+	go func() {
+		if err := n.Start(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	// Give node time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Execute shutdown
+	err := n.Shutdown()
+	if err != nil {
+		t.Fatalf("Shutdown failed: %v", err)
+	}
+
+	// Verify that resources are properly cleaned up:
+
+	// Check if file handle is closed by trying to use it
+	_, err = d.File.Stat()
+	if err == nil {
+		t.Error("File handle should be closed after Shutdown")
+	}
+
+	// Check if disk resources are properly cleaned
+	if d.SyncTicker != nil {
+		t.Error("SyncTicker should be nil after Shutdown")
+	}
+
+	if d.StopChan != nil {
+		t.Error("StopChan should be nil after Shutdown")
+	}
+
+	// Check if error channel was properly handled
+	if n.ErrCh != nil {
+		t.Error("Error channel should be nil after Shutdown")
+	}
+}
+
+// TestNodeShutdownMultiple ensures calling Shutdown multiple times is safe
+// TestNodeMessageDuringShutdown verifies that clients receive the proper shutdown error
+// when sending messages to a node that is in the process of shutting down
+func TestNodeMessageDuringShutdown(t *testing.T) {
+	// Create a node that will be shut down
+	shutdownNode := NewNode()
+	shutdownPort := util.GetAvailablePort()
+	shutdownNode.WithHost("shutdown-test-node", "127.0.0.1", shutdownPort)
+	shutdownNode.WithPath(t.TempDir())
+
+	// Add entity storage with disk
+	e := &register.Entity{
+		EntityBase: &register.EntityBase{
+			Name:    "Sample",
+			Version: "v1",
+		},
+	}
+
+	// Use the entity setup pattern
+	d := disk.NewDisk()
+	d.WithNewRandomPath()
+	d.WithEntity(e)
+	if err := d.OpenFile(); err != nil {
+		t.Fatalf("Failed to open disk: %v", err)
+	}
+
+	es := &EntityStorage{
+		Disk:   d,
+		Memory: e,
+	}
+	shutdownNode.EntitiesStorage = append(shutdownNode.EntitiesStorage, es)
+
+	// Create error channel
+	shutdownErrChan := make(chan error, 10)
+	shutdownNode.ErrCh = shutdownErrChan
+
+	// Start the node that will be shutdown
+	go func() {
+		if err := shutdownNode.Start(); err != nil {
+			t.Errorf("Failed to start shutdownNode: %v", err)
+		}
+	}()
+
+	// Give node time to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Create a direct connection to the node
+	conn, err := ConnectToNodeWithHostAndPort("127.0.0.1", fmt.Sprintf("%d", shutdownPort))
+	if err != nil {
+		t.Fatalf("Failed to connect to node: %v", err)
+	}
+
+	// Start shutting down the node in a goroutine
+	go func() {
+		// Small sleep to ensure the connection is established before shutdown starts
+		time.Sleep(10 * time.Millisecond)
+		if err := shutdownNode.Shutdown(); err != nil {
+			t.Errorf("Shutdown failed: %v", err)
+		}
+	}()
+
+	// Give it a moment to register the shutdown status
+	time.Sleep(20 * time.Millisecond)
+
+	// Try to send a message during shutdown and verify we get the correct error
+	msg := model.Message{
+		Type:   model.MessageTypeTest,
+		String: "test message",
+	}
+
+	err = conn.Send(msg)
+	if err != nil {
+		t.Fatalf("Failed to send message: %v", err)
+	}
+
+	// Receive the response
+	response, err := conn.Receive()
+	if err != nil {
+		t.Fatalf("Failed to receive message: %v", err)
+	}
+
+	// Check that we received the shutdown error
+	if response.Status != model.StatusError {
+		t.Errorf("Expected status error, got %d", response.Status)
+	}
+
+	// The error message should be in the String field when Status is StatusError
+	expectedErrMsg := model.ErrNodeShutdown.Error()
+	if response.String != expectedErrMsg {
+		t.Errorf("Expected error message '%s', got '%s'", expectedErrMsg, response.String)
+	}
+
+	// Clean up
+	conn.Close()
+}
+
+func TestNodeShutdownMultiple(t *testing.T) {
+	n := NewNode()
+	n.WithHost("test-multi-shutdown", "127.0.0.1", util.GetAvailablePort())
+	tempDir := t.TempDir()
+	n.WithPath(tempDir)
+
+	// Start briefly to initialize resources
+	errChan := make(chan error, 1)
+	n.ErrCh = errChan
+
+	go func() {
+		if err := n.Start(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	// First shutdown
+	err := n.Shutdown()
+	if err != nil {
+		t.Fatalf("First shutdown failed: %v", err)
+	}
+
+	// Second shutdown - should not error
+	err = n.Shutdown()
+	if err != nil {
+		t.Fatalf("Second shutdown should be safe but got error: %v", err)
+	}
 }
 
 func TestNodeDirectConnectionIpAndPort(t *testing.T) {

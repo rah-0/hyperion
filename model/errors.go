@@ -21,4 +21,7 @@ var (
 	ErrQueryEntityNoUuid                = errors.New("query: entity has no uuid")
 	ErrQueryEntityFieldNotFound         = errors.New("query: entity field not found")
 	ErrQueryEntityFieldOperatorNotFound = errors.New("query: operator not found for given field")
+
+	// Node-related errors
+	ErrNodeShutdown = errors.New("node: is shutting down, cannot process new messages")
 )

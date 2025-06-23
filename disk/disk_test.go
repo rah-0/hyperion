@@ -35,6 +35,85 @@ func TestMain(m *testing.M) {
 	})
 }
 
+// TestDiskClose tests the Close method ensuring proper resource cleanup
+func TestDiskClose(t *testing.T) {
+	// Create and open a disk
+	d := NewDisk()
+	d.WithNewRandomPath()
+	err := d.OpenFile()
+	if err != nil {
+		t.Fatalf("Failed to open disk file: %v", err)
+	}
+	t.Cleanup(func() { util.FileDelete(d.Path) })
+
+	// Ensure background goroutine is running by checking if StopChan and SyncTicker exist
+	if d.StopChan == nil {
+		t.Fatal("StopChan should be initialized after OpenFile")
+	}
+	if d.SyncTicker == nil {
+		t.Fatal("SyncTicker should be initialized after OpenFile")
+	}
+
+	// Close the disk
+	err = d.Close()
+	if err != nil {
+		t.Fatalf("Failed to close disk: %v", err)
+	}
+
+	// Verify resources are properly cleaned up
+	// After Close(), the fields should be nil as they've been cleaned up
+	if d.SyncTicker != nil {
+		t.Error("SyncTicker should be nil after Close()")
+	}
+	
+	if d.StopChan != nil {
+		t.Error("StopChan should be nil after Close()")
+	}
+
+	// The file handle should be closed, attempting to use it should fail
+	_, err = d.File.Stat()
+	if err == nil {
+		t.Error("File handle should be closed after Close()")
+	}
+}
+
+// TestDiskCloseMultipleTimes ensures that calling Close multiple times is safe
+func TestDiskCloseMultipleTimes(t *testing.T) {
+	// Create and open a disk
+	d := NewDisk()
+	d.WithNewRandomPath()
+	err := d.OpenFile()
+	if err != nil {
+		t.Fatalf("Failed to open disk file: %v", err)
+	}
+	t.Cleanup(func() { util.FileDelete(d.Path) })
+
+	// First close should succeed
+	err = d.Close()
+	if err != nil {
+		t.Fatalf("First close failed: %v", err)
+	}
+
+	// Second close should not error
+	err = d.Close()
+	if err != nil {
+		t.Fatalf("Second close should be safe but got error: %v", err)
+	}
+}
+
+// TestDiskCloseWithoutOpen tests closing a disk that was never opened
+func TestDiskCloseWithoutOpen(t *testing.T) {
+	// Create disk without opening
+	d := NewDisk()
+	d.WithNewRandomPath()
+
+	// Close should not panic or error
+	err := d.Close()
+	if err != nil {
+		t.Fatalf("Close on unopened disk should not error: %v", err)
+	}
+}
+
 func TestDataWrite(t *testing.T) {
 	d := NewDisk()
 	d.WithNewRandomPath()

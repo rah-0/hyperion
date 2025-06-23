@@ -24,6 +24,7 @@ const (
 	StatusStarting Status = iota
 	StatusActive
 	StatusReady
+	StatusShutdown
 )
 
 type EntityStorage struct {
@@ -271,6 +272,23 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 		}
 
 		msgOut := model.Message{}
+
+		// Check node status before processing messages
+		x.Mu.Lock()
+		nodeStatus := x.Status
+		x.Mu.Unlock()
+
+		if nodeStatus == StatusShutdown {
+			err := model.ErrNodeShutdown
+			nabu.FromError(err).Log()
+			msgOut.Error(err.Error())
+			if err := hc.Send(msgOut); err != nil {
+				x.ErrCh <- nabu.FromError(err).Log()
+			}
+			break
+		}
+
+		// Process message if node is not shutting down
 		switch msgIn.Type {
 		case model.MessageTypeInsert, model.MessageTypeDelete, model.MessageTypeUpdate:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
@@ -348,14 +366,24 @@ func (x *Node) findEntityStorage(version, name string) *EntityStorage {
 func (x *Node) handleErrors() {
 	go func(n *Node) {
 		for {
-			select {
-			case err, ok := <-n.ErrCh:
-				if !ok {
-					return
-				}
-				if err != nil {
-					nabu.FromError(err).WithLevelFatal().Log()
-				}
+			n.Mu.Lock()
+			// If channel is nil, it means the node is shutting down
+			if n.ErrCh == nil {
+				n.Mu.Unlock()
+				return
+			}
+
+			// Create a local reference to the channel while holding the lock
+			errCh := n.ErrCh
+			n.Mu.Unlock()
+
+			// Simple channel receive instead of select with single case
+			err, ok := <-errCh
+			if !ok {
+				return
+			}
+			if err != nil {
+				nabu.FromError(err).WithLevelFatal().Log()
 			}
 		}
 	}(x)
@@ -363,13 +391,65 @@ func (x *Node) handleErrors() {
 
 func (x *Node) WaitStatusActive() {
 	for {
+		time.Sleep(100 * time.Millisecond)
 		x.Mu.Lock()
-		status := x.Status
+		s := x.Status
 		x.Mu.Unlock()
-		if status == StatusActive {
+		if s == StatusActive {
 			break
-		} else {
-			time.Sleep(1 * time.Second)
 		}
 	}
+}
+
+// Shutdown performs a graceful shutdown of the node, ensuring that all data is
+// properly flushed to disk and resources are released.
+// It closes all entity storage disks and cleans up resources
+func (x *Node) Shutdown() error {
+	x.Mu.Lock()
+	defer x.Mu.Unlock()
+
+	if x.Status == StatusShutdown {
+		return nil
+	}
+
+	nabu.FromMessage("Shutting down node").WithArgs(x.Host).Log()
+
+	x.Status = StatusShutdown
+	if len(x.Peers) > 0 {
+		x.Peers = nil
+	}
+	if x.HConn != nil {
+		if err := x.HConn.Close(); err != nil {
+			nabu.FromError(err).Log()
+		}
+		x.HConn = nil
+	}
+	for _, es := range x.EntitiesStorage {
+		if es.Disk != nil {
+			nabu.FromMessage("Closing entity storage disk").WithArgs(es.Disk.Path).Log()
+			if err := es.Disk.Close(); err != nil {
+				nabu.FromError(err).Log()
+			}
+			es.Disk = nil
+		}
+	}
+
+	// Force cleanup any other references
+	x.EntitiesStorage = nil
+
+	// Close error channel - mutex is already locked in Shutdown
+	if x.ErrCh != nil {
+		errCh := x.ErrCh
+		x.ErrCh = nil // Set to nil first to signal handleErrors goroutine to stop
+
+		select {
+		case <-errCh: // Channel already closed
+			// Do nothing
+		default:
+			close(errCh)
+		}
+	}
+
+	nabu.FromMessage("Node shutdown completed: " + x.Host.Name).Log()
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"os"
+	"os/signal"
 	"sync"
 	"syscall"
 
@@ -63,9 +64,19 @@ func checkConfigs() (*node.Node, error) {
 func run(n *node.Node) {
 	var wg sync.WaitGroup
 
+	// Create a channel to listen for OS signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Channel to track if node exited on its own
+	nodeExited := make(chan struct{})
+
+	// Start the node
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer close(nodeExited)
+
 		if err := n.Start(); err != nil {
 			if errors.Is(err, syscall.EADDRINUSE) {
 				nabu.FromError(err).WithLevelFatal().Log()
@@ -76,7 +87,31 @@ func run(n *node.Node) {
 		}
 	}()
 
+	// Wait for either the node to complete or an OS signal
+	select {
+	case sig := <-sigChan:
+		nabu.FromMessage("Received signal: " + sig.String()).Log()
+		shutdownGracefully(n)
+	case <-nodeExited:
+		nabu.FromMessage("Node exited on its own").Log()
+		// No need to call shutdown as the node already terminated
+	}
+
+	// Wait for all goroutines to finish
 	wg.Wait()
+	nabu.FromMessage("Node process fully terminated").Log()
+}
+
+// shutdownGracefully handles the graceful shutdown process for the node
+func shutdownGracefully(n *node.Node) {
+	nabu.FromMessage("Initiating graceful shutdown...").Log()
+	
+	// Perform graceful shutdown
+	if err := n.Shutdown(); err != nil {
+		nabu.FromError(err).Log()
+	}
+	
+	nabu.FromMessage("Graceful shutdown completed").Log()
 }
 
 func checkPathConfig() error {
