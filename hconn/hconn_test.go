@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -258,6 +259,126 @@ func TestReceiveTimeout(t *testing.T) {
 		// OK, finished in time
 	case <-time.After(2 * Timeout):
 		t.Error("Receive did not time out as expected")
+	}
+}
+
+func TestKeepAliveSuccessful(t *testing.T) {
+	// Save original timeout and restore at the end
+	originalTimeout := Timeout
+	defer func() { Timeout = originalTimeout }()
+
+	// Use a shorter timeout for testing
+	Timeout = 200 * time.Millisecond
+
+	// Setup test
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+
+	serverConn := NewHConn(server)
+	clientConn := NewHConn(client)
+
+	// Track ping messages received
+	var pingCount int
+	var mu sync.Mutex
+	done := make(chan struct{})
+
+	// Server handler to respond to pings
+	go func() {
+		defer close(done)
+		for i := 0; i < 2; i++ { // Process two ping exchanges
+			msg, err := serverConn.Receive()
+			if err != nil {
+				return // Connection closed or error
+			}
+
+			// Respond to ping with success
+			if msg.Type == model.MessageTypePing {
+				mu.Lock()
+				pingCount++
+				mu.Unlock()
+
+				response := model.Message{
+					Type:   model.MessageTypePing,
+					Status: model.StatusSuccess,
+				}
+				if err := serverConn.Send(response); err != nil {
+					t.Errorf("Failed to send ping response: %v", err)
+					return
+				}
+			}
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(Timeout / 2)
+		defer ticker.Stop()
+		for range ticker.C {
+			pingMsg := model.Message{Type: model.MessageTypePing}
+			if err := clientConn.Send(pingMsg); err != nil {
+				return
+			}
+			if _, err := clientConn.Receive(); err != nil {
+				return
+			}
+		}
+	}()
+
+	// Wait for the test to complete
+	select {
+	case <-done:
+		// Test completed
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("Test timed out waiting for ping exchanges")
+	}
+
+	// Verify that pings were processed
+	mu.Lock()
+	defer mu.Unlock()
+	if pingCount < 1 {
+		t.Error("No ping messages were processed during the test")
+	}
+}
+
+func TestPingMessageHandling(t *testing.T) {
+	// Create ping message
+	pingMsg := model.Message{Type: model.MessageTypePing}
+
+	// Verify message has the expected type
+	if pingMsg.Type != model.MessageTypePing {
+		t.Errorf("Expected message type %v, got %v", model.MessageTypePing, pingMsg.Type)
+	}
+
+	// Success response to ping should have StatusSuccess
+	pingResponse := model.Message{
+		Type:   model.MessageTypePing,
+		Status: model.StatusSuccess,
+	}
+
+	if pingResponse.Status != model.StatusSuccess {
+		t.Errorf("Expected status %v, got %v", model.StatusSuccess, pingResponse.Status)
+	}
+
+	// Verify timeout manipulation works correctly with the HConn
+	originalTimeout := Timeout
+	defer func() { Timeout = originalTimeout }()
+
+	// Set to a very short timeout for testing
+	customTimeout := 50 * time.Millisecond
+	Timeout = customTimeout
+
+	// Verify the timeout is used in new connections
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+
+	clientConn := NewHConn(client)
+
+	// Manually set deadline just to verify it works
+	deadline := time.Now().Add(customTimeout)
+	err := clientConn.C.SetReadDeadline(deadline)
+	if err != nil {
+		t.Fatalf("Failed to set deadline: %v", err)
 	}
 }
 

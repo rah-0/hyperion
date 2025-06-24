@@ -8,10 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rah-0/hyperion/hconn"
+
 	"github.com/rah-0/nabu"
 
 	"github.com/rah-0/hyperion/disk"
-	"github.com/rah-0/hyperion/hconn"
 	"github.com/rah-0/hyperion/model"
 	"github.com/rah-0/hyperion/register"
 	"github.com/rah-0/hyperion/template"
@@ -26,6 +27,8 @@ const (
 	StatusReady
 	StatusShutdown
 )
+
+var DialTimeout = 5 * time.Second
 
 type EntityStorage struct {
 	Disk   *disk.Disk
@@ -96,9 +99,11 @@ func ConnectToNodeWithHostAndPort(ip string, port string) (*hconn.HConn, error) 
 	}
 
 	for {
-		conn, err := net.DialTimeout("tcp", ip+":"+port, 5*time.Second)
+		conn, err := net.DialTimeout("tcp", ip+":"+port, DialTimeout)
 		if err == nil {
-			return hconn.NewHConn(conn), nil
+			hc := hconn.NewHConn(conn)
+			go keepalive(hc)
+			return hc, nil
 		}
 		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") {
 			nabu.FromMessage("trying to connect to: [" + ip + ":" + port + "]").Log()
@@ -115,9 +120,11 @@ func ConnectToNode(x *Node) (*hconn.HConn, error) {
 	}
 
 	for {
-		conn, err := net.DialTimeout("tcp", x.getListenAddress(), 5*time.Second)
+		conn, err := net.DialTimeout("tcp", x.getListenAddress(), DialTimeout)
 		if err == nil {
-			return hconn.NewHConn(conn), nil
+			hc := hconn.NewHConn(conn)
+			go keepalive(hc)
+			return hc, nil
 		}
 		if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "i/o timeout") {
 			nabu.FromMessage("trying to connect to: [" + x.getListenAddress() + "]").Log()
@@ -290,6 +297,10 @@ func (x *Node) handleConnection(hc *hconn.HConn) {
 
 		// Process message if node is not shutting down
 		switch msgIn.Type {
+		case model.MessageTypePing:
+			// Respond to ping with success status
+			msgOut.Status = model.StatusSuccess
+			msgOut.Type = model.MessageTypePing
 		case model.MessageTypeInsert, model.MessageTypeDelete, model.MessageTypeUpdate:
 			e := x.findEntityStorage(msgIn.Entity.Version, msgIn.Entity.Name)
 			if e == nil {
@@ -452,4 +463,20 @@ func (x *Node) Shutdown() error {
 
 	nabu.FromMessage("Node shutdown completed: " + x.Host.Name).Log()
 	return nil
+}
+
+func keepalive(hc *hconn.HConn) {
+	ticker := time.NewTicker(hconn.Timeout / 2)
+	defer ticker.Stop()
+	for range ticker.C {
+		pingMsg := model.Message{Type: model.MessageTypePing}
+		if err := hc.Send(pingMsg); err != nil {
+			nabu.FromError(err).Log()
+			return
+		}
+		if _, err := hc.Receive(); err != nil {
+			nabu.FromError(err).Log()
+			return
+		}
+	}
 }

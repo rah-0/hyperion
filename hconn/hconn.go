@@ -10,7 +10,7 @@ import (
 	"github.com/rah-0/hyperion/model"
 )
 
-var Timeout = 5 * time.Second
+var Timeout = 120 * time.Second
 
 type HConn struct {
 	C net.Conn

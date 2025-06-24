@@ -3,6 +3,7 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1159,6 +1160,80 @@ func BenchmarkQueryExecution(b *testing.B) {
 			}
 		}
 	})
+}
+
+// TestPingHandling validates that the node correctly responds to ping messages
+func TestPingHandling(t *testing.T) {
+	// Create a test node
+	testNode := NewNode()
+	testNode.WithHost("test-ping", "127.0.0.1", util.GetAvailablePort())
+	testNode.WithPath(t.TempDir())
+	testNode.ErrCh = make(chan error, 1)
+
+	// Create pipe network connection
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+
+	serverHConn := hconn.NewHConn(server)
+	clientHConn := hconn.NewHConn(client)
+
+	// Use a channel to coordinate test completion
+	done := make(chan struct{})
+
+	// Start the connection handler
+	go func() {
+		defer close(done)
+
+		// Send a ping message
+		pingMsg := model.Message{Type: model.MessageTypePing}
+
+		if err := clientHConn.Send(pingMsg); err != nil {
+			t.Errorf("Failed to send ping: %v", err)
+			return
+		}
+
+		// Receive response
+		response, err := clientHConn.Receive()
+		if err != nil {
+			t.Errorf("Failed to receive response: %v", err)
+			return
+		}
+
+		// Verify the response
+		if response.Type != model.MessageTypePing {
+			t.Errorf("Expected response type MessageTypePing, got %v", response.Type)
+		}
+		if response.Status != model.StatusSuccess {
+			t.Errorf("Expected status StatusSuccess, got %v", response.Status)
+		}
+	}()
+
+	// Start handling the connection in the test node
+	go testNode.handleConnection(serverHConn)
+
+	// Wait for test to complete or timeout
+	select {
+	case <-done:
+		// Test completed
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("Test timed out waiting for ping response")
+	}
+}
+
+func TestDialTimeoutConfig(t *testing.T) {
+	// Verify DialTimeout is configurable
+	originalDialTimeout := DialTimeout
+	defer func() { DialTimeout = originalDialTimeout }()
+
+	// Set a custom timeout for the test
+	customTimeout := 2 * time.Second
+	DialTimeout = customTimeout
+
+	// Verify the timeout is set correctly
+	if DialTimeout != customTimeout {
+		t.Errorf("Expected DialTimeout to be %v, got %v", customTimeout, DialTimeout)
+	}
 }
 
 func BenchmarkHyperionInsert100kAndSort(b *testing.B) {

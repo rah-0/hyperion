@@ -9,6 +9,7 @@ type MessageType int
 
 const (
 	MessageTypeUndefined MessageType = iota
+	MessageTypePing
 	MessageTypeTest
 	MessageTypeInsert
 	MessageTypeDelete
