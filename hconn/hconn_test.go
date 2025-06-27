@@ -497,3 +497,64 @@ func TestConcurrentSendReceive_Race(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestSendReceiveRace_SharedConnection(t *testing.T) {
+	clientConn, serverConn := net.Pipe()
+	client := NewHConn(clientConn)
+	server := NewHConn(serverConn)
+
+	const (
+		numGoroutines = 20
+		testTimeout   = 2 * time.Second
+	)
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, numGoroutines)
+
+	// Server always echoes
+	go func() {
+		for {
+			msg, err := server.Receive()
+			if err != nil {
+				return
+			}
+			_ = server.Send(msg) // Ignore send errors here
+		}
+	}()
+
+	wg.Add(numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+
+			expected := fmt.Sprintf("hello from %d", id)
+			msg := model.Message{Type: model.MessageTypeTest, String: expected}
+
+			resp, err := client.SendReceive(msg)
+			if err != nil {
+				errCh <- fmt.Errorf("send/recv error %d: %v", id, err)
+				return
+			}
+			if resp.String != expected {
+				errCh <- fmt.Errorf("response mismatch %d: expected '%s', got '%s'", id, expected, resp.String)
+			}
+		}(i)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(testTimeout):
+		t.Fatal("test timeout")
+	}
+
+	close(errCh)
+	for err := range errCh {
+		t.Error(err)
+	}
+}

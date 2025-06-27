@@ -403,11 +403,7 @@ func (s *Sample) DbInsert(c *hconn.HConn) error {
 	}
 	s.BufferReset()
 
-	if err := c.Send(msg); err != nil {
-		return err
-	}
-
-	resp, err := c.Receive()
+	resp, err := c.SendReceive(msg)
 	if err != nil {
 		return err
 	}
@@ -434,11 +430,7 @@ func (s *Sample) DbDelete(c *hconn.HConn) error {
 	}
 	s.BufferReset()
 
-	if err := c.Send(msg); err != nil {
-		return err
-	}
-
-	resp, err := c.Receive()
+	resp, err := c.SendReceive(msg)
 	if err != nil {
 		return err
 	}
@@ -482,11 +474,7 @@ func (s *Sample) DbUpdate(c *hconn.HConn) error {
 	}
 	s.BufferReset()
 
-	if err := c.Send(msg); err != nil {
-		return err
-	}
-
-	resp, err := c.Receive()
+	resp, err := c.SendReceive(msg)
 	if err != nil {
 		return err
 	}
@@ -506,11 +494,7 @@ func DbGetAll(c *hconn.HConn) ([]*Sample, error) {
 		},
 	}
 
-	if err := c.Send(msg); err != nil {
-		return nil, err
-	}
-
-	resp, err := c.Receive()
+	resp, err := c.SendReceive(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -532,11 +516,7 @@ func DbQuery(c *hconn.HConn, q *query.Query) ([]*Sample, error) {
 		Query: q,
 	}
 
-	if err := c.Send(msg); err != nil {
-		return nil, err
-	}
-
-	resp, err := c.Receive()
+	resp, err := c.SendReceive(msg)
 	if err != nil {
 		return nil, err
 	}
