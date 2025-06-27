@@ -3,6 +3,7 @@ package hconn
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"reflect"
@@ -412,5 +413,87 @@ func BenchmarkSendReceive(b *testing.B) {
 		if err := <-done; err != nil {
 			b.Fatalf("Receive failed: %v", err)
 		}
+	}
+}
+
+func TestConcurrentSendReceive_Race(t *testing.T) {
+	const (
+		numGoroutines          = 50
+		iterationsPerGoroutine = 10
+		maxTestDuration        = 5 * time.Second
+		perOpTimeout           = 1 * time.Second
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(numGoroutines)
+
+	errCh := make(chan error, numGoroutines*iterationsPerGoroutine)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+
+			for j := 0; j < iterationsPerGoroutine; j++ {
+				cliConn, srvConn := net.Pipe()
+				client := NewHConn(cliConn)
+				server := NewHConn(srvConn)
+
+				msg := model.Message{
+					Type:   model.MessageTypeTest,
+					String: fmt.Sprintf("msg from goroutine %d, iteration %d", id, j),
+				}
+
+				// Server echoes back
+				go func() {
+					server.C.SetReadDeadline(time.Now().Add(perOpTimeout))
+					received, err := server.Receive()
+					if err != nil {
+						errCh <- fmt.Errorf("server receive [%d.%d]: %v", id, j, err)
+						return
+					}
+					server.C.SetWriteDeadline(time.Now().Add(perOpTimeout))
+					if err = server.Send(received); err != nil {
+						errCh <- fmt.Errorf("server send [%d.%d]: %v", id, j, err)
+					}
+				}()
+
+				client.C.SetWriteDeadline(time.Now().Add(perOpTimeout))
+				if err := client.Send(msg); err != nil {
+					errCh <- fmt.Errorf("send error [%d.%d]: %v", id, j, err)
+					return
+				}
+
+				client.C.SetReadDeadline(time.Now().Add(perOpTimeout))
+				resp, err := client.Receive()
+				if err != nil {
+					errCh <- fmt.Errorf("receive error [%d.%d]: %v", id, j, err)
+					return
+				}
+
+				if resp.String != msg.String {
+					errCh <- fmt.Errorf("mismatch [%d.%d]: sent '%s', got '%s'", id, j, msg.String, resp.String)
+				}
+
+				client.Close()
+				server.Close()
+			}
+		}(i)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(maxTestDuration):
+		t.Fatal("Test timed out")
+	}
+
+	close(errCh)
+	for err := range errCh {
+		t.Error(err)
 	}
 }

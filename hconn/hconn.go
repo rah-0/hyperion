@@ -3,6 +3,7 @@ package hconn
 import (
 	"encoding/binary"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/rah-0/nabu"
@@ -13,8 +14,10 @@ import (
 var Timeout = 120 * time.Second
 
 type HConn struct {
-	C net.Conn
-	S *Serializer
+	C   net.Conn
+	S   *Serializer
+	muR sync.Mutex
+	muW sync.Mutex
 }
 
 func NewHConn(conn net.Conn) *HConn {
@@ -28,8 +31,11 @@ func (hc *HConn) Close() error {
 	return hc.C.Close()
 }
 
-// Send sends a message with a length-prefixed format over the connection
+// Send sends a message with a length-prefixed format
 func (hc *HConn) Send(a any) error {
+	hc.muW.Lock()
+	defer hc.muW.Unlock()
+
 	if err := hc.S.Encode(a); err != nil {
 		return nabu.FromError(err).Log()
 	}
@@ -53,6 +59,9 @@ func (hc *HConn) Send(a any) error {
 
 // Receive reads a message using the length-prefixed format
 func (hc *HConn) Receive() (msg model.Message, err error) {
+	hc.muR.Lock()
+	defer hc.muR.Unlock()
+
 	if err = hc.C.SetReadDeadline(time.Now().Add(Timeout)); err != nil {
 		return
 	}
